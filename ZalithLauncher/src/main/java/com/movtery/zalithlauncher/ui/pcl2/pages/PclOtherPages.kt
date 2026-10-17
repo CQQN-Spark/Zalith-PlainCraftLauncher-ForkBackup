@@ -90,7 +90,8 @@ import com.movtery.zalithlauncher.game.download.engine.DownloadEngine
 import com.movtery.zalithlauncher.game.download.engine.DownloadRequest
 import com.movtery.zalithlauncher.game.path.GamePathManager
 import com.movtery.zalithlauncher.path.URL_WEBLATE
-import com.movtery.zalithlauncher.viewmodel.EventViewModel
+import com.movtery.zalithlauncher.upgrade.TooFrequentOperationException
+import com.movtery.zalithlauncher.viewmodel.LauncherUpgradeViewModel
 import com.movtery.zalithlauncher.path.PathManager
 import com.movtery.zalithlauncher.ui.androidText
 import com.movtery.zalithlauncher.ui.pcl2.components.PclBottomSpacer
@@ -251,8 +252,11 @@ private fun PclAboutRow(
 @Composable
 fun PclOtherAboutPage() {
     val context = LocalContext.current
-    // 检查更新走 Activity 作用域的事件通道，由 MainActivity 调用真正的更新检查
-    val eventViewModel: EventViewModel = viewModel()
+    // 直接用 Activity 作用域的更新 ViewModel：与 MainActivity 持有的是同一个实例，
+    // 检查到新版本时 MainActivity 里的更新弹窗照常弹出；
+    // 检查结果（已最新/失败/太频繁）用提示条给出可见反馈，不再依赖一闪而过的 Toast。
+    val scope = rememberCoroutineScope()
+    val upgradeViewModel: LauncherUpgradeViewModel = viewModel()
 
     PclContent {
         // ---- 关于
@@ -295,8 +299,22 @@ fun PclOtherAboutPage() {
                     info = "本启动器：基于 Zalith Launcher 2 与 PCL2 界面打造的 Minecraft Java 版启动器",
                     buttonText = "检查更新",
                 ) {
-                    eventViewModel.sendEvent(EventViewModel.Event.CheckUpdate)
-                    PclHintHost.push("正在检查更新…", PclHintTheme.Blue)
+                    scope.launch {
+                        try {
+                            upgradeViewModel.checkManually(
+                                onInProgress = {
+                                    PclHintHost.push("正在检查更新…（网络不佳时可能需要一两分钟）", PclHintTheme.Blue)
+                                },
+                                onIsLatest = {
+                                    PclHintHost.push("当前已是最新版本", PclHintTheme.Green)
+                                }
+                            )
+                        } catch (_: TooFrequentOperationException) {
+                            PclHintHost.push("检查太频繁了，请稍等几秒再试", PclHintTheme.Yellow)
+                        } catch (_: Exception) {
+                            PclHintHost.push("获取更新失败，请检查网络后重试", PclHintTheme.Red)
+                        }
+                    }
                 }
 
                 PclAboutRow(
