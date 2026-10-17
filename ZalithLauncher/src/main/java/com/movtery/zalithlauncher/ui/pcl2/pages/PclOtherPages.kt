@@ -64,6 +64,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.movtery.zalithlauncher.BuildConfig
 import com.movtery.zalithlauncher.R
 import com.movtery.zalithlauncher.path.URL_BANGBANG93_SPONSOR
@@ -89,6 +90,7 @@ import com.movtery.zalithlauncher.game.download.engine.DownloadEngine
 import com.movtery.zalithlauncher.game.download.engine.DownloadRequest
 import com.movtery.zalithlauncher.game.path.GamePathManager
 import com.movtery.zalithlauncher.path.URL_WEBLATE
+import com.movtery.zalithlauncher.viewmodel.EventViewModel
 import com.movtery.zalithlauncher.path.PathManager
 import com.movtery.zalithlauncher.ui.androidText
 import com.movtery.zalithlauncher.ui.pcl2.components.PclBottomSpacer
@@ -249,6 +251,8 @@ private fun PclAboutRow(
 @Composable
 fun PclOtherAboutPage() {
     val context = LocalContext.current
+    // 检查更新走 Activity 作用域的事件通道，由 MainActivity 调用真正的更新检查
+    val eventViewModel: EventViewModel = viewModel()
 
     PclContent {
         // ---- 关于
@@ -289,8 +293,11 @@ fun PclOtherAboutPage() {
                     icon = painterResource(R.drawable.ic_launcher_logo),
                     title = "Zalith-Plain Craft Launcher",
                     info = "本启动器：基于 Zalith Launcher 2 与 PCL2 界面打造的 Minecraft Java 版启动器",
-                    buttonText = "开源代码",
-                ) { openLink(context, URL_PROJECT) }
+                    buttonText = "检查更新",
+                ) {
+                    eventViewModel.sendEvent(EventViewModel.Event.CheckUpdate)
+                    PclHintHost.push("正在检查更新…", PclHintTheme.Blue)
+                }
 
                 PclAboutRow(
                     icon = painterResource(R.drawable.img_launcher_pcl2),
@@ -876,9 +883,9 @@ fun PclOtherFeedbackPage() {
     val p = pclPalette
     val context = LocalContext.current
     val channels = listOf(
-        Triple("GitHub Issues", "提交 Bug 报告与功能建议（Zalith Launcher 2 仓库）", "$URL_PROJECT/issues"),
-        Triple("翻译平台 Weblate", "参与启动器界面的多语言翻译", URL_WEBLATE),
-        Triple("爱发电支持", "赞助 Zalith Launcher 的开发", URL_SUPPORT),
+        Triple("GitHub Issues", "提交 Bug 报告与功能建议（本启动器仓库）", "$URL_PROJECT/issues"),
+        Triple("翻译参与", "通过 GitHub 仓库参与启动器界面的翻译", URL_PROJECT),
+        Triple("爱发电支持", "赞助 Zalith Launcher（运行内核）的开发", URL_SUPPORT),
         Triple("渲染器插件", "获取可安装的渲染器插件（FCL 插件格式）", URL_GITHUB_RENDERER_PLUGINS),
         Triple("驱动插件", "获取 Turnip 等 Vulkan 驱动插件", URL_GITHUB_DRIVER_PLUGINS),
         Triple("原生库插件", "获取额外的原生库插件", URL_GITHUB_NATIVE_LIB_PLUGINS),
@@ -925,12 +932,12 @@ fun PclOtherVotePage() {
     val context = LocalContext.current
     val entries = listOf(
         Triple("项目仓库", "查看进展、提交 Issue 与 Pull Request", URL_PROJECT),
-        Triple("贡献者列表", "查看为 Zalith Launcher 2 做出贡献的开发者", URL_COMMUNITY),
-        Triple("翻译进度", "在 Weblate 上查看与参与翻译", URL_WEBLATE),
+        Triple("贡献者列表", "查看为本启动器做出贡献的开发者", "$URL_PROJECT/graphs/contributors"),
+        Triple("翻译参与", "通过 GitHub 仓库参与启动器界面的翻译", URL_PROJECT),
     )
     PclContent {
         PclHint(
-            text = "Zalith Launcher 2 没有内置的「新功能投票」系统，功能建议请通过 GitHub Issues 提交。",
+            text = "本启动器没有内置的「新功能投票」系统，功能建议请通过 GitHub Issues 提交。",
             theme = PclHintTheme.Yellow,
         )
         Spacer(Modifier.height(15.dp))
