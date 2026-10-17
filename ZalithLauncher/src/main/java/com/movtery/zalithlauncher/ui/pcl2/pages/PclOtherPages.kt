@@ -902,8 +902,6 @@ fun PclOtherFeedbackPage() {
     val context = LocalContext.current
     val channels = listOf(
         Triple("GitHub Issues", "提交 Bug 报告与功能建议（本启动器仓库）", "$URL_PROJECT/issues"),
-        Triple("翻译参与", "通过 GitHub 仓库参与启动器界面的翻译", URL_PROJECT),
-        Triple("爱发电支持", "赞助 Zalith Launcher（运行内核）的开发", URL_SUPPORT),
         Triple("渲染器插件", "获取可安装的渲染器插件（FCL 插件格式）", URL_GITHUB_RENDERER_PLUGINS),
         Triple("驱动插件", "获取 Turnip 等 Vulkan 驱动插件", URL_GITHUB_DRIVER_PLUGINS),
         Triple("原生库插件", "获取额外的原生库插件", URL_GITHUB_NATIVE_LIB_PLUGINS),
@@ -951,7 +949,6 @@ fun PclOtherVotePage() {
     val entries = listOf(
         Triple("项目仓库", "查看进展、提交 Issue 与 Pull Request", URL_PROJECT),
         Triple("贡献者列表", "查看为本启动器做出贡献的开发者", "$URL_PROJECT/graphs/contributors"),
-        Triple("翻译参与", "通过 GitHub 仓库参与启动器界面的翻译", URL_PROJECT),
     )
     PclContent {
         PclHint(
