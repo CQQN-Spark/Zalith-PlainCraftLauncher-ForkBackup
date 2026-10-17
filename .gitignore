@@ -1,0 +1,37 @@
+*.iml
+.gradle
+.idea
+.kotlin
+/local.properties
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+.oauth_client_id.txt
+.store_password.txt
+.key_password.txt
+.curseforge_api.txt
+LWJGL/build/
+LWJGL/*/build/
+# 各模块的构建产物（ZalithLauncher/build、CardGrid/build、Terracotta/build …）
+build/
+# 本地构建日志（开发期排查用，不进仓库）
+*.log
+
+# AI agent
+.zcode/
+.agent/
+.claude/
+.cursor/
+.codex/
+.continue/
+.aider/
+.roo/
+.windsurf/
+.trae/
+.gemini/
+.ampersand/
+
+.vscode/

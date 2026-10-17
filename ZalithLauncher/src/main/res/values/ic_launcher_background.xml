@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 自适应图标的背景层：浅灰卡片色 #EEF0F4（与 legacy 图标的卡片底一致）。
+         系统会把它裁成圆角方形 / 圆形，所以这里**必须是不透明的卡片色**——
+         写成透明的话，前景那个蓝色六面体会直接浮在壁纸上，没有卡片底。
+         前景层 ic_launcher_foreground 是透明底，只负责 logo。 -->
+    <color name="ic_launcher_background">#FFEEF0F4</color>
+</resources>
