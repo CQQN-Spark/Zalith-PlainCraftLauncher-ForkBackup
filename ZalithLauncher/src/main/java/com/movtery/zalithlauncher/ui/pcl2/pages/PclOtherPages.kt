@@ -286,7 +286,7 @@ fun PclOtherAboutPage() {
                 ) { openLink(context, "https://github.com/ZalithLauncher/ZalithLauncher2") }
 
                 PclAboutRow(
-                    icon = painterResource(R.mipmap.ic_launcher),
+                    icon = painterResource(R.drawable.ic_launcher_logo),
                     title = "Zalith-Plain Craft Launcher",
                     info = "本启动器：基于 Zalith Launcher 2 与 PCL2 界面打造的 Minecraft Java 版启动器",
                     buttonText = "开源代码",
