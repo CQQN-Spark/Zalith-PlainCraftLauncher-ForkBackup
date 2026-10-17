@@ -1,0 +1,32 @@
+{
+  "code": 200043,
+  "version": "1.0",
+  "created_at": "2026-10-18T00:00:00Z",
+  "default_cloud_drive": {
+    "language": "NULL",
+    "link": "https://github.com/zuanxu53-hub/Zalith-PlainCraftLauncher/releases",
+    "links": []
+  },
+  "cloud_drives": [
+    {
+      "language": "zh",
+      "link": "https://github.com/zuanxu53-hub/Zalith-PlainCraftLauncher/releases",
+      "links": []
+    }
+  ],
+  "files": [],
+  "default_body": {
+    "language": "NULL",
+    "markdown": "这是 **Zalith-Plain Craft Launcher** 的首个版本。"
+  },
+  "bodies": [
+    {
+      "language": "zh",
+      "markdown": "这是 **Zalith-Plain Craft Launcher** 的首个版本。\n\n- 版本号：1.0"
+    },
+    {
+      "language": "en",
+      "markdown": "This is the first release of **Zalith-Plain Craft Launcher**.\n\n- Version: 1.0"
+    }
+  ]
+}
