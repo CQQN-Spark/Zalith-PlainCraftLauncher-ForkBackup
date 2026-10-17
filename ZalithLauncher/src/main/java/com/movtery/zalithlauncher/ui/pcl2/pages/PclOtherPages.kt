@@ -258,7 +258,7 @@ fun PclOtherAboutPage() {
                     icon = painterResource(R.drawable.img_avatar_zuanxu),
                     title = "zuanxu",
                     info = "Zalith-Plain Craft Launcher 的作者",
-                    buttonText = "项目主页",
+                    buttonText = "打开主页",
                     highlighted = true,
                 ) { openLink(context, URL_PROJECT) }
 
@@ -282,8 +282,15 @@ fun PclOtherAboutPage() {
                     icon = painterResource(R.drawable.img_launcher),
                     title = "Zalith Launcher 2",
                     info = "Zalith-Plain Craft Launcher 的运行内核 · 版本 ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE}) · ${BuildConfig.BUILD_TYPE}",
-                    buttonText = "反馈与建议",
-                ) { openLink(context, URL_COMMUNITY) }
+                    buttonText = "开源代码",
+                ) { openLink(context, "https://github.com/ZalithLauncher/ZalithLauncher2") }
+
+                PclAboutRow(
+                    icon = painterResource(R.mipmap.ic_launcher),
+                    title = "Zalith-Plain Craft Launcher",
+                    info = "本启动器：基于 Zalith Launcher 2 与 PCL2 界面打造的 Minecraft Java 版启动器",
+                    buttonText = "开源代码",
+                ) { openLink(context, URL_PROJECT) }
 
                 PclAboutRow(
                     icon = painterResource(R.drawable.img_launcher_pcl2),
