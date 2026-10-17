@@ -142,7 +142,7 @@ object PclStrings {
     const val LangPageOtherLeftAbout = "关于与鸣谢"
     const val LangPageOtherLeftTools = "百宝箱"
     const val LangPageOtherLeftFeedback = "反馈"
-    const val LangPageOtherLeftVoteNew = "新功能投票"
+    const val LangPageOtherLeftVoteNew = "社区"
     const val LangPageOtherLeftRefresh = "刷新"
 
     // ---------------------------------------------------------------- 公共
@@ -369,7 +369,7 @@ object PclStrings {
     const val LangSetFuncHiddenMoreAbout = "关于与鸣谢"
     const val LangSetFuncHiddenMoreTool = "百宝箱"
     const val LangSetFuncHiddenMoreFeedback = "反馈"
-    const val LangSetFuncHiddenMoreVote = "新功能投票"
+    const val LangSetFuncHiddenMoreVote = "社区"
     const val LangSetFuncHiddenSpecial = "特定功能"
     const val LangSetFuncHiddenSpecialFuncHidden = "功能隐藏"
     const val LangSetFuncHiddenSpecialEmail = "邮箱隐藏"
