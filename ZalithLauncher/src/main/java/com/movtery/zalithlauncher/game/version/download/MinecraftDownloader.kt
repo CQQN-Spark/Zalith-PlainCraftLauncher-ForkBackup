@@ -21,6 +21,7 @@ package com.movtery.zalithlauncher.game.version.download
 import android.content.Context
 import com.movtery.zalithlauncher.R
 import com.movtery.zalithlauncher.coroutine.Task
+import com.movtery.zalithlauncher.coroutine.TitledTask
 import com.movtery.zalithlauncher.game.path.getGameHome
 import com.movtery.zalithlauncher.game.versioninfo.models.GameManifest
 import com.movtery.zalithlauncher.game.versioninfo.models.VersionManifest
@@ -57,6 +58,9 @@ class MinecraftDownloader(
     private val maxDownloadThreads: Int = DEFAULT_DOWNLOAD_THREADS
 ) {
     private var allDownloadTasks = mutableListOf<DownloadTask>()
+
+    /** 分阶段下载时缓存的版本清单：Json 任务解析一次，支持库/资源任务直接复用 */
+    private var phasedManifest: GameManifest? = null
 
     private fun <R> getTaskMessage(
         download: R,
@@ -140,6 +144,146 @@ class MinecraftDownloader(
         } ?: throw IllegalArgumentException("Version not found: $version")
 
         commonScheduleDownloads(gameManifest, null, clientName, clientVersionsDir)
+    }
+
+    /**
+     * PCL2 版式的分阶段原版下载任务：三个独立任务行
+     *   1. 下载原版 Json 文件（版本 Json + client jar）
+     *   2. 下载原版支持库文件（libraries）
+     *   3. 下载原版资源文件（assets）
+     *
+     * 三行加入**同一个阶段**后由执行器顺序运行（见 TaskFlowExecutor.executePhases
+     * 的 for 循环），所以后两行可以直接依赖第一行解析出的 manifest。
+     * 校验修复（VERIFY_AND_REPAIR）不适用：它没有「先下 Json」的顺序约束，继续走单任务。
+     */
+    fun getPhasedDownloadTasks(
+        clientName: String = this.customName,
+        clientVersionsDir: File = downloader.versionsTarget
+    ): List<TitledTask> {
+        phasedManifest = null
+
+        // ---- 1. 版本 Json 文件 + client jar
+        val jsonTask = Task.runTask(
+            id = "Download.Vanilla.Json",
+            dispatcher = Dispatchers.Default,
+            task = { task ->
+                task.updateProgress(-1f)
+                val gameManifest = downloader.findVersion(version)?.let {
+                    downloader.createVersionJson(it, clientName, clientVersionsDir)
+                } ?: throw IllegalArgumentException("Version not found: $version")
+                phasedManifest = gameManifest
+
+                val jarTasks = mutableListOf<DownloadTask>()
+                downloader.loadClientJarDownload(
+                    gameManifest = gameManifest,
+                    clientName = clientName,
+                    mcFolder = clientVersionsDir,
+                    scheduleDownload = { urls, hash, targetFile, size ->
+                        jarTasks.add(
+                            DownloadTask(
+                                urls = urls, verifyIntegrity = true, targetFile = targetFile,
+                                sha1 = hash, size = size
+                            )
+                        )
+                    },
+                    scheduleCopy = {}
+                )
+                if (jarTasks.isNotEmpty()) {
+                    task.runBatchDownloads(
+                        tasks = jarTasks,
+                        maxConnections = maxDownloadThreads,
+                        retryRounds = 1,
+                        onSnapshot = { snapshot ->
+                            task.updateSpeed(snapshot.speedBytesPerSec)
+                            task.updateMessage(androidText(
+                                R.string.minecraft_download_downloading_game_files,
+                                snapshot.downloadedFiles, snapshot.totalFiles,
+                                formatFileSize(snapshot.downloadedBytes), formatFileSize(snapshot.totalBytes)
+                            ))
+                        }
+                    )
+                }
+                task.updateProgress(1f)
+                task.updateMessage(null)
+            }
+        )
+
+        // ---- 2. 支持库文件
+        val libraryTask = Task.runTask(
+            id = "Download.Vanilla.Libraries",
+            dispatcher = Dispatchers.Default,
+            task = { task ->
+                val gameManifest = phasedManifest ?: throw IllegalStateException("Version manifest is not ready")
+                val libTasks = mutableListOf<DownloadTask>()
+                downloader.loadLibraryDownloads(gameManifest) { urls, hash, targetFile, size, isDownloadable ->
+                    libTasks.add(
+                        DownloadTask(
+                            urls = urls, verifyIntegrity = true, targetFile = targetFile,
+                            sha1 = hash, size = size, isDownloadable = isDownloadable
+                        )
+                    )
+                }
+                if (libTasks.isNotEmpty()) {
+                    task.runBatchDownloads(
+                        tasks = libTasks,
+                        maxConnections = maxDownloadThreads,
+                        retryRounds = 1,
+                        onSnapshot = { snapshot ->
+                            task.updateSpeed(snapshot.speedBytesPerSec)
+                            task.updateMessage(androidText(
+                                R.string.minecraft_download_downloading_game_files,
+                                snapshot.downloadedFiles, snapshot.totalFiles,
+                                formatFileSize(snapshot.downloadedBytes), formatFileSize(snapshot.totalBytes)
+                            ))
+                        }
+                    )
+                }
+                task.updateProgress(1f)
+                task.updateMessage(null)
+            }
+        )
+
+        // ---- 3. 资源文件
+        val assetsTask = Task.runTask(
+            id = "Download.Vanilla.Assets",
+            dispatcher = Dispatchers.Default,
+            task = { task ->
+                val gameManifest = phasedManifest ?: throw IllegalStateException("Version manifest is not ready")
+                val assetIndex = downloader.createAssetIndex(downloader.assetIndexTarget, gameManifest)
+                val assetTasks = mutableListOf<DownloadTask>()
+                downloader.loadAssetsDownload(assetIndex) { urls, hash, targetFile, size ->
+                    assetTasks.add(
+                        DownloadTask(
+                            urls = urls, verifyIntegrity = true, targetFile = targetFile,
+                            sha1 = hash, size = size
+                        )
+                    )
+                }
+                if (assetTasks.isNotEmpty()) {
+                    task.runBatchDownloads(
+                        tasks = assetTasks,
+                        maxConnections = maxDownloadThreads,
+                        retryRounds = 1,
+                        onSnapshot = { snapshot ->
+                            task.updateSpeed(snapshot.speedBytesPerSec)
+                            task.updateMessage(androidText(
+                                R.string.minecraft_download_downloading_game_files,
+                                snapshot.downloadedFiles, snapshot.totalFiles,
+                                formatFileSize(snapshot.downloadedBytes), formatFileSize(snapshot.totalBytes)
+                            ))
+                        }
+                    )
+                }
+                task.updateProgress(1f)
+                task.updateMessage(null)
+            }
+        )
+
+        return listOf(
+            TitledTask(title = androidText(R.string.download_game_install_vanilla_json), task = jsonTask),
+            TitledTask(title = androidText(R.string.download_game_install_vanilla_libraries), task = libraryTask),
+            TitledTask(title = androidText(R.string.download_game_install_vanilla_assets), task = assetsTask),
+        )
     }
 
     private suspend fun progressDownloadTasks(

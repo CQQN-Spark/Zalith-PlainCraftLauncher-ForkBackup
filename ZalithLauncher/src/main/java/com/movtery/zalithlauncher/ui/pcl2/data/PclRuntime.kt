@@ -189,7 +189,7 @@ class PclRuntime(
         val installer = GameInstaller(activity, info, scope)
         installIsModify = false
         gameInstallerFlow.value = installer
-        installTitle = "安装 Minecraft ${info.customVersionName}"
+        installTitle = "${info.customVersionName} 安装"
         installer.installGame(
             isRunning = {
                 gameInstallerFlow.value = null
@@ -247,7 +247,7 @@ class PclRuntime(
         )
         installIsModify = true
         gameInstallerFlow.value = installer
-        installTitle = "重置 Minecraft ${info.customVersionName}"
+        installTitle = "${info.customVersionName} 重置"
         installer.modifyVersion(
             // 安装器内部拒绝受理时（任务流还占着）必须**说出来并释放槽位**：
             // 否则界面会停在「正在重置」、按钮再也点不动，用户看到的就是「没反应」。

@@ -297,11 +297,8 @@ class GameInstaller(
                     pathConfig.tempModsDir.createDirAndLog()
                 }
 
-                //下载安装原版
-                addTask(
-                    title = androidText(R.string.download_game_install_vanilla, info.gameVersion),
-                    task = createMinecraftDownloadTask(info.gameVersion, pathConfig.tempGameVersionsDir)
-                )
+                //下载安装原版（PCL2 版式：Json 文件 / 支持库文件 / 资源文件 各占一行）
+                addVanillaPhasedTasks(pathConfig.tempGameVersionsDir)
 
                 //下载加载器/模组
                 addLoaderTasks(
@@ -395,10 +392,8 @@ class GameInstaller(
 
                 //下载安装 Minecraft 本体：Json/Jar 进入临时目录，libraries/assets 直接进入游戏目录
                 //修改版本时也完整执行该任务，确保原版 Jar 干净可用，并补齐缺失的 libraries/assets
-                addTask(
-                    title = androidText(R.string.download_game_install_vanilla, info.gameVersion),
-                    task = createMinecraftDownloadTask(info.gameVersion, pathConfig.tempGameVersionsDir)
-                )
+                //PCL2 版式：Json 文件 / 支持库文件 / 资源文件 各占一行
+                addVanillaPhasedTasks(pathConfig.tempGameVersionsDir)
 
                 //下载加载器/模组
                 addLoaderTasks(
@@ -660,6 +655,27 @@ class GameInstaller(
         )
 
         return mcDownloader.getDownloadTask(tempClientName, tempVersionsDir)
+    }
+
+    /**
+     * PCL2 版式的原版下载分任务：把原来的单个「下载安装原版 x」拆成三行 ——
+     * 「下载原版 Json 文件」「下载原版支持库文件」「下载原版资源文件」，
+     * 阶段内顺序执行（TaskFlowExecutor 的 for 循环），三行依次跑完才轮到「安装游戏」。
+     */
+    private fun MutableList<TitledTask>.addVanillaPhasedTasks(tempVersionsDir: File) {
+        val mcDownloader = MinecraftDownloader(
+            context = context,
+            version = info.gameVersion,
+            customName = info.customVersionName,
+            downloader = downloader,
+            onThrowable = { throw it }
+        )
+        mcDownloader.getPhasedDownloadTasks(
+            clientName = info.customVersionName,
+            clientVersionsDir = tempVersionsDir
+        ).forEach { phased ->
+            addTask(title = phased.title, icon = null, task = phased.task)
+        }
     }
 
     /**
