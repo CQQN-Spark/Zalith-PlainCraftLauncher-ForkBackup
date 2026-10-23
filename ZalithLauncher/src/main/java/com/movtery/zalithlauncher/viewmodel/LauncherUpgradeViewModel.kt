@@ -50,6 +50,7 @@ import com.movtery.zalithlauncher.ui.screens.content.elements.DisabledAlpha
 import com.movtery.zalithlauncher.ui.upgrade.UpgradeDialog
 import com.movtery.zalithlauncher.ui.upgrade.UpgradeFilesDialog
 import com.movtery.zalithlauncher.upgrade.GithubContentApi
+import com.movtery.zalithlauncher.upgrade.GithubReleaseApi
 import com.movtery.zalithlauncher.upgrade.RemoteData
 import com.movtery.zalithlauncher.upgrade.TooFrequentOperationException
 import com.movtery.zalithlauncher.utils.logging.Logger
@@ -83,6 +84,8 @@ sealed interface LauncherUpgradeOperation {
 private const val LATEST_VERSION = "latest_version_md.json"
 private const val LATEST_API_URL = "$URL_PROJECT_INFO/$LATEST_VERSION"
 private const val LATEST_API_CHINESE_URL = "https://raw.githubusercontent.com/zuanxu53-hub/Zalith-PlainCraftLauncher/main/$LATEST_VERSION"
+/** GitHub Releases 最新版本接口：动态拉取安装包资产，避免在 latest_version_md.json 里写死 files。 */
+private const val RELEASE_LATEST_URL = "https://api.github.com/repos/zuanxu53-hub/Zalith-PlainCraftLauncher/releases/latest"
 
 /**
  * 用于记录启动器更新 ViewModel
@@ -198,6 +201,7 @@ class LauncherUpgradeViewModel: ViewModel() {
                     //需要Base64解密
                     val contentString = decodeBase64(api.content)
                     GLOBAL_JSON.decodeFromString(RemoteData.serializer(), contentString)
+                        .let { it.copy(files = fetchReleaseAssets()) }
                 }
             }.getOrElse { e ->
                 if (Locale.getDefault().language == "zh") {
@@ -206,6 +210,7 @@ class LauncherUpgradeViewModel: ViewModel() {
                         //在中国地区，可能因为无法访问 Github API 导致获取更新信息失败
                         withRetry(logTag = "LauncherUpgrade_Chinese", maxRetries = 2) {
                             GLOBAL_CLIENT.get(LATEST_API_CHINESE_URL).safeBodyAsJson<RemoteData>()
+                                .let { it.copy(files = fetchReleaseAssets()) }
                         }
                     }.getOrElse { e ->
                         Logger.warning(TAG, "Failed to check for launcher upgrade!", e)
@@ -216,6 +221,46 @@ class LauncherUpgradeViewModel: ViewModel() {
                     null
                 }
             }
+        }
+    }
+
+    /**
+     * 从 GitHub Releases 最新版本动态拉取安装包资产列表。
+     *
+     * 这样 `latest_version_md.json` 里就**不用写死 files**：每次发新版只需把 APK 上传到
+     * GitHub Release，启动器就能自动拿到全部安装包的下载地址、架构和大小。
+     * 拉取失败（断网 / 被墙）时返回空列表，此时仍可通过网盘链接手动下载。
+     */
+    private suspend fun fetchReleaseAssets(): List<RemoteData.RemoteFile> {
+        return runCatching {
+            GLOBAL_CLIENT.get(RELEASE_LATEST_URL).safeBodyAsJson<GithubReleaseApi>()
+                .assets
+                .mapNotNull { asset ->
+                    inferArch(asset.name)?.let { arch ->
+                        RemoteData.RemoteFile(
+                            fileName = asset.name,
+                            uri = asset.downloadUrl,
+                            arch = arch,
+                            size = asset.size,
+                        )
+                    }
+                }
+        }.getOrElse { e ->
+            Logger.warning(TAG, "Failed to fetch release assets!", e)
+            emptyList()
+        }
+    }
+
+    /** 从安装包文件名推断架构（如 `xxx-arm64-v8a.apk` → ARM64）。 */
+    private fun inferArch(name: String): RemoteData.RemoteFile.Arch? {
+        val n = name.lowercase()
+        return when {
+            "universal" in n -> RemoteData.RemoteFile.Arch.ALL
+            "arm64" in n -> RemoteData.RemoteFile.Arch.ARM64
+            "armeabi" in n -> RemoteData.RemoteFile.Arch.ARM
+            "x86_64" in n -> RemoteData.RemoteFile.Arch.X86_64
+            "x86" in n -> RemoteData.RemoteFile.Arch.X86
+            else -> null
         }
     }
 
