@@ -32,11 +32,6 @@
 
 package com.movtery.zalithlauncher.ui.pcl2.pages
 
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -391,26 +386,13 @@ private fun PclSpeedSubTaskRow(titled: TitledTask) {
 @Composable
 private fun WaitingDots() {
     val p = pclPalette
-    // PCL 的三个点是**跑马灯**式的：每个点依次亮起再暗下去。
-    // 之前这里画的是三个恒定亮度的圆 —— 静态图形放在「进度不确定」的位置上，
-    // 看起来和卡死没有区别（「一直在转圈」和「彻底不动」用户分得出来）。
-    // 动画值只在绘制 lambda 里读 `.value`，所以每帧只重绘、不重组。
-    val transition = rememberInfiniteTransition(label = "pclWaitingDots")
-    val phase = transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(960, easing = LinearEasing)),
-        label = "pclWaitingDotsPhase",
-    )
+    // 按要求改成**静止**的三点：不再做跑马灯呼吸动画。
+    // 静态图形同样能表示「未开始 / 等待中」，而且不占每帧重绘。
     Canvas(modifier = Modifier.padding(top = 7.dp).size(width = 18.dp, height = 6.dp)) {
         val radius = size.height / 2f
-        val t = phase.value
-        listOf(0.14f, 0.5f, 0.86f).forEachIndexed { index, fraction ->
-            // 三点相位依次错开 1/3 圈：亮度在 0.2~1 之间来回呼吸
-            val local = (t + index / 3f) % 1f
-            val wave = 1f - kotlin.math.abs(local - 0.5f) * 2f
+        listOf(0.14f, 0.5f, 0.86f).forEach { fraction ->
             drawCircle(
-                color = p.color3.copy(alpha = 0.25f + 0.75f * wave.coerceIn(0f, 1f)),
+                color = p.color3.copy(alpha = 0.7f),
                 radius = radius,
                 center = Offset(size.width * fraction, radius),
             )

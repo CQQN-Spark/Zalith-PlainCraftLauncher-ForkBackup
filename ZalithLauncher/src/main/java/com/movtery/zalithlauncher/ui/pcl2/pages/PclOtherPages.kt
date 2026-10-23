@@ -111,6 +111,7 @@ import com.movtery.zalithlauncher.ui.pcl2.components.PclSearchBox
 import com.movtery.zalithlauncher.ui.pcl2.components.PclSplitLine
 import com.movtery.zalithlauncher.ui.pcl2.components.PclTextBox
 import com.movtery.zalithlauncher.ui.pcl2.components.PclText
+import com.movtery.zalithlauncher.ui.pcl2.data.PclRemoteContent
 import com.movtery.zalithlauncher.ui.pcl2.theme.PclDimens
 import com.movtery.zalithlauncher.ui.pcl2.theme.PclTextStyle
 import com.movtery.zalithlauncher.ui.pcl2.theme.pclPalette
@@ -445,8 +446,8 @@ fun PclOtherTestPage() {
     var storage by remember { mutableStateOf<StorageScan?>(null) }
     // 「千万别点」：0 无 / 1 三按钮弹窗 / 2 恶搞画面
     var prankStage by remember { mutableIntStateOf(0) }
-    // 回声洞当前显示的留言
-    var echoText by remember { mutableStateOf(ECHO_TAGLINE) }
+    // 回声洞当前显示的留言（默认内容已删，改从官网联网抓取）
+    var echoText by remember { mutableStateOf("回声洞暂时没有留言，去官网投稿吧～") }
 
     // ---- 下载自定义文件的表单
     var url by remember { mutableStateOf("") }
@@ -507,11 +508,15 @@ fun PclOtherTestPage() {
 
         // ---------------------------------------------------------------- 回声洞
         PclCard(modifier = Modifier.fillMaxWidth(), title = "回声洞") {
-            // 整块可点：点一次换一条
+            // 整块可点：点一次从官网联网换一条（拿不到就保持现状）
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { echoText = ECHO_HOLE.random() },
+                    .clickable {
+                        scope.launch {
+                            PclRemoteContent.random("cave")?.let { echoText = it }
+                        }
+                    },
             ) {
                 Text(
                     text = echoText,
@@ -863,33 +868,6 @@ private fun formatBytes(bytes: Long): String = when {
     bytes >= 1024L -> String.format(Locale.US, "%.1f KB", bytes / 1024.0)
     else -> "$bytes B"
 }
-
-/** 回声洞的初始文案（PCL 原句）。 */
-private const val ECHO_TAGLINE = "反复点击这里可以看看 PCL 作者与各位沙雕网友乱七八糟的留言！"
-
-/**
- * 回声洞的留言池。
- *
- * PCL 是向自己的服务端取随机留言，Zalith 没有这个后端，所以用一份内置池代替；
- * 内容是通用的自嘲式玩笑，**没有**冒用任何真人的原话。
- */
-private val ECHO_HOLE = listOf(
-    "「再玩五分钟就去写作业」——三小时后，我还在挖矿。",
-    "存档备份是最好的护身符，可惜我总在丢了存档之后才想起来。",
-    "世界上最远的距离，是我和我的掉落物之间那格岩浆。",
-    "每次说「这次一定不挖到基岩」，最后都见到了基岩。",
-    "苦力怕的心跳声，是 Minecraft 里最准时的心跳。",
-    "我家的窗户之所以那么多，是因为我总在拆错方块。",
-    "末影人：我不是针对谁，我只是不喜欢被盯着看。",
-    "村民的物价让我明白，通货膨胀在方块世界里也一样存在。",
-    "有人说红石是逻辑学，我觉得它更像玄学。",
-    "从今天起，我要用「先备份再作死」作为人生准则。",
-    "地狱：免费旅游胜地，单程票价一颗黑曜石。",
-    "养了一只狼，它比我更怕水。",
-    "最后一格面包总是要留着的，这是生存玩家的浪漫。",
-    "在 MC 里，最贵的不是钻石，是耐心。",
-)
-
 
 /* ============================================================================
  *  反馈

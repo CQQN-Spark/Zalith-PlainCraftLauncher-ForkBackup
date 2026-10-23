@@ -19,9 +19,12 @@
 package com.movtery.zalithlauncher.ui.pcl2.components
 
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.graphics.Bitmap
+import android.net.Uri
 import android.webkit.CookieManager
 import android.webkit.WebSettings
+import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.compose.BackHandler
@@ -50,9 +53,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.movtery.zalithlauncher.ui.pcl2.data.PclSkinSettings
 import androidx.compose.ui.viewinterop.AndroidView
 import com.movtery.zalithlauncher.ui.pcl2.theme.PclDimens
 import com.movtery.zalithlauncher.ui.pcl2.theme.PclTextStyle
@@ -227,6 +232,108 @@ private fun WebView.disposeWebView() {
         clearHistory()
         removeAllViews()
         destroy()
+    }
+}
+
+/**
+ * 渲染已经转成 HTML 的主页内容（PCL 主页 XAML 的转换结果 / 内置预设）。
+ *
+ * 用 `loadDataWithBaseURL` 而不是 `loadUrl`：HTML 是转换器现生成的字符串，
+ * 没有 URL 可加载；baseURL 给 `https://localhost/`，让页面里的相对链接
+ * 与脚本按普通网页处理，同时保持与 [PclInlineWeb] 一致的加载动画。
+ */
+@Composable
+fun PclInlineHtml(
+    html: String,
+    modifier: Modifier = Modifier,
+    /** 主页里的内部按钮（启动游戏 / 下载文件 / 刷新主页…）回传给宿主处理。 */
+    onEvent: ((type: String, data: String) -> Unit)? = null,
+) {
+    // 「界面缩放」在 Compose 里是靠乘 density 实现的，WebView 是原生 View 吃不到，
+    // 所以这里把缩放系数用 CSS `zoom` 注进页面，让字号、卡片、图片**整体**一起缩放。
+    val config = LocalConfiguration.current
+    val scale = PclSkinSettings.resolveScale(
+        config.screenWidthDp.toFloat(),
+        config.screenHeightDp.toFloat(),
+    )
+    val scaledHtml = remember(html, scale) {
+        if (kotlin.math.abs(scale - 1f) < 0.01f) {
+            html
+        } else {
+            val zoom = String.format(java.util.Locale.ROOT, "%.3f", scale)
+            html.replace("</style>", "body{zoom:$zoom;}</style>")
+        }
+    }
+
+    var webView by remember(scaledHtml) { mutableStateOf<WebView?>(null) }
+    var loading by remember(scaledHtml) { mutableStateOf(true) }
+
+    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+        AndroidView(
+            modifier = Modifier.fillMaxSize(),
+            factory = { ctx ->
+                WebView(ctx).apply {
+                    configureLauncherWebView()
+                    webViewClient = object : WebViewClient() {
+                        override fun onPageFinished(view: WebView?, url2: String?) {
+                            super.onPageFinished(view, url2)
+                            loading = false
+                        }
+
+                        /**
+                         * 主页里的按钮/链接统一在这里分流：
+                         * - `pclhome://event?...` → PCL 的内部事件（启动游戏 / 下载文件 / 刷新主页），
+                         *   解析后回传给 Compose；
+                         * - `http(s)` → 系统浏览器打开，**不把主页本身导航走**。
+                         *
+                         * 两个签名都要 override：API 24+ 只会调用带 [WebResourceRequest] 的新签名，
+                         * 只写旧的（deprecated）那个的话，真机上点击会直接落到 WebView 自己的导航里。
+                         */
+                        private fun handle(url: String?, view: WebView?): Boolean {
+                            if (url.isNullOrBlank()) return false
+                            if (url.startsWith("pclhome://", ignoreCase = true)) {
+                                val uri = Uri.parse(url)
+                                onEvent?.invoke(
+                                    uri.getQueryParameter("type").orEmpty(),
+                                    uri.getQueryParameter("data").orEmpty(),
+                                )
+                                return true
+                            }
+                            if (url.startsWith("http://", ignoreCase = true) ||
+                                url.startsWith("https://", ignoreCase = true)
+                            ) {
+                                runCatching {
+                                    view?.context?.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                                }
+                                return true
+                            }
+                            return false
+                        }
+
+                        override fun shouldOverrideUrlLoading(
+                            view: WebView?,
+                            request: WebResourceRequest?,
+                        ): Boolean = handle(request?.url?.toString(), view)
+
+                        @Suppress("DEPRECATION")
+                        override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean =
+                            handle(url, view)
+                    }
+                    loadDataWithBaseURL("https://localhost/", scaledHtml, "text/html", "utf-8", null)
+                    webView = this
+                }
+            },
+        )
+        if (loading) {
+            PclText(text = "正在加载自定义主页…", color = pclPalette.gray2)
+        }
+    }
+
+    DisposableEffect(scaledHtml) {
+        onDispose {
+            webView?.disposeWebView()
+            webView = null
+        }
     }
 }
 

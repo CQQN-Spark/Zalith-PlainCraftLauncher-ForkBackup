@@ -2155,6 +2155,25 @@ fun PclLoading(
     modifier: Modifier = Modifier,
 ) {
     val p = pclPalette
+    Column(
+        modifier = modifier.padding(start = 20.dp, top = 20.dp, end = 20.dp, bottom = 17.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        PclLoadingPickaxe()
+        Spacer(Modifier.height(10.dp))
+        Text(text = text, style = PclTextStyle.base(p).copy(fontSize = 16.sp, lineHeight = PclTextStyle.lineHeight(16),), textAlign = TextAlign.Center)
+    }
+}
+
+/**
+ * 只要 `MyLoading` 的**镐子挥动动画**（60×47 的盒子：镐子 + 左右碎屑 + 底部横条），不带文案。
+ *
+ * 启动界面（`PclHomeLaunching`）要和下载界面用**同一份**动画，所以把它从 [PclLoading]
+ * 里抽出来。几何与时间轴见上面 [PclLoading] 的说明。
+ */
+@Composable
+fun PclLoadingPickaxe(modifier: Modifier = Modifier) {
+    val p = pclPalette
 
     // 镐子角度（度）与碎屑进度
     val angle = remember { Animatable(55f) }
@@ -2182,70 +2201,63 @@ fun PclLoading(
         }
     }
 
-    Column(
-        modifier = modifier.padding(start = 20.dp, top = 20.dp, end = 20.dp, bottom = 17.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        // Grid 60×47：镐子 + 左右碎屑 + 底部横条
-        Box(modifier = Modifier.size(60.dp, 47.dp)) {
-            // 镐子绕自身的 (30,30) 旋转（相对 35×35 的盒子 = 0.857）
-            Icon(
-                imageVector = PclIcons.loadingPickaxe,
-                contentDescription = null,
-                tint = p.color3,
-                modifier = Modifier
-                    .offset(x = 10.dp, y = 6.dp)
-                    .size(35.dp)
-                    .graphicsLayer {
-                        transformOrigin = TransformOrigin(30f / 35f, 30f / 35f)
-                        rotationZ = angle.value
-                    },
-            )
-            // 左侧碎屑：Margin(7,41)，RotateTransform -45，飞出 (-5,-6)
-            val fragTint = p.color3
-            Icon(
-                imageVector = PclIcons.loadingFragment,
-                contentDescription = null,
-                tint = fragTint,
-                modifier = Modifier
-                    .offset(
-                        x = 7.dp + (-5).dp * fragShift.value,
-                        y = 41.dp + (-6).dp * fragShift.value,
-                    )
-                    .size(3.dp, 5.dp)
-                    .graphicsLayer {
-                        transformOrigin = TransformOrigin(0.5f, 0.5f)
-                        rotationZ = -45f
-                        alpha = fragAlpha.value
-                    },
-            )
-            // 右侧碎屑：Margin(14,41)，RotateTransform 45，飞出 (+5,-6)
-            Icon(
-                imageVector = PclIcons.loadingFragment,
-                contentDescription = null,
-                tint = fragTint,
-                modifier = Modifier
-                    .offset(
-                        x = 14.dp + 5.dp * fragShift.value,
-                        y = 41.dp + (-6).dp * fragShift.value,
-                    )
-                    .size(3.dp, 5.dp)
-                    .graphicsLayer {
-                        transformOrigin = TransformOrigin(0.5f, 0.5f)
-                        rotationZ = 45f
-                        alpha = fragAlpha.value
-                    },
-            )
-            // 底部横条 Rectangle 25×2
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .size(25.dp, 2.dp)
-                    .background(p.color3),
-            )
-        }
-        Spacer(Modifier.height(10.dp))
-        Text(text = text, style = PclTextStyle.base(p).copy(fontSize = 16.sp, lineHeight = PclTextStyle.lineHeight(16),), textAlign = TextAlign.Center)
+    // Grid 60×47：镐子 + 左右碎屑 + 底部横条
+    Box(modifier = modifier.size(60.dp, 47.dp)) {
+        // 镐子绕自身的 (30,30) 旋转（相对 35×35 的盒子 = 0.857）
+        Icon(
+            imageVector = PclIcons.loadingPickaxe,
+            contentDescription = null,
+            tint = p.color3,
+            modifier = Modifier
+                .offset(x = 10.dp, y = 6.dp)
+                .size(35.dp)
+                .graphicsLayer {
+                    transformOrigin = TransformOrigin(30f / 35f, 30f / 35f)
+                    rotationZ = angle.value
+                },
+        )
+        // 左侧碎屑：Margin(7,41)，RotateTransform -45，飞出 (-5,-6)
+        val fragTint = p.color3
+        Icon(
+            imageVector = PclIcons.loadingFragment,
+            contentDescription = null,
+            tint = fragTint,
+            modifier = Modifier
+                .offset(
+                    x = 7.dp + (-5).dp * fragShift.value,
+                    y = 41.dp + (-6).dp * fragShift.value,
+                )
+                .size(3.dp, 5.dp)
+                .graphicsLayer {
+                    transformOrigin = TransformOrigin(0.5f, 0.5f)
+                    rotationZ = -45f
+                    alpha = fragAlpha.value
+                },
+        )
+        // 右侧碎屑：Margin(14,41)，RotateTransform 45，飞出 (+5,-6)
+        Icon(
+            imageVector = PclIcons.loadingFragment,
+            contentDescription = null,
+            tint = fragTint,
+            modifier = Modifier
+                .offset(
+                    x = 14.dp + 5.dp * fragShift.value,
+                    y = 41.dp + (-6).dp * fragShift.value,
+                )
+                .size(3.dp, 5.dp)
+                .graphicsLayer {
+                    transformOrigin = TransformOrigin(0.5f, 0.5f)
+                    rotationZ = 45f
+                    alpha = fragAlpha.value
+                },
+        )
+        // 底部横条 Rectangle 25×2
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .size(25.dp, 2.dp)
+                .background(p.color3),
+        )
     }
 }
 

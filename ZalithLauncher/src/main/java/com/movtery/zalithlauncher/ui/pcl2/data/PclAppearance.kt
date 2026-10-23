@@ -82,6 +82,7 @@ object PclAppearance {
     private const val KEY_MUSIC_VOLUME = "pcl2.ui.musicVolume"
     private const val KEY_HOME_TYPE = "pcl2.ui.customType"
     private const val KEY_HOME_NET = "pcl2.ui.customNet"
+    private const val KEY_HOME_PRESET = "pcl2.ui.customPreset"
     private const val KEY_HOME_LOCAL = "pcl2.ui.customLocal"
 
     // ------------------------------------------------------------------ 目录
@@ -377,12 +378,20 @@ object PclAppearance {
     var homeLocalFile by mutableStateOf<String?>(null)
         private set
 
+    /** 「预设」选中的预设 id（对应 [PclHomePresets.entries]，PCL 的 `UiCustomPreset`）。 */
+    var homePreset by mutableStateOf(PclHomePresets.default().id)
+        private set
+
     fun applyHomeType(value: Int) {
         homeType = value
     }
 
     fun applyHomeNet(value: String) {
         homeNet = value
+    }
+
+    fun applyHomePreset(value: Int) {
+        homePreset = value
     }
 
     fun importHomeFile(context: Context, uri: Uri, name: String?): Boolean {
@@ -419,6 +428,8 @@ object PclAppearance {
         musicVolume = mmkv.getInt(KEY_MUSIC_VOLUME, 70)
         homeType = mmkv.getInt(KEY_HOME_TYPE, PclHomeType.EMPTY)
         homeNet = mmkv.getString(KEY_HOME_NET, "").orEmpty()
+        homePreset = mmkv.getInt(KEY_HOME_PRESET, PclHomePresets.default().id)
+            .let { id -> PclHomePresets.of(id)?.id ?: PclHomePresets.default().id }
         homeLocalFile = mmkv.getString(KEY_HOME_LOCAL, null)?.takeIf { it.isNotBlank() }
         // 没有记录背景图时，按 PCL 的行为在打开时随机取一张。
         // 这一步要在磁盘上列目录，所以**不在这里做** —— 由调用方放到 IO 线程：
@@ -439,6 +450,7 @@ object PclAppearance {
             putInt(KEY_MUSIC_VOLUME, musicVolume)
             putInt(KEY_HOME_TYPE, homeType)
             putString(KEY_HOME_NET, homeNet)
+            putInt(KEY_HOME_PRESET, homePreset)
             putString(KEY_HOME_LOCAL, homeLocalFile ?: "")
         }
     }

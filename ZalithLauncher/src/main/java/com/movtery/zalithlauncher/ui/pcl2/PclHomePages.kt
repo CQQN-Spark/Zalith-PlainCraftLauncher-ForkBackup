@@ -33,7 +33,21 @@ import android.graphics.Rect
 import android.graphics.RectF
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.border
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.asComposePath
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.core.graphics.PathParser
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
@@ -65,6 +79,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -108,11 +123,14 @@ import com.movtery.zalithlauncher.ui.pcl2.components.PclCard
 import com.movtery.zalithlauncher.ui.pcl2.components.PclColorState
 import com.movtery.zalithlauncher.ui.pcl2.components.PclComboBox
 import com.movtery.zalithlauncher.ui.pcl2.components.PclComboBoxItemRow
+import com.movtery.zalithlauncher.ui.pcl2.components.PclConfirmDialog
 import com.movtery.zalithlauncher.ui.pcl2.components.PclComboBoxPopup
 import com.movtery.zalithlauncher.ui.pcl2.components.PclHint
 import com.movtery.zalithlauncher.ui.pcl2.components.PclHintTheme
 import com.movtery.zalithlauncher.ui.pcl2.components.PclIconButton
 import com.movtery.zalithlauncher.ui.pcl2.components.PclIcons
+import com.movtery.zalithlauncher.ui.pcl2.components.PclLoadingPickaxe
+import com.movtery.zalithlauncher.ui.pcl2.components.PclInlineHtml
 import com.movtery.zalithlauncher.ui.pcl2.components.PclInlineWeb
 import com.movtery.zalithlauncher.ui.pcl2.components.PclInputDialog
 import com.movtery.zalithlauncher.ui.pcl2.components.PclPillButton
@@ -122,6 +140,12 @@ import com.movtery.zalithlauncher.ui.pcl2.components.PclText
 import com.movtery.zalithlauncher.ui.pcl2.components.PclTextButton
 import com.movtery.zalithlauncher.ui.pcl2.data.LocalPclRuntime
 import com.movtery.zalithlauncher.ui.pcl2.data.PclAppearance
+import com.movtery.zalithlauncher.ui.pcl2.data.PclHomeEntry
+import com.movtery.zalithlauncher.ui.pcl2.data.PclHomeLoader
+import com.movtery.zalithlauncher.ui.pcl2.data.PclHomePresetEntry
+import com.movtery.zalithlauncher.ui.pcl2.data.PclHomePresets
+import com.movtery.zalithlauncher.ui.pcl2.data.rememberRemoteText
+import com.movtery.zalithlauncher.ui.pcl2.data.PclHomeType
 import com.movtery.zalithlauncher.ui.pcl2.data.PclRuntime
 import com.movtery.zalithlauncher.ui.pcl2.pages.pclInstanceVersionPage
 import com.movtery.zalithlauncher.ui.pcl2.pages.pclVersionSelectPage
@@ -169,14 +193,22 @@ fun PclHomeLeft(nav: PclNavController) {
     }
 }
 
-/** `PanLaunching` —— 启动中的进度面板。 */
+/**
+ * `PanLaunching` —— 启动中的进度面板（照 `PageLaunchLeft.xaml:73-165` 还原）。
+ *
+ * PCL 这里是一屏居中的「启动卡片」：手绘上升箭头（`MyLoading`）→ 标题（正在启动游戏 /
+ * 已启动游戏）→ 版本名 → 蓝色渐变进度条 → 两列信息（当前步骤 / 登录方式）→
+ * 「你知道吗」小提示框 → 底部「取消」按钮。整块从 `Scale 0.8 / Opacity 0` 进场。
+ */
 @Composable
 private fun ColumnScope.PclHomeLaunching(runtime: PclRuntime) {
     val p = pclPalette
     val context = LocalContext.current
     val tasks by runtime.launchTasks.collectAsStateWithLifecycle()
+    val version by runtime.currentVersion.collectAsStateWithLifecycle()
+    val account by runtime.currentAccount.collectAsStateWithLifecycle()
 
-    // PageLaunchLeft.xaml：PanLaunching 初始 RenderTransform = ScaleTransform(0.8, 0.8)、Opacity = 0
+    // 进场动画：PCL 的 PanLaunching 初始 RenderTransform = ScaleTransform(0.8)、Opacity = 0
     var shown by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { shown = true }
     val enterScale by animateFloatAsState(
@@ -190,6 +222,23 @@ private fun ColumnScope.PclHomeLaunching(runtime: PclRuntime) {
         label = "pclLaunchAlpha",
     )
 
+    // 当前阶段 = 第一个还没完成的子任务；全部完成就是「已启动游戏」。
+    val total = tasks.size
+    val finishedCount = tasks.count { it.task.stage.value == TaskStage.COMPLETED }
+    val allDone = total > 0 && finishedCount == total
+    val current = tasks.firstOrNull { it.task.stage.value != TaskStage.COMPLETED }
+    val stageName = current?.title?.toAndroidString(context)
+        ?: if (allDone) "等待游戏窗口出现" else PclStrings.LangLaunchLeftInit
+    val rawProgress = if (total == 0) 0f else finishedCount.toFloat() / total
+    val progress by animateFloatAsState(
+        targetValue = rawProgress.coerceIn(0f, 1f),
+        animationSpec = tween(300, easing = PclMotion.easeOutFluent),
+        label = "pclLaunchProgress",
+    )
+    val method = if (account?.isMicrosoftAccount() == true) "正版验证" else "离线验证"
+    // 每次开始启动随机一条小提示（PCL 的 LabLaunchingHint 从提示库里挑）；优先联网抓官网审核文案。
+    val tip = rememberRemoteText("hint")
+
     Column(
         modifier = Modifier
             .fillMaxHeight()
@@ -199,39 +248,116 @@ private fun ColumnScope.PclHomeLaunching(runtime: PclRuntime) {
                 scaleY = enterScale
                 alpha = enterAlpha
             },
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Spacer(Modifier.height(24.dp))
-        Text(
-            text = PclStrings.LangLaunchLeftLaunchingTitle,
-            style = PclTextStyle.cardTitle(p).copy(fontSize = 15.sp),
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center,
-        )
-        Spacer(Modifier.height(6.dp))
-        Text(
-            text = PclStrings.LangLaunchLeftLaunchingHint,
-            style = PclTextStyle.listInfo(p),
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center,
-        )
-        Spacer(Modifier.height(18.dp))
+        Spacer(Modifier.weight(1f))
 
-        if (tasks.isEmpty()) {
-            Text(text = PclStrings.LangLaunchLeftLaunchingWaiting, style = PclTextStyle.listInfo(p))
-        } else {
-            tasks.forEach { titled ->
-                PclLaunchTaskRow(titled, context)
-                Spacer(Modifier.height(12.dp))
-            }
+        // PCL 的 MyLoading：镐子敲地（与下载界面共用同一份实现）
+        PclLoadingPickaxe()
+
+        Spacer(Modifier.height(8.dp))
+        Text(
+            text = if (allDone) PclStrings.LangLaunchLeftStarted else PclStrings.LangLaunchLeftLaunchingTitle,
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Bold,
+            color = p.color3,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Spacer(Modifier.height(4.dp))
+        Text(
+            text = version?.getVersionName().orEmpty(),
+            fontSize = 13.5.sp,
+            color = p.color3,
+            textAlign = TextAlign.Center,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
+        )
+
+        // 进度条：左段 ColorBrush4 → ColorBrush3 渐变，右段 ColorBrush6 半透明
+        Spacer(Modifier.height(14.dp))
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 30.dp)
+                .height(4.dp),
+        ) {
+            Box(
+                Modifier
+                    .weight(progress.coerceAtLeast(0.001f))
+                    .fillMaxHeight()
+                    .background(Brush.horizontalGradient(listOf(p.color4, p.color3))),
+            )
+            Box(
+                Modifier
+                    .weight((1f - progress).coerceAtLeast(0.001f))
+                    .fillMaxHeight()
+                    .background(p.color6.copy(alpha = 0.6f)),
+            )
+        }
+
+        // 两列信息（PCL 的 PanLaunchingInfo）
+        Spacer(Modifier.height(22.dp))
+        LaunchInfoRow(PclStrings.LangLaunchLeftStartingStage, stageName)
+        Spacer(Modifier.height(4.dp))
+        LaunchInfoRow(PclStrings.LangLaunchLeftStageLogin, method)
+
+        // 「你知道吗」小提示框（灰边框、圆角、标题在框顶）
+        Spacer(Modifier.height(18.dp))
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 6.dp)
+                .border(1.dp, p.gray5.copy(alpha = 0.5f), RoundedCornerShape(3.dp))
+                .padding(horizontal = 11.dp, vertical = 9.dp),
+        ) {
+            Text(
+                text = PclStrings.LangLaunchLeftTip,
+                fontSize = 12.5.sp,
+                color = p.gray2,
+                modifier = Modifier.align(Alignment.CenterHorizontally),
+            )
+            Spacer(Modifier.height(5.dp))
+            Text(
+                text = tip,
+                fontSize = 12.5.sp,
+                color = p.color1,
+                lineHeight = 18.sp,
+            )
         }
 
         Spacer(Modifier.weight(1f))
+
+        // 底部「取消」（PCL 的 BtnCancel：白底细边框）
         PclButton(
-            text = PclStrings.LangLaunchLeftLaunchingCancel,
-            modifier = Modifier.fillMaxWidth(),
+            text = "取消",
+            modifier = Modifier.fillMaxWidth().height(35.dp),
             onClick = { runtime.cancelLaunch() },
         )
         Spacer(Modifier.height(20.dp))
+    }
+}
+
+/** 启动信息的一行：左边灰色标签，右边正文（PCL 的 PanLaunchingInfo 两列）。 */
+@Composable
+private fun LaunchInfoRow(label: String, value: String) {
+    val p = pclPalette
+    Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp)) {
+        Text(
+            text = label,
+            fontSize = 12.5.sp,
+            color = p.gray3,
+            textAlign = TextAlign.End,
+            modifier = Modifier.weight(1f),
+        )
+        Spacer(Modifier.width(15.dp))
+        Text(
+            text = value,
+            fontSize = 12.5.sp,
+            color = p.color1,
+            modifier = Modifier.weight(1f),
+        )
     }
 }
 
@@ -1151,15 +1277,133 @@ private fun PclOfflineLoginPanel(
 /** `PageLaunchRight` —— 右侧信息流：提示条 + 自定义主页 + 启动日志卡片。 */
 @Composable
 fun PclHomeRight(nav: PclNavController) {
-    // PanCustom（自定义主页）：`UiCustomType = 2`（联网更新）时，
-    // PCL 会把启动页右侧整块换成自定义主页，左边的账户 / 版本面板照旧。
-    PclAppearance.homeUrl?.let { url ->
-        PclCustomHomePage(url)
+    // PanCustom（自定义主页）：PCL 在 `UiCustomType` 为 预设/本地/联网 时把启动页
+    // 右侧整块换成自定义主页，左边的账户 / 版本面板照旧。
+    val context = LocalContext.current
+    val runtime = LocalPclRuntime.current
+    var reloadToken by remember { mutableStateOf(0) }
+    // 主页里 `EventType="弹出窗口"` 的标题 / 内容（PclConfirmDialog 展示）。
+    var homeDialog by remember { mutableStateOf<Pair<String, String>?>(null) }
+
+    // 「你知道吗？/ 回声洞」是 PCL 的内置预设（`PageLaunchRight.xaml.vb` 里 Case 0/1 的
+    // XAML 字面量）。这两张卡片**直接用 Compose 复刻**，完全不经过 XAML 转换器 ——
+    // 转换器只用来啃别人的主页文件，内置预设没必要冒那个风险。
+    if (PclAppearance.homeType == PclHomeType.PRESET) {
+        val preset = PclHomePresets.of(PclAppearance.homePreset)
+        if (preset != null && preset.isLocal) {
+            PclLocalPresetHome(preset = preset, reloadToken = reloadToken, onRefresh = { reloadToken++ })
+            return
+        }
+    }
+
+    // 远程预设 / 本地文件 / 联网更新：统一由 [PclHomeLoader] 解析成「网址」或「已转换的
+    // HTML」；远程 PCL 主页 XAML 会在 IO 线程下载并转换，所以这里异步等待。
+    var homeEntry by remember { mutableStateOf<PclHomeEntry?>(null) }
+    var resolved by remember { mutableStateOf(false) }
+
+    LaunchedEffect(
+        PclAppearance.homeType,
+        PclAppearance.homePreset,
+        PclAppearance.homeNet,
+        PclAppearance.homeLocalFile,
+        reloadToken,
+    ) {
+        resolved = false
+        homeEntry = PclHomeLoader.resolve(context)
+        resolved = true
+    }
+
+    // 正在解析（预设里的远程 PCL 主页 XAML 要联网下载 + 转换，可能要点时间），
+    // 给一个明确的加载态，而不是先闪一下默认主页再跳回来。
+    if (!resolved) {
+        PclContent {
+            PclCard(modifier = Modifier.fillMaxWidth(), title = "自定义主页") {
+                PclText(text = "正在加载自定义主页…", color = pclPalette.gray2)
+            }
+            com.movtery.zalithlauncher.ui.pcl2.components.PclBottomSpacer()
+        }
+        return
+    }
+
+    if (homeEntry != null) {
+        PclCustomHomePage(
+            entry = homeEntry!!,
+            reloadToken = reloadToken,
+            onEvent = { type, data ->
+                // 主页里的内部按钮（PCL 的 EventType）：能在手机上做的就做，做不了的给明确提示。
+                when {
+                    type.contains("刷新") -> reloadToken++
+                    // 教程：`EventType="弹出窗口"`，EventData 格式是「标题|内容」。
+                    type.contains("弹出窗口") -> {
+                        val parts = data.split("|", limit = 2)
+                        homeDialog = parts[0].ifBlank { "提示" } to (parts.getOrNull(1) ?: "")
+                    }
+                    // 教程：`EventType="复制文本"`，把 EventData 放进剪贴板。
+                    type.contains("复制文本") -> {
+                        runCatching {
+                            val cm = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE)
+                                    as android.content.ClipboardManager
+                            cm.setPrimaryClip(android.content.ClipData.newPlainText("PCL 主页", data))
+                        }.onSuccess {
+                            PclHintHost.push("已复制到剪贴板。", PclHintTheme.Green)
+                        }.onFailure {
+                            PclHintHost.push("复制失败。", PclHintTheme.Red)
+                        }
+                    }
+                    type.contains("启动游戏") -> {
+                        // EventData 是版本名（如 "26.4-snapshot-5"）。找到它、切为当前版本、直接启动。
+                        val target = runtime.versions.value
+                            .firstOrNull { it.getVersionName() == data }
+                        if (target == null) {
+                            PclHintHost.push(
+                                "没有找到版本「$data」，请先在「下载」页安装该版本。",
+                                PclHintTheme.Red,
+                            )
+                        } else {
+                            if (runtime.currentVersion.value?.getVersionName() != data) {
+                                runtime.selectVersion(target)
+                            }
+                            runtime.tryLaunch()
+                        }
+                    }
+                    type.contains("下载") && data.startsWith("http", true) ->
+                        runCatching {
+                            context.startActivity(
+                                android.content.Intent(
+                                    android.content.Intent.ACTION_VIEW,
+                                    android.net.Uri.parse(data),
+                                )
+                            )
+                        }.onFailure {
+                            PclHintHost.push("无法打开下载链接。", PclHintTheme.Red)
+                        }
+                    type.contains("打开网页") && data.startsWith("http", true) ->
+                        runCatching {
+                            context.startActivity(
+                                android.content.Intent(
+                                    android.content.Intent.ACTION_VIEW,
+                                    android.net.Uri.parse(data),
+                                )
+                            )
+                        }
+                    type.isNotBlank() ->
+                        PclHintHost.push("主页动作「$type」暂不支持。", PclHintTheme.Blue)
+                }
+            },
+        )
+        // 「弹出窗口」事件：用 PCL 的确认对话框显示标题 + 内容。
+        homeDialog?.let { (title, content) ->
+            PclConfirmDialog(
+                title = title,
+                content = content,
+                onConfirm = { homeDialog = null },
+                onDismiss = { homeDialog = null },
+            )
+        }
         return
     }
 
     val p = pclPalette
-    val runtime = LocalPclRuntime.current
     val version by runtime.currentVersion.collectAsStateWithLifecycle()
     val isLaunching = runtime.isLaunching
     val liveLog by runtime.logLines.collectAsStateWithLifecycle()
@@ -1243,15 +1487,24 @@ private fun formatSpeed(bytes: Long): String = when {
 }
 
 /**
- * `PageLaunchRight.PanCustom` —— 自定义主页（`UiCustomType = 2` 联网更新）。
+ * PCL 的内置主页预设「你知道吗？/ 回声洞」的 Compose 原生实现。
  *
- * PCL 这里是内嵌的 WebBrowser 控件；Android 上用同一个内置 WebView 组件承载，
- * 顶部补一行「刷新主页」按钮（对应 `BtnCustomRefresh`）。
+ * 对应 `PageLaunchRight.xaml.vb:44-58` 里 Case 0 / Case 1 的两段 XAML 字面量：
+ * 一张 `MyCard`（标题 + 正文 `TextBlock`），右上角一个刷新按钮（`MyIconButton`）。
+ * 这里直接用 [PclCard] / [PclText] / [PclTextButton] 复刻，**不经过 XAML 转换器** ——
+ * 内置内容本来就有现成的 Compose 控件可用，没必要让通用转换器去冒险。
  */
 @Composable
-private fun PclCustomHomePage(url: String) {
+private fun PclLocalPresetHome(
+    preset: PclHomePresetEntry,
+    reloadToken: Int,
+    onRefresh: () -> Unit,
+) {
     val p = pclPalette
-    var reloadToken by remember { mutableStateOf(0) }
+    val isEcho = preset.id == 1
+    // 每次刷新换一条随机内容（对应 PCL 的 {hint} / {cave} 占位符随机替换）；
+    // 优先联网抓官网已审核文案，抓不到回退本地。
+    val text = rememberRemoteText(if (isEcho) "cave" else "hint", reloadToken)
 
     Column(modifier = Modifier.fillMaxSize()) {
         Row(
@@ -1267,13 +1520,49 @@ private fun PclCustomHomePage(url: String) {
                 fontSize = 12,
                 modifier = Modifier.weight(1f),
             )
-            PclTextButton(text = "刷新主页") { reloadToken++ }
+            PclTextButton(text = "刷新主页", onClick = onRefresh)
         }
-        // 换 key 才能让 WebView 真的重建（AndroidView 的 factory 只会跑一次）
-        androidx.compose.runtime.key(reloadToken) {
-            PclInlineWeb(
-                url = url,
-                modifier = Modifier.fillMaxWidth().weight(1f),
+        PclContent {
+            PclCard(
+                modifier = Modifier.fillMaxWidth(),
+                title = if (isEcho) "回声洞" else "你知道吗？",
+                contentPadding = PaddingValues(start = 25.dp, top = 40.dp, end = 23.dp, bottom = 15.dp),
+                titleAccessory = {
+                    PclTextButton(text = "刷新", onClick = onRefresh)
+                },
+            ) {
+                PclText(text = text)
+            }
+            com.movtery.zalithlauncher.ui.pcl2.components.PclBottomSpacer()
+        }
+    }
+}
+
+/**
+ * `PageLaunchRight.PanCustom` —— 自定义主页。
+ *
+ * PCL 这里是内嵌的 WebBrowser 控件；Android 上用同一个内置 WebView 组件承载，
+ * 顶部补一行「刷新主页」按钮（对应 `BtnCustomRefresh`）。
+ * 「网址」直接加载；「HTML」（PCL 主页 XAML 的转换结果 / 内置预设）用 loadData 渲染。
+ */
+@Composable
+private fun PclCustomHomePage(
+    entry: PclHomeEntry,
+    reloadToken: Int,
+    onEvent: ((type: String, data: String) -> Unit)? = null,
+) {
+    // 换 key 才能让 WebView 真的重建（AndroidView 的 factory 只会跑一次）：
+    // reloadToken 变化（主页里的「刷新」按钮）或内容变化都会触发重建。
+    key(entry, reloadToken) {
+        when (entry) {
+            is PclHomeEntry.Web -> PclInlineWeb(
+                url = entry.url,
+                modifier = Modifier.fillMaxSize(),
+            )
+            is PclHomeEntry.Html -> PclInlineHtml(
+                html = entry.html,
+                modifier = Modifier.fillMaxSize(),
+                onEvent = onEvent,
             )
         }
     }
