@@ -191,9 +191,16 @@ private suspend fun installNewForgeHMCLWay(
     vars["INSTALLER"] = tempInstaller.absolutePath
     vars["LIBRARY_DIR"] = File(tempMinecraftDir, "libraries").absolutePath
 
+    // GSON 反序列化出来的列表可能夹着 null 元素（install_profile.json 的 processors
+    // 出现 null / 异常项时），先过滤掉，否则 runProcessors 里会空指针。
     val processors: List<ForgeLikeInstallProcessor> = installProfile["processors"]
         ?.asJsonArray
-        ?.let { GSON.fromJson(it, object : TypeToken<List<ForgeLikeInstallProcessor>>() {}.type) }
+        ?.let {
+            GSON.fromJson<List<ForgeLikeInstallProcessor?>>(
+                it,
+                object : TypeToken<List<ForgeLikeInstallProcessor?>>() {}.type,
+            ).filterNotNull()
+        }
         ?: return@withContext
 
     runProcessors(
@@ -317,7 +324,7 @@ private suspend fun runProcessors(
                 throw IllegalArgumentException("Invalid forge installation configuration")
             }
         }.also {
-            Logger.info(TAG, "Parsed output mappings for ${processor.javaClass.simpleName}: ${it.entries.joinToString("\n") { entry -> "${entry.key} = ${entry.value}" }}")
+            Logger.info(TAG, "Parsed output mappings: ${it.entries.joinToString("\n") { entry -> "${entry.key} = ${entry.value}" }}")
         }
 
         val anyMissing = outputs.any { (key, expectedHash) ->

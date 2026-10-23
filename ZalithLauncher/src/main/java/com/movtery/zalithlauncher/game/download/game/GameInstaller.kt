@@ -670,8 +670,12 @@ class GameInstaller(
             downloader = downloader,
             onThrowable = { throw it }
         )
+        // 临时目录里的原版必须用**原版版本名**（如 1.12.2）而不是用户自定义的版本名：
+        // Forge 的 inheritsFrom、GameJsonMerger 的 clientFolder、以及 tempVanillaJar 全都
+        // 按 versions/<原版版本名>/<原版版本名>.{json,jar} 去找，名字对不上就会 json 缺失，
+        // 最后在合并 json 时 `getJsonOrNull(...)!!` 直接空指针（装 Forge 失败的根因）。
         mcDownloader.getPhasedDownloadTasks(
-            clientName = info.customVersionName,
+            clientName = info.gameVersion,
             clientVersionsDir = tempVersionsDir
         ).forEach { phased ->
             addTask(title = phased.title, icon = null, task = phased.task)

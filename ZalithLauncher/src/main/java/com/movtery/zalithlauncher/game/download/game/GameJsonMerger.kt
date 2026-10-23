@@ -85,7 +85,10 @@ fun mergeGameJson(
     val cleanroomJsonPath = cleanroomFolder.gameFileOrNull("json")
 
     //读取和验证 Json
-    val minecraftJson = minecraftJsonPath.getJsonOrNull("Minecraft")!!
+    val minecraftJson = minecraftJsonPath.getJsonOrNull("Minecraft")
+        ?: throw IllegalStateException(
+            "Minecraft 版本 Json 缺失：$minecraftJsonPath，请先完整安装原版 ${info.gameVersion}"
+        )
     //Addon
     val optiFineJson = optiFineJsonPath.getJsonOrNull(ModLoader.OPTIFINE.displayName)
     val forgeJson = forgeJsonPath.getJsonOrNull(ModLoader.FORGE.displayName)

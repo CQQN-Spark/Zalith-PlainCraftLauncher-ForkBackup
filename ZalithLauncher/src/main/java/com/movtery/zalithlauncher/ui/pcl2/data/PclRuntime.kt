@@ -27,6 +27,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import com.movtery.zalithlauncher.bridge.LoggerBridge
+import com.movtery.zalithlauncher.utils.logging.Logger
 import com.movtery.zalithlauncher.coroutine.Task
 import com.movtery.zalithlauncher.coroutine.TaskStage
 import com.movtery.zalithlauncher.coroutine.TaskSystem
@@ -204,6 +205,8 @@ class PclRuntime(
             },
             onError = { th ->
                 gameInstallerFlow.value = null
+                // 弹窗只显示 message，定位不到崩溃行；完整堆栈写进日志方便排查。
+                Logger.error(TAG, "安装失败", th)
                 pendingError = ErrorViewModel.ThrowableMessage(
                     title = androidText("安装失败"),
                     message = androidText(th.message ?: th.javaClass.simpleName),
@@ -264,6 +267,7 @@ class PclRuntime(
             },
             onError = { th ->
                 gameInstallerFlow.value = null
+                Logger.error(TAG, "重置失败", th)
                 pendingError = ErrorViewModel.ThrowableMessage(
                     title = androidText("重置失败"),
                     message = androidText(th.message ?: th.javaClass.simpleName),
