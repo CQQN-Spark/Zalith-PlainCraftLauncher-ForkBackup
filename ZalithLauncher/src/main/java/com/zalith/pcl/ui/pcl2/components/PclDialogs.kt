@@ -63,9 +63,11 @@ import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.zalith.pcl.game.plugin.renderer_v2.data.EnvSettingUnit
 import com.zalith.pcl.ui.pcl2.theme.PclDimens
 import com.zalith.pcl.ui.pcl2.theme.PclEase
 import com.zalith.pcl.ui.pcl2.theme.PclTextStyle
@@ -406,6 +408,94 @@ fun PclInputDialog(
                 secret = secret,
                 onValueChange = { text = it },
             )
+        }
+    }
+}
+
+/**
+ * 单输入框 + 实时说明 + 确认校验（PCL 风格）。
+ *
+ * 与 [PclInputDialog] 的区别是「输入有语义」：输入过程中可以在下面显示实时说明
+ * （[describe]，例如识别出来的是哪种联机邀请码），点确定时还能再校验一次
+ * （[validate] 返回非空 → 显示红字并且**不关闭**）。
+ *
+ * 联机房客填邀请码就是这种场景 —— 原来的 `SimpleEditDialog` 是 Material 圆角框，
+ * 在 PCL 界面里弹出来格格不入。
+ */
+@Composable
+fun PclInputDialogValidate(
+    title: String,
+    label: String,
+    initial: String = "",
+    hint: String = "",
+    confirmText: String = MSG_BTN_OK,
+    /** 实时说明；返回 null / 空串表示不显示。 */
+    describe: ((String) -> String?)? = null,
+    /** 点确定时的校验；返回 null 表示通过，否则是要显示的错误文字（此时弹窗不关闭）。 */
+    validate: (String) -> String? = { null },
+    onConfirm: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val p = pclPalette
+    var text by remember { mutableStateOf(initial) }
+    var error by remember { mutableStateOf<String?>(null) }
+
+    PclDialogContainer(onDismiss = onDismiss) { requestClose ->
+        PclMsgFrame(
+            title = title,
+            buttons = {
+                PclMsgButton(text = confirmText, colorState = PclColorState.Highlight) {
+                    val message = validate(text)
+                    if (message == null) {
+                        onConfirm(text)
+                        requestClose()
+                    } else {
+                        error = message
+                    }
+                }
+                PclMsgButton(text = MSG_BTN_CANCEL, onClick = requestClose)
+            },
+        ) {
+            PclMsgBody(
+                text = label,
+                modifier = Modifier.padding(
+                    start = PclDimens.msgBodyStart,
+                    end = PclDimens.msgBodyEnd,
+                    bottom = PclDimens.msgBodyBottomLoose,
+                ),
+            )
+            PclTextBox(
+                value = text,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        start = PclDimens.msgInputStart,
+                        top = 0.dp,
+                        end = PclDimens.msgInputEnd,
+                        bottom = PclDimens.msgInputBottom,
+                    ),
+                hint = hint,
+                onValueChange = {
+                    text = it
+                    // 用户开始改就先把上一次的红字收掉，别一边打一边看着旧错误
+                    if (error != null) error = null
+                },
+            )
+            val tip = error ?: describe?.invoke(text)?.takeIf { it.isNotBlank() }
+            if (tip != null) {
+                Text(
+                    text = tip,
+                    style = PclTextStyle.base(p).copy(
+                        fontSize = 12.5.sp,
+                        color = if (error != null) p.redDark else p.gray2,
+                    ),
+                    modifier = Modifier.padding(
+                        start = PclDimens.msgInputStart,
+                        end = PclDimens.msgInputEnd,
+                        bottom = PclDimens.msgInputBottom,
+                    ),
+                )
+            }
         }
     }
 }
@@ -959,5 +1049,169 @@ fun PclUpgradeDownloadDialog(
                 )
             }
         }
+    }
+}
+
+/* ============================================================================
+ *  渲染器配置（新一代渲染器插件的环境变量）
+ * ==========================================================================*/
+
+/**
+ * 「渲染器配置」弹窗（PCL 风格）。
+ *
+ * 原生界面在「设置 → 渲染设置 → 全局渲染器」右侧有一枚齿轮，点开就是这个配置
+ * （`RendererV2ConfigDialog`）。PCL 界面此前没有入口 —— 用户装了 MobileGlues 这类
+ * 新一代渲染器插件后，MOBILEGL_BACKEND_TYPE 之类的开关在 PCL 界面里完全够不着。
+ *
+ * 三类配置项按插件给的 [EnvSettingUnit] 原样渲染：
+ *   · `Selectable`   —— 可选勾选 + 下拉选值（`MOBILEGL_BACKEND_TYPE`）
+ *   · `Toggleable`   —— 开关（`MOBILEGL_DISABLE_TIMERQUERY`，开 = 写入 envValue）
+ *   · `Customizable` —— 文本框（自由填写）
+ * 变量名用等宽思路单行显示、超长省略；摘要走灰色小字，和 PCL 的说明行一致。
+ */
+@Composable
+fun PclRendererConfigDialog(
+    units: List<EnvSettingUnit>,
+    onDismiss: () -> Unit,
+) {
+    val p = pclPalette
+    PclDialogContainer(onDismiss = onDismiss) { requestClose ->
+        PclMsgFrame(
+            title = "渲染器配置",
+            buttons = {
+                PclMsgButton(text = "关闭", onClick = requestClose)
+            },
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        start = PclDimens.msgBodyStart,
+                        end = PclDimens.msgBodyEnd,
+                        bottom = PclDimens.msgBodyBottomTight,
+                    )
+                    // 配置项可能很多，限高滚动，别把「关闭」按钮顶出屏幕
+                    .heightIn(max = 300.dp)
+                    .verticalScroll(rememberScrollState()),
+            ) {
+                if (units.isEmpty()) {
+                    Text(
+                        text = "当前渲染器没有可配置的环境变量。",
+                        style = PclTextStyle.base(p).copy(
+                            fontSize = PclDimens.msgBodyFontSize.sp,
+                            color = MsgBodyColor,
+                        ),
+                    )
+                }
+                units.forEachIndexed { index, unit ->
+                    if (index > 0) {
+                        Spacer(Modifier.height(14.dp))
+                        // 分隔线：PCL 里同一张卡片内的条目之间就靠一条淡线分开
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(1.dp)
+                                .background(p.color6),
+                        )
+                        Spacer(Modifier.height(14.dp))
+                    }
+                    when (unit) {
+                        is EnvSettingUnit.Selectable -> PclSelectableEnvItem(unit)
+                        is EnvSettingUnit.Toggleable -> PclToggleableEnvItem(unit)
+                        is EnvSettingUnit.Customizable -> PclCustomizableEnvItem(unit)
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** 环境变量名：`环境变量：MOBILEGL_BACKEND_TYPE`。 */
+@Composable
+private fun PclEnvKeyText(key: String) {
+    val p = pclPalette
+    Text(
+        text = "环境变量：$key",
+        style = PclTextStyle.base(p).copy(
+            fontSize = PclDimens.msgBodyFontSize.sp,
+            color = p.color1,
+        ),
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+    )
+}
+
+/** 插件给的说明（灰色小字）。 */
+@Composable
+private fun PclEnvSummaryText(summary: String?) {
+    if (summary.isNullOrBlank()) return
+    val p = pclPalette
+    Spacer(Modifier.height(3.dp))
+    Text(
+        text = summary,
+        style = PclTextStyle.base(p).copy(
+            fontSize = 12.5.sp,
+            color = p.gray2,
+        ),
+    )
+}
+
+@Composable
+private fun PclSelectableEnvItem(unit: EnvSettingUnit.Selectable) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        if (unit.rawEnv.check != null) {
+            // 插件声明了 check：可以整体关掉这条环境变量
+            PclCheckBox(
+                text = "环境变量：${unit.rawEnv.key}",
+                checked = unit.isEnabled,
+                modifier = Modifier.fillMaxWidth(),
+                onCheckedChange = { unit.saveCheck(it) },
+            )
+        } else {
+            PclEnvKeyText(unit.rawEnv.key)
+        }
+        PclEnvSummaryText(unit.summary)
+        Spacer(Modifier.height(6.dp))
+        PclComboBox(
+            items = unit.values,
+            selected = unit.state,
+            // 关掉的时候下拉置灰，避免「关了还能改」的困惑
+            enabled = unit.isEnabled,
+            modifier = Modifier.fillMaxWidth(),
+            label = { it.orEmpty() },
+            onSelect = { if (it != unit.state) unit.save(it) },
+        )
+    }
+}
+
+@Composable
+private fun PclToggleableEnvItem(unit: EnvSettingUnit.Toggleable) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        PclSwitchItem(
+            title = "环境变量：${unit.rawEnv.key}",
+            checked = unit.isEnabled,
+            description = unit.summary,
+            modifier = Modifier.fillMaxWidth(),
+            onCheckedChange = { checked -> unit.save(if (checked) unit.envValue else "") },
+        )
+    }
+}
+
+@Composable
+private fun PclCustomizableEnvItem(unit: EnvSettingUnit.Customizable) {
+    var text by remember(unit) { mutableStateOf(unit.state) }
+    Column(modifier = Modifier.fillMaxWidth()) {
+        PclEnvKeyText(unit.rawEnv.key)
+        PclEnvSummaryText(unit.summary)
+        Spacer(Modifier.height(6.dp))
+        PclTextBox(
+            value = text,
+            modifier = Modifier.fillMaxWidth(),
+            hint = unit.defaultValue.ifEmpty { "留空表示不设置" },
+            onValueChange = {
+                text = it
+                unit.save(it)
+            },
+        )
     }
 }

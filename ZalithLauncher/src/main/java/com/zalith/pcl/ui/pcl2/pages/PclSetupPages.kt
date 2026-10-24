@@ -57,6 +57,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.materialkolor.PaletteStyle
 import com.zalith.pcl.game.download.assets.platform.Platform
 import com.zalith.pcl.game.plugin.driver.DriverPluginManager
+import com.zalith.pcl.game.plugin.renderer_v2.RendererV2Data
+import com.zalith.pcl.game.renderer.Renderers
 import com.zalith.pcl.game.version.installed.GraphicsApi
 import com.zalith.pcl.setting.AllSettings
 import com.zalith.pcl.ui.pcl2.data.PclSkinSettings
@@ -83,6 +85,8 @@ import com.zalith.pcl.ui.pcl2.components.PclExtraTextButton
 import com.zalith.pcl.ui.pcl2.components.PclHint
 import com.zalith.pcl.ui.pcl2.components.PclHintTheme
 import com.zalith.pcl.ui.pcl2.components.PclIcons
+import com.zalith.pcl.ui.pcl2.components.PclIconButton
+import com.zalith.pcl.ui.pcl2.components.PclRendererConfigDialog
 import com.zalith.pcl.ui.pcl2.components.PclImageLoader
 import com.zalith.pcl.ui.pcl2.components.PclRadioBox
 import com.zalith.pcl.ui.pcl2.components.PclSlider
@@ -310,15 +314,51 @@ private fun PclRenderingCard() {
     val driverNames = driverOptions.toMap() + (currentDriver to
         (driverOptions.firstOrNull { it.first == currentDriver }?.second ?: currentDriver))
 
+    // 新一代渲染器插件（MobileGlues 这类）会带一组可配置环境变量。
+    // 原生界面在「全局渲染器」右侧有枚齿轮，点开就是 `RendererV2ConfigDialog`；
+    // PCL 界面之前完全没有这个入口，装了插件也够不着 MOBILEGL_BACKEND_TYPE 之类的开关。
+    val currentRendererId = AllSettings.renderer.state
+    val rendererEnvUnits = remember(currentRendererId) {
+        runCatching {
+            Renderers.getRenderers()
+                .filterIsInstance<RendererV2Data>()
+                .firstOrNull { it.getUniqueIdentifier() == currentRendererId }
+                ?.env
+                ?.getConfigurableUnits()
+                ?.takeIf { it.isNotEmpty() }
+        }.getOrNull()
+    }
+    var showRendererConfig by remember { mutableStateOf(false) }
+
     PclCard( modifier = Modifier.fillMaxWidth(),title = "渲染器") {
         Column {
-            SettingCombo(
-                label = "渲染器",
-                items = rendererIds,
-                selected = AllSettings.renderer.state,
-                labelOf = { rendererNames[it] ?: it.ifEmpty { "自动选择" } },
-                onSelect = { AllSettings.renderer.save(it) },
-            )
+            SetupRow("渲染器") {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    PclComboBox(
+                        items = rendererIds,
+                        selected = AllSettings.renderer.state,
+                        modifier = Modifier.weight(1f),
+                        // PclComboBox 的 label 收到的是可空项（列表里允许出现 null），
+                        // 所以这里要先兜住 null 再查名字。
+                        label = { id -> id?.let { rendererNames[it] ?: it.ifEmpty { "自动选择" } }.orEmpty() },
+                        onSelect = { AllSettings.renderer.save(it) },
+                    )
+                    // 只有「选中新一代渲染器插件 + 它确实有可配置项」时才出现，和原生一致
+                    if (rendererEnvUnits != null) {
+                        Spacer(Modifier.width(10.dp))
+                        PclIconButton(
+                            logo = PclIcons.setupGear,
+                            size = 30.dp,
+                            logoScale = 0.95f,
+                            contentDescription = "渲染器配置",
+                            onClick = { showRendererConfig = true },
+                        )
+                    }
+                }
+            }
             SettingCombo(
                 label = "Vulkan 驱动",
                 items = driverIds,
@@ -386,6 +426,15 @@ private fun PclRenderingCard() {
                 theme = PclHintTheme.Blue,
             )
         }
+    }
+
+    // 渲染器配置弹窗（环境变量）。放在卡片外层：`PclDialogContainer` 自带 Dialog 层级，
+    // 塞进 `Column` 里也不会被卡片裁剪，但放外层更清楚。
+    if (showRendererConfig && rendererEnvUnits != null) {
+        PclRendererConfigDialog(
+            units = rendererEnvUnits,
+            onDismiss = { showRendererConfig = false },
+        )
     }
 }
 

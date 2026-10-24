@@ -26,10 +26,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
 import com.zalith.pcl.R
+import com.zalith.pcl.setting.AllSettings
 import com.zalith.pcl.terracotta.Terracotta
 import com.zalith.pcl.ui.AndroidStringText
 import com.zalith.pcl.ui.androidText
 import com.zalith.pcl.ui.components.SimpleEditDialog
+import com.zalith.pcl.ui.pcl2.components.PclInputDialogValidate
 import com.zalith.pcl.utils.string.isEmptyOrBlank
 import net.burningtnt.terracotta.TerracottaAndroidAPI
 
@@ -63,6 +65,10 @@ fun GuestWaitingOperation(
 
 /**
  * 房客输入邀请码对话框
+ *
+ * PCL 界面走 [PclInputDialogValidate]（`MyMsgInput` 版式）：白色卡片、细边框、
+ * 「确定」在左「取消」在右，输入过程中在下方显示识别出的邀请码类型，格式不对时
+ * 点确定会用红字提示并且**不关闭**。原生界面保持原来的 `SimpleEditDialog`。
  */
 @Composable
 private fun InviteCodeInputDialog(
@@ -70,6 +76,39 @@ private fun InviteCodeInputDialog(
     onDismiss: () -> Unit,
     onShowToast: (AndroidStringText) -> Unit
 ) {
+    if (AllSettings.usePcl2Ui.state) {
+        val legacyText = stringResource(R.string.terracotta_status_waiting_guest_prompt_terracotta_legacy)
+        val pcl2ceText = stringResource(R.string.terracotta_status_waiting_guest_prompt_pcl2ce)
+        val scaffoldingText = stringResource(R.string.terracotta_status_waiting_guest_prompt_scaffolding)
+        PclInputDialogValidate(
+            title = stringResource(R.string.terracotta_status_waiting_guest_prompt_title),
+            label = "请填写房主提供的邀请码。",
+            hint = "U/XXXX-XXXX-XXXX-XXXX",
+            describe = { value ->
+                if (value.isEmpty()) null
+                else when (Terracotta.parseRoomCode(value)) {
+                    TerracottaAndroidAPI.RoomType.TERRACOTTA_LEGACY -> legacyText
+                    TerracottaAndroidAPI.RoomType.PCL2CE -> pcl2ceText
+                    TerracottaAndroidAPI.RoomType.SCAFFOLDING -> scaffoldingText
+                    else -> null
+                }
+            },
+            validate = { value ->
+                when {
+                    value.isEmptyOrBlank() -> "请先填写邀请码。"
+                    Terracotta.parseRoomCode(value) == null -> "邀请码格式不正确，检查一下有没有少字符。"
+                    else -> null
+                }
+            },
+            onConfirm = { code ->
+                onPositive(code)
+                onDismiss()
+            },
+            onDismiss = onDismiss,
+        )
+        return
+    }
+
     var code by remember { mutableStateOf("") }
 
     /** 验证不通过时 */
