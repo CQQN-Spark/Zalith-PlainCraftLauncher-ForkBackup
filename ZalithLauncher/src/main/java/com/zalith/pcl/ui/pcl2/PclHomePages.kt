@@ -479,7 +479,8 @@ private fun ColumnScope.PclHomeInput(nav: PclNavController, runtime: PclRuntime)
     // 第三方登录不画胶囊：那一块的面板自己有「XXX 登录」标题（PCL 的 `PageLoginAuth`
     // 也是这样），再挂一粒写着「外置登录」的胶囊只是重复。
     if (thirdParty) {
-        Spacer(Modifier.height(22.dp))
+        // 第三方：PCL 不画可点胶囊，改画一枚静态的 `PanTypeOne`（图标 + 认证服务器名）
+        PclLoginTypeCapsule(name = authServerName)
     } else {
         Spacer(Modifier.height(22.dp))
         Row(
@@ -1200,6 +1201,56 @@ private fun PclAccountNameField(
     }
 }
 
+/**
+ * `PageLaunchLeft.xaml` 的 `PanTypeOne` —— 版本把登录方式定死成一种时（仅正版 / 仅离线 /
+ * 统一通行证 / Authlib-Injector），PCL 不画那两枚可点的胶囊，而是显示一枚**静态**胶囊：
+ *
+ * ```
+ * Border Background=ColorBrushSemiTransparent CornerRadius=13 MinHeight=27 MaxHeight=27
+ *   Path   16×16（MaxHeight/MaxWidth=16，Scale 1.05）、Margin="12,0,0,0"、ColorBrush3
+ *   Text   FontSize=14、Margin="15,0,12,0"、ColorBrush3
+ * ```
+ *
+ * 外置登录的文字就是认证服务器的名字（`VersionServerAuthName`），没填才退回「第三方登录」
+ * —— 注意 PCL 这里**没有**「登录」二字，只有服务器名。
+ */
+@Composable
+private fun PclLoginTypeCapsule(name: String) {
+    val p = pclPalette
+    Row(
+        // PanType 的 Margin="20,22,20,0"
+        modifier = Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 22.dp),
+        horizontalArrangement = Arrangement.Center,
+    ) {
+        Row(
+            modifier = Modifier
+                .height(27.dp)
+                .clip(RoundedCornerShape(13.dp))
+                .background(p.semiTransparent)
+                .padding(start = 12.dp, end = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = PclIcons.loginAuth,
+                contentDescription = null,
+                tint = p.color3,
+                modifier = Modifier
+                    .size(16.dp)
+                    .graphicsLayer {
+                        scaleX = 1.05f
+                        scaleY = 1.05f
+                    },
+            )
+            Spacer(Modifier.width(15.dp))
+            PclText(
+                text = name.ifBlank { "第三方登录" },
+                color = p.color3,
+                fontSize = 14,
+            )
+        }
+    }
+}
+
 /** 右栏当前显示哪一块登录页（可用项由版本的「登录方式」决定）。 */
 private enum class HomeLoginPage { Microsoft, Offline, Auth }
 
@@ -1271,23 +1322,9 @@ private fun PclAuthLoginPanel(
         if (loggedIn != null) picking = false
     }
 
+    // 标题不在这里画：PCL 把它画成了 `PanTypeOne` 那枚静态胶囊（见 [PclLoginTypeCapsule]），
+    // 位置在登录面板**上面**、和正版 / 离线那两枚胶囊同一行，所以由调用方负责。
     Column(modifier = Modifier.fillMaxSize()) {
-        // ---- 标题：「(图标) {服务器名} 登录」
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Icon(
-                imageVector = PclIcons.loginAuth,
-                contentDescription = null,
-                tint = p.color3,
-                modifier = Modifier.size(14.dp),
-            )
-            Spacer(Modifier.width(7.dp))
-            PclText(text = "$serverName 登录", color = p.color3, fontSize = 14)
-        }
-
         if (loggedIn != null && !picking) {
             // ---- 已登录：整块换成和正版一样的「皮肤头像 + 角色名 + 按钮行」。
             //      PCL 的 `PageLoginAuth` 只画输入框，没有已登录样式（它把这件事交给

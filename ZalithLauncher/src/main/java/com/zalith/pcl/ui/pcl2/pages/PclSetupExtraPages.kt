@@ -1240,7 +1240,6 @@ fun PclSetupControlManagePage() {
     val context = LocalContext.current
     val dataList by ControlManager.dataList.collectAsStateWithLifecycle()
     val isRefreshing by ControlManager.isRefreshing.collectAsStateWithLifecycle()
-    val eventViewModel: EventViewModel = viewModel()
 
     var createDialog by remember { mutableStateOf(false) }
     var deleteTarget by remember { mutableStateOf<ControlData?>(null) }
@@ -1251,13 +1250,51 @@ fun PclSetupControlManagePage() {
 
     val selectedName = AllSettings.controlLayout.state
 
-    // 导入走 Activity 的事件通道（`Event.ImportControls`）—— 与原生界面同一个实现，
-    // 连「解析失败 / 读取失败」的报错也保持一致。
+    // 【不能走 `Event.ImportControls`】那是 Activity 级事件通道，只有 `MainActivity` 在
+    // `lifecycleScope` 里收 —— PCL 界面跑在 `Pcl2Activity` 里，事件发出去没人接，
+    // 表现就是「选完 json 文件，列表里什么都没多出来」。
+    // 这里直接调 `ControlManager.importControl`（和 `PclExternalImport` 的外部导入同一条路），
+    // 导完自己 refresh 一次列表。
+    val importScope = rememberCoroutineScope()
     val importPicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenMultipleDocuments(),
     ) { uris ->
-        if (uris.isNotEmpty()) {
-            eventViewModel.sendEvent(EventViewModel.Event.ImportControls(uris))
+        if (uris.isEmpty()) return@rememberLauncherForActivityResult
+        importScope.launch {
+            var imported = 0
+            var failure: String? = null
+            withContext(Dispatchers.IO) {
+                uris.forEach { uri ->
+                    runCatching {
+                        val stream = context.contentResolver.openInputStream(uri)
+                            ?: error("无法读取这个文件（没有读取权限）。")
+                        var parseError: String? = null
+                        stream.use {
+                            ControlManager.importControl(
+                                inputStream = it,
+                                onSerializationError = { e ->
+                                    parseError = "这个文件不是启动器能识别的控制布局：${e.message}"
+                                },
+                                catchedError = { e ->
+                                    parseError = "布局导入失败：${e.message}"
+                                },
+                            )
+                        }
+                        parseError?.let { message -> error(message) }
+                        imported++
+                    }.onFailure { failure = it.message ?: it.javaClass.simpleName }
+                }
+                // 列表要重新扫一遍：`dataList` 是 ControlManager 里的 StateFlow，
+                // 不 refresh 的话导进来的那份永远不出现在这一页
+                if (imported > 0) ControlManager.refresh()
+            }
+            when {
+                imported > 0 -> PclHintHost.push(
+                    if (imported == 1) "控制布局已导入。" else "已导入 $imported 个控制布局。",
+                    PclHintTheme.Green,
+                )
+                else -> PclHintHost.push(failure ?: "导入失败。", PclHintTheme.Red)
+            }
         }
     }
 
