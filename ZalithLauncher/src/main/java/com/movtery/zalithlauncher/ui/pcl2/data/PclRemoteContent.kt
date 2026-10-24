@@ -25,11 +25,19 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.movtery.zalithlauncher.setting.launcherMMKV
+import com.movtery.zalithlauncher.utils.logging.Logger
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
+import java.util.concurrent.ConcurrentHashMap
+
+private const val LOG_TAG = "PclRemoteContent"
+
+/** 首次进入主页时最多尝试几次（失败后逐步退避），避免一次失败就永远停在占位文案。 */
+private const val FETCH_ATTEMPTS = 3
 
 object PclRemoteContent {
 
@@ -42,7 +50,22 @@ object PclRemoteContent {
      */
     private const val DEFAULT_BASE_URL = "http://103.85.86.151:25997"
 
-    private const val TIMEOUT_MS = 5000
+    private const val TIMEOUT_MS = 8000
+
+    /** 上次成功拿到的文案，按类型缓存。只在内存里，重启失效。 */
+    private val cache = ConcurrentHashMap<String, String>()
+
+    /** 最近一次失败原因，写进日志方便排查（`HTTP 404` / `timeout` / `返回内容为空` 等）。 */
+    @Volatile
+    var lastError: String? = null
+        private set
+
+    /** 已缓存的上一条文案；没有就返回 null。 */
+    fun cached(type: String): String? = cache[type]
+
+    private fun cacheText(type: String, text: String) {
+        cache[type] = text
+    }
 
     /** 站点根地址（去尾斜杠）。空 = 不联网。 */
     fun baseUrl(): String {
@@ -56,7 +79,10 @@ object PclRemoteContent {
      */
     fun randomBlocking(type: String): String? {
         val base = baseUrl()
-        if (base.isEmpty()) return null
+        if (base.isEmpty()) {
+            lastError = "未配置站点地址"
+            return null
+        }
         var conn: HttpURLConnection? = null
         return try {
             conn = URL("$base/api/random?type=$type").openConnection() as HttpURLConnection
@@ -64,10 +90,22 @@ object PclRemoteContent {
             conn.readTimeout = TIMEOUT_MS
             conn.setRequestProperty("User-Agent", "ZalithLauncher/2")
             conn.setRequestProperty("Accept", "application/json")
-            if (conn.responseCode != HttpURLConnection.HTTP_OK) return null
+            val code = conn.responseCode
+            if (code != HttpURLConnection.HTTP_OK) {
+                lastError = "HTTP $code"
+                return null
+            }
             val body = conn.inputStream.bufferedReader().use { it.readText() }
-            JSONObject(body).optString("text").takeIf { it.isNotBlank() }
-        } catch (_: Exception) {
+            val text = JSONObject(body).optString("text")
+            if (text.isBlank()) {
+                lastError = "返回内容为空"
+                return null
+            }
+            lastError = null
+            cacheText(type, text)
+            text
+        } catch (e: Exception) {
+            lastError = "${e.javaClass.simpleName}: ${e.message}"
             null
         } finally {
             runCatching { conn?.disconnect() }
@@ -81,16 +119,30 @@ object PclRemoteContent {
 /**
  * 随机文案（本地兜底 + 联网替换）。
  *
- * 先立刻返回一条本地随机文案（首帧就有内容），再在后台联网；
- * 拉到审核通过的新文案就替换掉本地那条。[reloadToken] 变化会重新随机并重新拉取。
+ * 首帧优先用**上次成功拿到的文案**（内存缓存），再在后台联网；
+ * 拉到审核通过的新文案就替换掉。[reloadToken] 变化会重新拉取（点文字刷新走这条）。
+ *
+ * 旧实现只请求一次，失败就一直停在占位文案上，表现成「必须点一下才显示内容」；
+ * 现在最多重试 [FETCH_ATTEMPTS] 次并逐步退避，失败原因写进日志。
  */
 @Composable
 fun rememberRemoteText(type: String, reloadToken: Int = 0): String {
     var text by remember(reloadToken, type) {
-        mutableStateOf(PclHomePresets.randomLocal(type))
+        mutableStateOf(PclRemoteContent.cached(type) ?: PclHomePresets.randomLocal(type))
     }
     LaunchedEffect(type, reloadToken) {
-        PclRemoteContent.random(type)?.let { text = it }
+        repeat(FETCH_ATTEMPTS) { attempt ->
+            val fetched = PclRemoteContent.random(type)
+            if (!fetched.isNullOrBlank()) {
+                text = fetched
+                return@LaunchedEffect
+            }
+            Logger.warning(
+                LOG_TAG,
+                "拉取「$type」文案失败（第 ${attempt + 1}/$FETCH_ATTEMPTS 次）：${PclRemoteContent.lastError}"
+            )
+            if (attempt < FETCH_ATTEMPTS - 1) delay(500L * (attempt + 1))
+        }
     }
     // 回声洞的默认文案已删、又没拉到联网文案时给一句占位，避免留白。
     return text.ifBlank {
