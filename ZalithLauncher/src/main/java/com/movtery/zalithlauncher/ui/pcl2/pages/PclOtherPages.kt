@@ -111,7 +111,7 @@ import com.movtery.zalithlauncher.ui.pcl2.components.PclSearchBox
 import com.movtery.zalithlauncher.ui.pcl2.components.PclSplitLine
 import com.movtery.zalithlauncher.ui.pcl2.components.PclTextBox
 import com.movtery.zalithlauncher.ui.pcl2.components.PclText
-import com.movtery.zalithlauncher.ui.pcl2.data.PclRemoteContent
+import com.movtery.zalithlauncher.ui.pcl2.data.rememberRemoteText
 import com.movtery.zalithlauncher.ui.pcl2.theme.PclDimens
 import com.movtery.zalithlauncher.ui.pcl2.theme.PclTextStyle
 import com.movtery.zalithlauncher.ui.pcl2.theme.pclPalette
@@ -446,8 +446,10 @@ fun PclOtherTestPage() {
     var storage by remember { mutableStateOf<StorageScan?>(null) }
     // 「千万别点」：0 无 / 1 三按钮弹窗 / 2 恶搞画面
     var prankStage by remember { mutableIntStateOf(0) }
-    // 回声洞当前显示的留言（默认内容已删，改从官网联网抓取）
-    var echoText by remember { mutableStateOf("回声洞暂时没有留言，去官网投稿吧～") }
+    // 回声洞：进页面就联网抓一条（旧实现只给了占位文案，没有首帧请求，
+    // 必须点一下才去抓，表现成「每次进来都是没有留言」）。点击整块换一条。
+    var echoReload by remember { mutableIntStateOf(0) }
+    val echoText = rememberRemoteText("cave", echoReload)
 
     // ---- 下载自定义文件的表单
     var url by remember { mutableStateOf("") }
@@ -512,11 +514,7 @@ fun PclOtherTestPage() {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable {
-                        scope.launch {
-                            PclRemoteContent.random("cave")?.let { echoText = it }
-                        }
-                    },
+                    .clickable { echoReload++ },
             ) {
                 Text(
                     text = echoText,

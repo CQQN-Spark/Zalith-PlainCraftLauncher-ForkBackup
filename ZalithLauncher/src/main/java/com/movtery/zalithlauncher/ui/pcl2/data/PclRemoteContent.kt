@@ -130,7 +130,11 @@ fun rememberRemoteText(type: String, reloadToken: Int = 0): String {
     var text by remember(reloadToken, type) {
         mutableStateOf(PclRemoteContent.cached(type) ?: PclHomePresets.randomLocal(type))
     }
+    // 三次都失败才算「真的没有内容」。加载中不要提前显示「没有留言」，
+    // 否则用户会以为回声洞是空的，复现「每次进来都是没有」的观感。
+    var exhausted by remember(reloadToken, type) { mutableStateOf(false) }
     LaunchedEffect(type, reloadToken) {
+        exhausted = false
         repeat(FETCH_ATTEMPTS) { attempt ->
             val fetched = PclRemoteContent.random(type)
             if (!fetched.isNullOrBlank()) {
@@ -143,9 +147,9 @@ fun rememberRemoteText(type: String, reloadToken: Int = 0): String {
             )
             if (attempt < FETCH_ATTEMPTS - 1) delay(500L * (attempt + 1))
         }
+        exhausted = true
     }
-    // 回声洞的默认文案已删、又没拉到联网文案时给一句占位，避免留白。
-    return text.ifBlank {
-        if (type == "cave") "回声洞暂时没有留言，去官网投稿吧～" else text
-    }
+    if (text.isNotBlank()) return text
+    // 回声洞的默认文案已删：只有确认拉不到时才给占位，加载中返回空串（不留假信息）。
+    return if (exhausted && type == "cave") "回声洞暂时没有留言，去官网投稿吧～" else ""
 }
