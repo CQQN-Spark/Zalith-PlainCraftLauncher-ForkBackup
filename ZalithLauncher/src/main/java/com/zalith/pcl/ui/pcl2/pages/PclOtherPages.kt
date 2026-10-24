@@ -118,14 +118,15 @@ import com.zalith.pcl.ui.pcl2.theme.pclPalette
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.io.File
 import com.zalith.pcl.utils.network.openLinkInternal
 
-/** 在浏览器里打开一个真实链接。 */
-private fun openLink(context: android.content.Context?, url: String) {
+/** 在浏览器里打开一个真实链接。对同包的更新宿主（PclUpgradeHost）开放。 */
+internal fun openLink(context: android.content.Context?, url: String) {
     val activity = context as? Activity ?: return
     runCatching {
         activity.openLinkInternal(url)
@@ -253,11 +254,14 @@ private fun PclAboutRow(
 @Composable
 fun PclOtherAboutPage() {
     val context = LocalContext.current
-    // 直接用 Activity 作用域的更新 ViewModel：与 MainActivity 持有的是同一个实例，
-    // 检查到新版本时 MainActivity 里的更新弹窗照常弹出；
-    // 检查结果（已最新/失败/太频繁）用提示条给出可见反馈，不再依赖一闪而过的 Toast。
+    // Activity 作用域的更新 ViewModel：与外壳上的 `PclUpgradeHost` 是**同一个实例**，
+    // 所以这里检查到新版本时，那个宿主会直接弹出 PCL 风格的更新框
+    // （上游只有 MainActivity 渲染更新弹窗，本界面在 Pcl2Activity，之前点完毫无反应）。
     val scope = rememberCoroutineScope()
     val upgradeViewModel: LauncherUpgradeViewModel = viewModel()
+    // 手动检查的状态：按钮文字改成「检查中…」，结果用弹窗给出（不再依赖左下角提示条）。
+    var checking by remember { mutableStateOf(false) }
+    var notice by remember { mutableStateOf<String?>(null) }
 
     PclContent {
         // ---- 关于
@@ -298,22 +302,39 @@ fun PclOtherAboutPage() {
                     icon = painterResource(R.drawable.ic_launcher_logo),
                     title = "Zalith-Plain Craft Launcher",
                     info = "本启动器：基于 Zalith Launcher 2 与 PCL2 界面打造的 Minecraft Java 版启动器",
-                    buttonText = "检查更新",
+                    buttonText = if (checking) "检查中…" else "检查更新",
                 ) {
+                    // 检查更新必须**当场给出可见结果**：以前只往左下角推一条提示条，
+                    // 而「已是最新」「网络失败」这类结果一闪就没了，用户点完的感受就是
+                    // 「点了没反应，连个弹窗都没有」。现在统一弹 PCL 提示框。
+                    if (checking) return@PclAboutRow
                     scope.launch {
+                        checking = true
                         try {
-                            upgradeViewModel.checkManually(
-                                onInProgress = {
-                                    PclHintHost.push("正在检查更新…（网络不佳时可能需要一两分钟）", PclHintTheme.Blue)
-                                },
-                                onIsLatest = {
-                                    PclHintHost.push("当前已是最新版本", PclHintTheme.Green)
-                                }
-                            )
+                            val finished = withTimeoutOrNull(90_000) {
+                                upgradeViewModel.checkManually(
+                                    onChecked = { data ->
+                                        notice = when {
+                                            data == null ->
+                                                "获取更新失败，请检查网络后重试。\n\n" +
+                                                    "（如果你在中国大陆，GitHub 的接口经常连不上，换个时间段再试通常就好了。）"
+                                            BuildConfig.VERSION_CODE >= data.code ->
+                                                "当前已是最新版本 ${BuildConfig.VERSION_NAME}（${BuildConfig.VERSION_CODE}）。"
+                                            // 有新版本：operation 已由 ViewModel 设好，交给 PclUpgradeHost 弹框
+                                            else -> null
+                                        }
+                                    },
+                                )
+                            }
+                            if (finished == null) {
+                                notice = "检查更新超时了，请检查网络后重试。"
+                            }
                         } catch (_: TooFrequentOperationException) {
-                            PclHintHost.push("检查太频繁了，请稍等几秒再试", PclHintTheme.Yellow)
+                            notice = "检查太频繁了，请等几秒再试。"
                         } catch (_: Exception) {
-                            PclHintHost.push("获取更新失败，请检查网络后重试", PclHintTheme.Red)
+                            notice = "获取更新失败，请检查网络后重试。"
+                        } finally {
+                            checking = false
                         }
                     }
                 }
@@ -413,6 +434,16 @@ fun PclOtherAboutPage() {
         }
 
         PclBottomSpacer()
+    }
+
+    // 手动检查更新的结果（已最新 / 失败 / 太频繁 / 超时）。
+    // 放在 `PclContent` 之后：Dialog 是独立窗口，不参与页面滚动布局。
+    notice?.let { text ->
+        PclNoticeDialog(
+            title = "检查更新",
+            content = text,
+            onDismiss = { notice = null },
+        )
     }
 }
 

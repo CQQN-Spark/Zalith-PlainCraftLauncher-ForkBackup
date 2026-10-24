@@ -427,6 +427,9 @@ private fun PclMainContent(
         // 第三方登录（authlib-injector / 统一通行证）的询问框：版本设置了第三方登录、
         // 本地又没有该服务器的账户时，启动那一刻在这里问账号密码。
         PclThirdPartyLoginHost()
+        // 启动器更新弹窗。**必须挂在 PCL 外壳上**：上游只有 MainActivity 会渲染更新弹窗，
+        // 而本界面跑在 Pcl2Activity —— 挂在页面里就不会弹（「关于」页点检查更新毫无反应）。
+        PclUpgradeHost()
         val p = pclPalette
         // 「千万别点」彩蛋：整扇窗体的视觉变换（缩小 / 平移 / 抖动 / 叠加彩虹色）。
         // 放在最外层，`graphicsLayer` 才会把夹在后面的圆角、底色、窗体背景图一起带走。

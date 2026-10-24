@@ -790,3 +790,113 @@ fun PclSelectDialog(
         }
     }
 }
+
+/* ============================================================================
+ *  启动器更新（「关于」页的检查更新）
+ * ==========================================================================*/
+
+/**
+ * 把更新说明的 Markdown 压成纯文本。
+ *
+ * PCL 的更新框正文是 `MyMsgText` 里的普通 `Text`，不认 Markdown 语法；
+ * 直接塞原文的话用户会看到一堆 `**`、`###`、`` ` ``。这里只做去标记、不改变文字，
+ * 保证 `latest_version_md.json` 里那份说明在弹窗里依然可读。
+ */
+internal fun pclMarkdownToPlain(md: String): String {
+    var s = md
+    s = s.replace(Regex("!\\[[^\\]]*]\\([^)]*\\)"), "")                        // 图片
+    s = s.replace(Regex("\\[([^\\]]*)]\\([^)]*\\)"), "$1")                     // 链接 → 文字
+    s = s.replace(Regex("^\\s{0,3}#{1,6}\\s*", RegexOption.MULTILINE), "")     // 标题井号
+    s = s.replace(Regex("^\\s{0,3}>\\s?", RegexOption.MULTILINE), "")          // 引用
+    s = s.replace(Regex("^\\s*[-*+]\\s+", RegexOption.MULTILINE), "· ")        // 无序列表
+    s = s.replace(Regex("\\*\\*(.+?)\\*\\*"), "$1")                            // 粗体
+    s = s.replace(Regex("__(.+?)__"), "$1")
+    s = s.replace("`", "")
+    return s.trim()
+}
+
+/**
+ * 发现新版本（PCL 风格的 `MyMsgText`）。
+ *
+ * 上游的 `UpgradeDialog` 是 Material 的圆角卡片 —— PCL 界面里弹出来就是「不像 PCL」，
+ * 所以这里用同一套 `PclMsgFrame` 重画：标题栏 + 版本号 + 说明正文（限高滚动）+ 按钮行。
+ *
+ * 按钮顺序按 PCL 的习惯**主要按钮在最左**：立即更新 / 忽略此版本 / 稍后。
+ * 正文必须限高可滚动：更新说明有好几十行，不限高会把按钮顶到屏幕外。
+ */
+@Composable
+fun PclUpgradeDialog(
+    versionText: String,
+    bodyText: String,
+    onDownload: () -> Unit,
+    onIgnore: () -> Unit,
+    onLater: () -> Unit,
+) {
+    val p = pclPalette
+    PclDialogContainer(onDismiss = onLater) { requestClose ->
+        PclMsgFrame(
+            title = "发现新版本",
+            buttons = {
+                PclMsgButton(text = "立即更新", colorState = PclColorState.Highlight) {
+                    onDownload()
+                    requestClose()
+                }
+                PclMsgButton(text = "忽略此版本") {
+                    onIgnore()
+                    requestClose()
+                }
+                PclMsgButton(text = "稍后", onClick = requestClose)
+            },
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        start = PclDimens.msgBodyStart,
+                        end = PclDimens.msgBodyEnd,
+                        bottom = PclDimens.msgBodyBottomTight,
+                    )
+                    .heightIn(max = 250.dp)
+                    .verticalScroll(rememberScrollState()),
+            ) {
+                Text(
+                    text = versionText,
+                    style = PclTextStyle.base(p).copy(
+                        fontSize = PclDimens.msgBodyFontSize.sp,
+                        color = p.color2,
+                    ),
+                )
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    text = bodyText,
+                    style = PclTextStyle.base(p).copy(
+                        fontSize = PclDimens.msgBodyFontSize.sp,
+                        lineHeight = PclDimens.msgBodyLineHeight.sp,
+                        color = MsgBodyColor,
+                    ),
+                )
+            }
+        }
+    }
+}
+
+/**
+ * 选择要下载哪一个安装包（多架构）。
+ *
+ * 直接复用 [PclSelectDialog]（`MyMsgSelect`）：条目就是各个 APK 的文件名，
+ * 选中即打开该资产的下载链接 —— 与本项目其它「选版本」弹窗的观感完全一致。
+ */
+@Composable
+fun PclUpgradeFilesDialog(
+    files: List<Pair<String, String>>,
+    onSelect: (uri: String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    PclSelectDialog(
+        title = "选择要下载的安装包",
+        options = files,
+        current = null,
+        onSelect = { id -> onSelect(id) },
+        onDismiss = onDismiss,
+    )
+}

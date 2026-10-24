@@ -63,6 +63,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
@@ -84,6 +85,17 @@ sealed interface LauncherUpgradeOperation {
 private const val LATEST_VERSION = "latest_version_md.json"
 private const val LATEST_API_URL = "$URL_PROJECT_INFO/$LATEST_VERSION"
 private const val LATEST_API_CHINESE_URL = "https://raw.githubusercontent.com/zuanxu53-hub/Zalith-PlainCraftLauncher/main/$LATEST_VERSION"
+/**
+ * 国内备用镜像：jsDelivr 的 GitHub 加速。
+ *
+ * `api.github.com` 与 `raw.githubusercontent.com` 在中国大陆都经常连不上，
+ * 只留它们两个时「检查更新」会直接失败（用户看到的就是「点了没反应」）。
+ * jsDelivr 走的是自家 CDN，同一份文件能正常取到。
+ */
+private const val LATEST_API_JSDELIVR_URL = "https://cdn.jsdelivr.net/gh/zuanxu53-hub/Zalith-PlainCraftLauncher@main/$LATEST_VERSION"
+
+/** 一次「检查更新」最多等这么久（毫秒）：超时就当失败，别让按钮一直转。 */
+private const val UPDATE_TIMEOUT_MS = 60_000L
 /** GitHub Releases 最新版本接口：动态拉取安装包资产，避免在 latest_version_md.json 里写死 files。 */
 private const val RELEASE_LATEST_URL = "https://api.github.com/repos/zuanxu53-hub/Zalith-PlainCraftLauncher/releases/latest"
 
@@ -157,10 +169,14 @@ class LauncherUpgradeViewModel: ViewModel() {
      * 用户在设置内手动点击检查更新
      * @param onInProgress 准备检查更新
      * @param onIsLatest 当前启动器是最新版
+     * @param onChecked 拿到远端数据后回调（null = 网络失败）。
+     *   PCL 界面用它区分「失败 / 已最新 / 有新版本」并弹出对应的 PCL 弹窗 ——
+     *   只看 Boolean 返回值分不清前两者，而那边没有 Toast 可以兜底。
      */
     suspend fun checkManually(
         onInProgress: suspend () -> Unit = {},
-        onIsLatest: suspend () -> Unit = {}
+        onIsLatest: suspend () -> Unit = {},
+        onChecked: suspend (RemoteData?) -> Unit = {},
     ): Boolean {
         return checkMutex.withLock {
             if (
@@ -185,41 +201,55 @@ class LauncherUpgradeViewModel: ViewModel() {
                 )
             }
             updateLastCheckTime()
+            onChecked(data)
             data != null
         }
     }
 
     /**
-     * 从远端获取最新的启动器信息
+     * 从远端获取最新的启动器信息。
+     *
+     * 整体套一层 60 秒超时：`GLOBAL_CLIENT` 单次请求 30 秒超时，主源 + 两个镜像源
+     * 各自还带重试，网络不通时能拖上好几分钟 —— 用户点完「检查更新」只会觉得死了。
      */
     private suspend fun fetchRemoteData(): RemoteData? {
         return withContext(Dispatchers.IO) {
-            runCatching {
-                withRetry(logTag = "LauncherUpgrade", maxRetries = 2) {
-                    //获取最新的启动器信息
-                    val api = GLOBAL_CLIENT.get(LATEST_API_URL).safeBodyAsJson<GithubContentApi>()
-                    //需要Base64解密
-                    val contentString = decodeBase64(api.content)
-                    GLOBAL_JSON.decodeFromString(RemoteData.serializer(), contentString)
-                        .let { it.copy(files = fetchReleaseAssets()) }
-                }
-            }.getOrElse { e ->
-                if (Locale.getDefault().language == "zh") {
-                    runCatching {
-                        Logger.info(TAG, "Check for updates in the Chinese region.")
-                        //在中国地区，可能因为无法访问 Github API 导致获取更新信息失败
-                        withRetry(logTag = "LauncherUpgrade_Chinese", maxRetries = 2) {
-                            GLOBAL_CLIENT.get(LATEST_API_CHINESE_URL).safeBodyAsJson<RemoteData>()
+            withTimeoutOrNull(UPDATE_TIMEOUT_MS) { fetchRemoteDataInner() }
+        }
+    }
+
+    private suspend fun fetchRemoteDataInner(): RemoteData? {
+        return runCatching {
+            withRetry(logTag = "LauncherUpgrade", maxRetries = 2) {
+                //获取最新的启动器信息
+                val api = GLOBAL_CLIENT.get(LATEST_API_URL).safeBodyAsJson<GithubContentApi>()
+                //需要Base64解密
+                val contentString = decodeBase64(api.content)
+                GLOBAL_JSON.decodeFromString(RemoteData.serializer(), contentString)
+                    .let { it.copy(files = fetchReleaseAssets()) }
+            }
+        }.getOrElse { e ->
+            if (Locale.getDefault().language == "zh") {
+                // 国内依次试 raw.githubusercontent → jsDelivr，任一成功即可。
+                // 镜像源只重试一次：再失败就该立刻把「连不上」告诉他，而不是继续等。
+                var result: RemoteData? = null
+                for (url in listOf(LATEST_API_CHINESE_URL, LATEST_API_JSDELIVR_URL)) {
+                    result = runCatching {
+                        Logger.info(TAG, "Check for updates via mirror: $url")
+                        withRetry(logTag = "LauncherUpgrade_Chinese", maxRetries = 1) {
+                            GLOBAL_CLIENT.get(url).safeBodyAsJson<RemoteData>()
                                 .let { it.copy(files = fetchReleaseAssets()) }
                         }
-                    }.getOrElse { e ->
-                        Logger.warning(TAG, "Failed to check for launcher upgrade!", e)
-                        null
-                    }
-                } else {
-                    Logger.warning(TAG, "Failed to check for launcher upgrade!", e)
-                    null
+                    }.getOrNull()
+                    if (result != null) break
                 }
+                if (result == null) {
+                    Logger.warning(TAG, "Failed to check for launcher upgrade!", e)
+                }
+                result
+            } else {
+                Logger.warning(TAG, "Failed to check for launcher upgrade!", e)
+                null
             }
         }
     }
