@@ -1509,44 +1509,30 @@ private fun PclLocalPresetHome(
     reloadToken: Int,
     onRefresh: () -> Unit,
 ) {
-    val p = pclPalette
     val isEcho = preset.id == 1
     // 每次刷新换一条随机内容（对应 PCL 的 {hint} / {cave} 占位符随机替换）；
     // 优先联网抓官网已审核文案，抓不到回退本地。
     val text = rememberRemoteText(if (isEcho) "cave" else "hint", reloadToken)
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(32.dp)
-                .padding(horizontal = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            PclText(
-                text = "自定义主页",
-                color = p.gray2,
-                fontSize = 12,
-                modifier = Modifier.weight(1f),
-            )
-            PclTextButton(text = "刷新主页", onClick = onRefresh)
-        }
-        PclContent {
-            // 内置文案已删：官网没审核内容时「你知道吗」不再画空卡（回声洞有占位文案）
-            if (text.isNotBlank()) {
-                PclCard(
-                    modifier = Modifier.fillMaxWidth(),
-                    title = if (isEcho) "回声洞" else "你知道吗？",
-                    contentPadding = PaddingValues(start = 25.dp, top = 40.dp, end = 23.dp, bottom = 15.dp),
-                    titleAccessory = {
-                        PclTextButton(text = "刷新", onClick = onRefresh)
-                    },
-                ) {
-                    PclText(text = text)
-                }
+    // 原来的顶部条（「自定义主页 / 刷新主页」）已整行删除，卡片右上角的「刷新」按钮也去掉了；
+    // 换一条的方式改成**直接点正文文字**，少两层视觉噪音。
+    PclContent {
+        // 内置文案已删：官网没审核内容时「你知道吗」不再画空卡（回声洞有占位文案）
+        if (text.isNotBlank()) {
+            PclCard(
+                modifier = Modifier.fillMaxWidth(),
+                title = if (isEcho) "回声洞" else "你知道吗？",
+                contentPadding = PaddingValues(start = 25.dp, top = 40.dp, end = 23.dp, bottom = 15.dp),
+            ) {
+                PclText(
+                    text = text,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onRefresh() },
+                )
             }
-            com.movtery.zalithlauncher.ui.pcl2.components.PclBottomSpacer()
         }
+        com.movtery.zalithlauncher.ui.pcl2.components.PclBottomSpacer()
     }
 }
 
