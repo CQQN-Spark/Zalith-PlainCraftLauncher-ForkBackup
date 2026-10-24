@@ -1706,6 +1706,50 @@ private class PclAssetPage(
     val hint: String?,
 )
 
+/**
+ * 社区资源页的搜索现场（每个分栏一份）。
+ *
+ * **为什么需要它**：点进某个模组看详情是 `nav.push(详情页)`，右栏整块被替换，
+ * `PclDownloadResourcePage` 因此离开组合，里面所有 `remember` 一起作废 ——
+ * 表现就是「搜索关键词、筛选条件、结果列表全没了，返回后要重新搜一遍」。
+ * PCL 原版的页面对象是常驻的（WPF 的 `PageResource` 实例不销毁），不存在这个问题。
+ *
+ * 所以把这几项搬到这个文件级单例里：页面每次组合时从槽位读初值、改动直接写回槽位，
+ * 返回时自然接上原来的搜索现场。结果页（[PclAssetPage]）也一起缓存，
+ * 返回后不必再发一次请求，直接显示上次那一页。
+ */
+private class PclAssetSearchSlot {
+    // 直接用 `MutableState` 而不是 `by mutableStateOf`：调用点要 `var x by slot.x` 委托到它，
+    // 委托目标必须是 `MutableState<T>` 本身，不能是已经拆包出来的 `T`。
+    val source = mutableStateOf<Platform?>(null)
+    val keyword = mutableStateOf("")
+    val gameVersion = mutableStateOf<String?>(null)
+    val tag = mutableStateOf<PlatformFilterCode?>(null)
+    val sortField = mutableStateOf<PlatformSortField?>(null)
+    val modLoader = mutableStateOf<PlatformDisplayLabel?>(null)
+    val versionInput = mutableStateOf(false)
+    val page = mutableStateOf<PclAssetPage?>(null)
+    val pageIndex = mutableIntStateOf(0)
+
+    /** 上次真正发起搜索时的筛选条件；`null` = 这个分栏还没搜过。 */
+    val lastSearchedFilters = mutableStateOf<List<Any?>?>(null)
+
+    /**
+     * 已经响应过的左栏刷新令牌（普通字段，不参与重组）。
+     *
+     * `LaunchedEffect(refreshToken)` 在每次重新组合时都会先跑一遍，
+     * 不记一下的话「从详情页返回」会被当成点了刷新，又白搜一次。
+     * `-1` 表示还没对过号，首次组合只登记、不触发。
+     */
+    var refreshTokenSeen: Int = -1
+}
+
+private object PclAssetSearchMemory {
+    private val slots = HashMap<Int, PclAssetSearchSlot>()
+
+    fun of(section: Int): PclAssetSearchSlot = slots.getOrPut(section) { PclAssetSearchSlot() }
+}
+
 /** 对单个平台执行一次搜索并把结果包成 [Result]（`searchAssets` 是回调式接口）。 */
 private suspend fun pclSearchOnce(
     platform: Platform,
@@ -1788,14 +1832,19 @@ private fun PclDownloadResourcePage(nav: PclNavController, section: Int) {
     }
 
     // ---- 筛选状态（默认值与 PCL 搜索卡片一致：全部 / 全部 / 默认 / 任意 / 任意）
+    //
+    // 不放在 `remember` 里而是存进 [PclAssetSearchMemory]：点开源码里的模组详情是
+    // `nav.push`，本页会整块离开组合，`remember` 全部作废 → 搜索关键词被清空。
+    // 每个分栏各占一个槽位，切换分栏依然互不干扰。
     val sourceChoices = remember(classes) { pclSourceChoices(classes) }
-    var source by remember(classes) { mutableStateOf<Platform?>(null) }
-    var keyword by remember(classes) { mutableStateOf("") }
-    var gameVersion by remember(classes) { mutableStateOf<String?>(null) }
-    var tag by remember(classes) { mutableStateOf<PlatformFilterCode?>(null) }
-    var sortField by remember(classes) { mutableStateOf<PlatformSortField?>(null) }
-    var modLoader by remember(classes) { mutableStateOf<PlatformDisplayLabel?>(null) }
-    var versionInput by remember(classes) { mutableStateOf(false) }
+    val searchSlot = PclAssetSearchMemory.of(section)
+    var source by searchSlot.source
+    var keyword by searchSlot.keyword
+    var gameVersion by searchSlot.gameVersion
+    var tag by searchSlot.tag
+    var sortField by searchSlot.sortField
+    var modLoader by searchSlot.modLoader
+    var versionInput by searchSlot.versionInput
 
     // 标签 / 加载器候选跟着「来源」走；选「全部」时以 CurseForge 的分类为准
     // （下发时按平台换算，见 PlatformSearchFilter.pclForPlatform）。
@@ -1812,10 +1861,12 @@ private fun PclDownloadResourcePage(nav: PclNavController, section: Int) {
     }
 
     // ---- 结果状态
+    // loading / error 是纯瞬态，保持 `remember`；结果页与页码跟着槽位走，
+    // 返回时直接复用上次的列表，不再白搜一次。
     var loading by remember(classes) { mutableStateOf(false) }
     var error by remember(classes) { mutableStateOf<String?>(null) }
-    var page by remember(classes) { mutableStateOf<PclAssetPage?>(null) }
-    var pageIndex by remember(classes) { mutableStateOf(0) }
+    var page by searchSlot.page
+    var pageIndex by searchSlot.pageIndex
     var pendingPick by remember { mutableStateOf<PendingAssetPick?>(null) }
     // 筛选条件变化会自动重搜，连着切几下就会有多个请求同时在路上。
     // 这里用一个递增序号做「后来者居上」：只有最后一次请求允许写回结果与 loading，
@@ -1875,9 +1926,13 @@ private fun PclDownloadResourcePage(nav: PclNavController, section: Int) {
         if (page == null && !loading) search(0)
     }
 
-    // 左栏刷新按钮 → 已有结果则重新搜索
+    // 左栏刷新按钮 → 已有结果则重新搜索。
+    // `LaunchedEffect` 在页面重新组合时也会先跑一遍，「从模组详情页返回」正好属于这种，
+    // 那不是用户点了刷新，所以先拿令牌对一次号（`refreshTokenSeen`）再决定要不要搜。
     LaunchedEffect(refreshToken) {
-        if (page != null) search(pageIndex)
+        val seen = searchSlot.refreshTokenSeen
+        searchSlot.refreshTokenSeen = refreshToken
+        if (seen >= 0 && seen != refreshToken && page != null) search(pageIndex)
     }
 
     // ---- 筛选条件一变就重搜（来源 / 标签 / 排序方式 / 版本 / 加载器）
@@ -1893,14 +1948,14 @@ private fun PclDownloadResourcePage(nav: PclNavController, section: Int) {
     // 注意 `keyword`（搜索框文字）不在此列：它是边打边变的，仍按原版走
     // 「点搜索按钮 / 键盘回车」，否则每敲一个字都会发一次请求。
     val filterKey = listOf<Any?>(source, tag, sortField, gameVersion, modLoader)
-    // 初值直接取当前筛选条件，于是首次组合时 `filterKey == lastSearchedFilters`，
-    // 不会多发一次请求（首屏那一次由上面的 `LaunchedEffect(classes)` 负责）。
-    // 切换分栏时 `remember(classes)` 会把它重置成新分栏的默认值，同样不会重复；
-    // 同值重选（`PclComboBox` 的 `onSelect` 是无条件回调）也因为 key 没变而不触发。
-    var lastSearchedFilters by remember(classes) { mutableStateOf(filterKey) }
+    // 上次真正发起搜索时的条件，存在槽位里：返回页面时它跟当前条件一致，
+    // 于是不会把「从详情页回来」错当成「刚改了筛选」再搜一次。
+    // `null` = 这个分栏还没搜过，首次组合只登记、不触发（首屏那次由上面的 `LaunchedEffect(classes)` 负责）。
+    var lastSearchedFilters by searchSlot.lastSearchedFilters
     LaunchedEffect(filterKey) {
-        if (filterKey == lastSearchedFilters) return@LaunchedEffect
+        val previous = lastSearchedFilters
         lastSearchedFilters = filterKey
+        if (previous == null || filterKey == previous) return@LaunchedEffect
         search(0)
     }
 
