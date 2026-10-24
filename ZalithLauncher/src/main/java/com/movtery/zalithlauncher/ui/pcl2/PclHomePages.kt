@@ -318,13 +318,16 @@ private fun ColumnScope.PclHomeLaunching(runtime: PclRuntime) {
                 color = p.gray2,
                 modifier = Modifier.align(Alignment.CenterHorizontally),
             )
-            Spacer(Modifier.height(5.dp))
-            Text(
-                text = tip,
-                fontSize = 12.5.sp,
-                color = p.color1,
-                lineHeight = 18.sp,
-            )
+            // 内置提示文案已删：官网没给内容时不留空行
+            if (tip.isNotBlank()) {
+                Spacer(Modifier.height(5.dp))
+                Text(
+                    text = tip,
+                    fontSize = 12.5.sp,
+                    color = p.color1,
+                    lineHeight = 18.sp,
+                )
+            }
         }
 
         Spacer(Modifier.weight(1f))
@@ -1428,16 +1431,17 @@ fun PclHomeRight(nav: PclNavController) {
         }
 
         // PanCustom（自定义主页）
-        PclCard(modifier = Modifier.fillMaxWidth(),
-            title = "你知道吗？",
-            contentPadding = PaddingValues(start = 25.dp, top = 40.dp, end = 23.dp, bottom = 15.dp),
-        ) {
-            PclText(
-                text = "这个界面由 PCL2 的原始 XAML 逐项还原而来，但它连接的是 ZalithLauncher " +
-                    "的真实内核：版本扫描、账号系统、下载器、JVM 启动流程全部原样复用，不是演示界面。",
-            )
+        // 「你知道吗」的内置文案已删除：只显示官网审核通过的文案，拉不到就整张卡不画。
+        val homeHint = rememberRemoteText("hint")
+        if (homeHint.isNotBlank()) {
+            PclCard(modifier = Modifier.fillMaxWidth(),
+                title = "你知道吗？",
+                contentPadding = PaddingValues(start = 25.dp, top = 40.dp, end = 23.dp, bottom = 15.dp),
+            ) {
+                PclText(text = homeHint)
+            }
+            Spacer(Modifier.height(15.dp))
         }
-        Spacer(Modifier.height(15.dp))
 
         // PanLog（启动日志卡片）
         PclCard(modifier = Modifier.fillMaxWidth(),
@@ -1528,15 +1532,18 @@ private fun PclLocalPresetHome(
             PclTextButton(text = "刷新主页", onClick = onRefresh)
         }
         PclContent {
-            PclCard(
-                modifier = Modifier.fillMaxWidth(),
-                title = if (isEcho) "回声洞" else "你知道吗？",
-                contentPadding = PaddingValues(start = 25.dp, top = 40.dp, end = 23.dp, bottom = 15.dp),
-                titleAccessory = {
-                    PclTextButton(text = "刷新", onClick = onRefresh)
-                },
-            ) {
-                PclText(text = text)
+            // 内置文案已删：官网没审核内容时「你知道吗」不再画空卡（回声洞有占位文案）
+            if (text.isNotBlank()) {
+                PclCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    title = if (isEcho) "回声洞" else "你知道吗？",
+                    contentPadding = PaddingValues(start = 25.dp, top = 40.dp, end = 23.dp, bottom = 15.dp),
+                    titleAccessory = {
+                        PclTextButton(text = "刷新", onClick = onRefresh)
+                    },
+                ) {
+                    PclText(text = text)
+                }
             }
             com.movtery.zalithlauncher.ui.pcl2.components.PclBottomSpacer()
         }

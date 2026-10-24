@@ -77,6 +77,8 @@ object PclHomeLoader {
             // 再走同一条转换链路，保证视觉一致。文案优先联网抓官网审核内容，失败回退本地。
             val type = if (entry.id == 1) "cave" else "hint"
             val text = PclRemoteContent.randomBlocking(type) ?: PclHomePresets.randomLocal(type)
+            // 内置文案已删：官网也没给出内容时，这张卡干脆不画（避免一张空卡片）
+            if (text.isBlank()) return null
             val title = if (entry.id == 1) "回声洞" else "你知道吗？"
             val xaml = "<local:MyCard Title=\"$title\">" +
                     "<TextBlock Margin=\"20,4,20,10\" FontSize=\"13.5\" Text=\"${escapeXml(text)}\" TextWrapping=\"Wrap\"/>" +
