@@ -131,13 +131,38 @@ fun GameMenuSubscreen(
             }
 
             Column {
-                //顶贴标签栏（PCL 风格：未选中 ColorBrush2、选中 ColorBrush3 + 3px 下划线）
-                PclMenuTabRow(
-                    tabIcons = controlTabs.map { it.iconRes },
-                    tabIconSizes = controlTabs.map { it.iconSize },
-                    selectedIndex = controlMenuTabIndex,
-                    onSelect = onControlMenuTabChange,
-                )
+                //顶贴标签栏：界面风格跟着启动器的「界面风格」设置走
+                if (AllSettings.usePcl2Ui.state) {
+                    //PCL 风格：未选中 ColorBrush2、选中 ColorBrush3 + 3px 下划线
+                    PclMenuTabRow(
+                        tabIcons = controlTabs.map { it.iconRes },
+                        tabIconSizes = controlTabs.map { it.iconSize },
+                        selectedIndex = controlMenuTabIndex,
+                        onSelect = onControlMenuTabChange,
+                    )
+                } else {
+                    //原生 ZL 风格：Material 的可滚动标签栏
+                    SecondaryScrollableTabRow(
+                        selectedTabIndex = controlMenuTabIndex,
+                        edgePadding = 0.dp,
+                        minTabWidth = 58.dp,
+                        containerColor = cardTitleColor(),
+                    ) {
+                        controlTabs.forEachIndexed { index, iconTab ->
+                            Tab(
+                                selected = index == controlMenuTabIndex,
+                                onClick = { onControlMenuTabChange(index) },
+                                icon = {
+                                    Icon(
+                                        modifier = Modifier.size(iconTab.iconSize),
+                                        painter = painterResource(iconTab.iconRes),
+                                        contentDescription = null
+                                    )
+                                }
+                            )
+                        }
+                    }
+                }
 
                 HorizontalPager(
                     state = pagerState,
@@ -168,7 +193,15 @@ fun GameMenuSubscreen(
                 }
             }
         },
-        //标题交给 PCL 卡片统一渲染（原来是调用处自带 Material 字体的 Text）
+        //原生界面的标题（PCL 界面下这个参数不生效，走下面的 rightTitle）
+        rightMenuTitle = {
+            Text(
+                modifier = Modifier.padding(all = 8.dp),
+                text = stringResource(R.string.game_menu_title),
+                style = MaterialTheme.typography.titleMedium
+            )
+        },
+        //标题交给 PCL 卡片统一渲染（仅在 PCL 界面下生效）
         rightTitle = stringResource(R.string.game_menu_title),
         rightMenuContent = {
             GameActionContent(

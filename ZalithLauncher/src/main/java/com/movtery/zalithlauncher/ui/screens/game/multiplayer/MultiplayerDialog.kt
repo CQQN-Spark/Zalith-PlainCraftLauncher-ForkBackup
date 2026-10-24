@@ -27,11 +27,14 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
@@ -60,12 +63,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.movtery.zalithlauncher.R
+import com.movtery.zalithlauncher.setting.AllSettings
 import com.movtery.zalithlauncher.terracotta.TerracottaState
 import com.movtery.zalithlauncher.terracotta.profile.TerracottaProfile
 import com.movtery.zalithlauncher.ui.AndroidStringText
@@ -73,6 +79,13 @@ import com.movtery.zalithlauncher.ui.components.BackgroundCard
 import com.movtery.zalithlauncher.ui.components.MarqueeText
 import com.movtery.zalithlauncher.ui.components.rememberDialogMaxHeight
 import com.movtery.zalithlauncher.ui.components.verticalScrollWithBar
+import com.movtery.zalithlauncher.ui.pcl2.components.PclCard
+import com.movtery.zalithlauncher.ui.pcl2.components.PclLoadingPickaxe
+import com.movtery.zalithlauncher.ui.pcl2.components.PclMenuSurface
+import com.movtery.zalithlauncher.ui.pcl2.components.PclSplitLine
+import com.movtery.zalithlauncher.ui.pcl2.components.PclTextButton
+import com.movtery.zalithlauncher.ui.pcl2.theme.PclTextStyle
+import com.movtery.zalithlauncher.ui.pcl2.theme.pclPalette
 import com.movtery.zalithlauncher.ui.theme.cardColor
 import com.movtery.zalithlauncher.ui.theme.itemColor
 import com.movtery.zalithlauncher.ui.theme.onCardColor
@@ -136,25 +149,28 @@ fun MultiplayerDialog(
                 .fillMaxHeight(),
             contentAlignment = Alignment.Center
         ) {
-            Surface(
+            //界面风格跟着启动器的「界面风格」设置走
+            val pcl = AllSettings.usePcl2Ui.state
+            MpDialogFrame(
+                pcl = pcl,
+                title = stringResource(R.string.terracotta_menu),
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(all = 6.dp)
                     .heightIn(max = (maxHeight - 12.dp).coerceAtMost(rememberDialogMaxHeight()))
                     .wrapContentHeight(),
-                shape = MaterialTheme.shapes.extraLarge,
-                color = cardColor(false),
-                contentColor = onCardColor(),
-                shadowElevation = 6.dp
             ) {
                 Column(
-                    modifier = Modifier.padding(all = 16.dp),
+                    //PCL 卡片的标题与内边距由卡片自己给，这里不再额外包一层 16dp
+                    modifier = if (pcl) Modifier else Modifier.padding(all = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Text(
-                        text = stringResource(R.string.terracotta_menu),
-                        style = MaterialTheme.typography.titleLarge
-                    )
+                    if (!pcl) {
+                        Text(
+                            text = stringResource(R.string.terracotta_menu),
+                            style = MaterialTheme.typography.titleLarge
+                        )
+                    }
 
                     val commonModifier = Modifier
                         .weight(1f, fill = false)
@@ -168,7 +184,7 @@ fun MultiplayerDialog(
                                         modifier = commonModifier,
                                         contentAlignment = Alignment.Center
                                     ) {
-                                        LoadingIndicator()
+                                        if (pcl) PclLoadingPickaxe() else LoadingIndicator()
                                     }
                                 }
                                 is TerracottaState.Waiting -> {
@@ -187,7 +203,7 @@ fun MultiplayerDialog(
                                         text = {
                                             Text(
                                                 text = stringResource(R.string.terracotta_status_host_scanning_desc),
-                                                style = MaterialTheme.typography.labelMedium
+                                                style = mpTextStyle(MaterialTheme.typography.labelMedium, PclTextStyle.listInfo(pclPalette))
                                             )
                                         },
                                         backDescription = stringResource(R.string.terracotta_status_host_scanning_back),
@@ -277,32 +293,49 @@ fun MultiplayerDialog(
                             val easyTierVer0 = easyTierVer ?: stringResource(R.string.generic_loading)
                             Text(
                                 text = stringResource(R.string.terracotta_metadata_ver, terracottaVer0),
-                                style = MaterialTheme.typography.labelMedium
+                                style = mpTextStyle(MaterialTheme.typography.labelMedium, PclTextStyle.listInfo(pclPalette))
                             )
                             Text(
                                 text = stringResource(R.string.terracotta_metadata_easytier_ver, easyTierVer0),
-                                style = MaterialTheme.typography.labelMedium
+                                style = mpTextStyle(MaterialTheme.typography.labelMedium, PclTextStyle.listInfo(pclPalette))
                             )
                         }
 
                         //查看日志
-                        TextButton(
-                            onClick = onShowLog,
-                            enabled = logOperation !is TerracottaLogOperation.CollectingLog
-                        ) {
-                            if (logOperation is TerracottaLogOperation.EnableLog) {
-                                //切换文字到 -> 刷新
-                                Text(text = stringResource(R.string.generic_refresh))
-                            } else {
-                                Text(text = stringResource(R.string.terracotta_log))
-                            }
+                        val logLabel = if (logOperation is TerracottaLogOperation.EnableLog) {
+                            //切换文字到 -> 刷新
+                            stringResource(R.string.generic_refresh)
+                        } else {
+                            stringResource(R.string.terracotta_log)
                         }
+                        val logEnabled = logOperation !is TerracottaLogOperation.CollectingLog
+                        val closeLabel = stringResource(R.string.generic_close)
 
-                        //关闭
-                        TextButton(
-                            onClick = onClose
-                        ) {
-                            Text(text = stringResource(R.string.generic_close))
+                        if (pcl) {
+                            PclTextButton(
+                                text = logLabel,
+                                enabled = logEnabled,
+                                onClick = onShowLog,
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            PclTextButton(
+                                text = closeLabel,
+                                onClick = onClose,
+                            )
+                        } else {
+                            TextButton(
+                                onClick = onShowLog,
+                                enabled = logEnabled
+                            ) {
+                                Text(text = logLabel)
+                            }
+
+                            //关闭
+                            TextButton(
+                                onClick = onClose
+                            ) {
+                                Text(text = closeLabel)
+                            }
                         }
                     }
                 }
@@ -359,7 +392,7 @@ private fun WaitingUI(
 
         //禁止交互时，提示用户正在加载中
         if (!isInteractive) {
-            LoadingIndicator()
+            if (AllSettings.usePcl2Ui.state) PclLoadingPickaxe() else LoadingIndicator()
         }
     }
 
@@ -423,7 +456,7 @@ private fun GuestStartingUI(
                                 .fillMaxWidth()
                                 .alpha(0.7f),
                             text = stringResource(R.string.terracotta_difficulty_estimate_only),
-                            style = MaterialTheme.typography.bodySmall
+                            style = mpTextStyle(MaterialTheme.typography.bodySmall, PclTextStyle.listInfo(pclPalette))
                         )
                     }
                 }
@@ -477,14 +510,14 @@ private fun OkRoomUI(
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 Text(text = okText)
-                HorizontalDivider(modifier = Modifier.fillMaxWidth())
+                MpDivider(modifier = Modifier.fillMaxWidth())
                 Text(
                     text = codeLabel,
-                    style = MaterialTheme.typography.labelMedium
+                    style = mpTextStyle(MaterialTheme.typography.labelMedium, PclTextStyle.listInfo(pclPalette))
                 )
                 Text(
                     text = code,
-                    style = MaterialTheme.typography.labelMedium
+                    style = mpTextStyle(MaterialTheme.typography.labelMedium, PclTextStyle.listInfo(pclPalette))
                 )
             }
             //按钮部分
@@ -533,7 +566,7 @@ private fun ProfileListPanel(
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         Text(text = title)
-        HorizontalDivider()
+        MpDivider()
 
         val scrollState = rememberLazyListState()
         LazyColumn(
@@ -575,7 +608,7 @@ private fun TerracottaProfileLayout(
         MarqueeText(
             modifier = Modifier.alpha(0.7f),
             text = profile.vendor,
-            style = MaterialTheme.typography.labelSmall
+            style = mpTextStyle(MaterialTheme.typography.labelSmall, PclTextStyle.listInfo(pclPalette))
         )
     }
 }
@@ -602,10 +635,10 @@ private fun ExceptionUI(
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             Text(text = title)
-            HorizontalDivider(modifier = Modifier.fillMaxWidth())
+            MpDivider(modifier = Modifier.fillMaxWidth())
             Text(
                 text = stringResource(R.string.terracotta_export_log),
-                style = MaterialTheme.typography.labelMedium
+                style = mpTextStyle(MaterialTheme.typography.labelMedium, PclTextStyle.listInfo(pclPalette))
             )
         }
         //退出按钮
@@ -700,6 +733,43 @@ private fun SimpleCardButton(
     onClick: () -> Unit,
     enabled: Boolean = true
 ) {
+    if (AllSettings.usePcl2Ui.state) {
+        //PCL 界面：`MyListItem` 的观感（透明底 + 指向浮层），不用 M3 的卡片
+        PclMenuSurface(
+            modifier = modifier,
+            enabled = enabled,
+            radius = 6.dp,
+            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
+            onClick = onClick,
+        ) {
+            Icon(
+                modifier = Modifier.size(18.dp),
+                painter = icon,
+                contentDescription = title,
+                tint = pclPalette.color2,
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                //标题
+                Text(
+                    modifier = Modifier.fillMaxWidth(),
+                    text = title,
+                    style = PclTextStyle.listTitle(pclPalette)
+                )
+                //描述
+                Text(
+                    modifier = Modifier.fillMaxWidth(),
+                    text = description,
+                    style = PclTextStyle.listInfo(pclPalette)
+                )
+            }
+        }
+        return
+    }
+
     BackgroundCard(
         modifier = modifier,
         influencedByBackground = false,
@@ -731,7 +801,7 @@ private fun SimpleCardButton(
                 Text(
                     modifier = Modifier.fillMaxWidth(),
                     text = title,
-                    style = MaterialTheme.typography.titleMedium
+                    style = mpTextStyle(MaterialTheme.typography.titleMedium, PclTextStyle.listTitle(pclPalette))
                 )
                 //描述
                 Text(
@@ -739,7 +809,7 @@ private fun SimpleCardButton(
                         .fillMaxWidth()
                         .alpha(0.7f),
                     text = description,
-                    style = MaterialTheme.typography.bodySmall
+                    style = mpTextStyle(MaterialTheme.typography.bodySmall, PclTextStyle.listInfo(pclPalette))
                 )
             }
         }
@@ -757,6 +827,41 @@ private fun SimpleRowButton(
     description: String,
     onClick: () -> Unit
 ) {
+    if (AllSettings.usePcl2Ui.state) {
+        PclMenuSurface(
+            modifier = modifier,
+            radius = 6.dp,
+            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
+            onClick = onClick,
+        ) {
+            Icon(
+                modifier = Modifier.size(16.dp),
+                painter = icon,
+                contentDescription = title,
+                tint = pclPalette.color2,
+            )
+            Spacer(modifier = Modifier.width(10.dp))
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                Text(
+                    modifier = Modifier.fillMaxWidth(),
+                    text = title,
+                    style = PclTextStyle.listTitle(pclPalette)
+                )
+                Text(
+                    modifier = Modifier.fillMaxWidth(),
+                    text = description,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    style = PclTextStyle.listInfo(pclPalette)
+                )
+            }
+        }
+        return
+    }
+
     Row(
         modifier = modifier
             .clickable(onClick = onClick)
@@ -778,7 +883,7 @@ private fun SimpleRowButton(
             Text(
                 modifier = Modifier.fillMaxWidth(),
                 text = title,
-                style = MaterialTheme.typography.titleSmall
+                style = mpTextStyle(MaterialTheme.typography.titleSmall, PclTextStyle.listTitle(pclPalette))
             )
             //描述
             MarqueeText(
@@ -786,8 +891,65 @@ private fun SimpleRowButton(
                     .fillMaxWidth()
                     .alpha(0.7f),
                 text = description,
-                style = MaterialTheme.typography.bodySmall
+                style = mpTextStyle(MaterialTheme.typography.bodySmall, PclTextStyle.listInfo(pclPalette))
             )
         }
+    }
+}
+
+/* ============================================================================
+ *  界面风格分流小工具
+ * ==========================================================================*/
+
+/**
+ * PCL 界面下走 PCL 的字体，原生界面下沿用 M3 的 Typography。
+ */
+@Composable
+private fun mpTextStyle(m3: TextStyle, pcl: TextStyle): TextStyle =
+    if (AllSettings.usePcl2Ui.state) pcl else m3
+
+/**
+ * 对话框外壳。
+ *
+ * PCL 界面下是 `MyCard`（白色圆角 5 + 卡片标题 + 标题下方的内边距）；
+ * 原生界面下还是原来那张 M3 的 `Surface`。
+ */
+@Composable
+private fun MpDialogFrame(
+    pcl: Boolean,
+    title: String,
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    if (pcl) {
+        PclCard(
+            title = title,
+            modifier = modifier,
+            hasMouseAnimation = false,
+            content = content,
+        )
+    } else {
+        Surface(
+            modifier = modifier,
+            shape = MaterialTheme.shapes.extraLarge,
+            color = cardColor(false),
+            contentColor = onCardColor(),
+            shadowElevation = 6.dp
+        ) {
+            //content 是 ColumnScope 的扩展，这里补一个 Column 当接收者
+            Column(modifier = Modifier.fillMaxWidth()) {
+                content()
+            }
+        }
+    }
+}
+
+/** 分隔线：PCL 用两端渐隐的主题色细线，原生界面用 M3 的 `HorizontalDivider`。 */
+@Composable
+private fun MpDivider(modifier: Modifier = Modifier) {
+    if (AllSettings.usePcl2Ui.state) {
+        PclSplitLine(modifier = modifier)
+    } else {
+        HorizontalDivider(modifier = modifier)
     }
 }

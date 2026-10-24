@@ -19,6 +19,7 @@
 package com.movtery.zalithlauncher.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
@@ -29,19 +30,14 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.horizontalScroll
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SliderColors
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
@@ -57,14 +53,20 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.movtery.zalithlauncher.setting.AllSettings
 import com.movtery.zalithlauncher.ui.pcl2.components.PclMenuCheckRow
 import com.movtery.zalithlauncher.ui.pcl2.components.PclMenuComboRow
 import com.movtery.zalithlauncher.ui.pcl2.components.PclMenuPanel
+import com.movtery.zalithlauncher.ui.pcl2.components.PclMenuPanels
 import com.movtery.zalithlauncher.ui.pcl2.components.PclMenuRow
 import com.movtery.zalithlauncher.ui.pcl2.components.PclMenuSliderRow
+import com.movtery.zalithlauncher.ui.pcl2.components.PclMenuSurface
 import com.movtery.zalithlauncher.ui.pcl2.components.PclSlider
+import com.movtery.zalithlauncher.ui.pcl2.theme.PclMotion
 import com.movtery.zalithlauncher.ui.pcl2.theme.PclTextStyle
 import com.movtery.zalithlauncher.ui.pcl2.theme.pclPalette
+import com.movtery.zalithlauncher.ui.theme.itemColor
+import com.movtery.zalithlauncher.ui.theme.onItemColor
 import java.text.DecimalFormat
 
 /**
@@ -96,16 +98,19 @@ enum class MenuState {
 }
 
 /* ============================================================================
- *  版式说明
+ *  样式分流
  *
- *  这里原来是 Material 3 的一套（圆角 21 的浮层、48 高灰底居中标题条、
- *  `MaterialTheme.colorScheme` 驱动的行底色、M3 Switch）。游戏内悬浮窗菜单是
- *  玩家会看到的主要界面之一，而 PCL 界面里没有任何一处长这样，所以整层换成
- *  PCL2 的控件观感：
- *    · 浮层  = `MyCard`（圆角 5、影子 3、底色 `#F5FFFFFF`、标题 13 号加粗在 (15,12)）；
- *    · 行    = `MyListItem` 的指向态（`ColorBrush7 @ alpha 190` + 1px `ColorBrush6` 边框）；
- *    · 开关  = `MyCheckBox`；下拉 = `MyComboBox`；滑杆 = `MySlider`。
- *  **所有函数签名保持不变**，调用点（`GameMenuSubscreen`）一行都不用改。
+ *  游戏内悬浮菜单曾被整体改成 PCL2 观感，但启动器可以在「设置 → 启动 →
+ *  界面风格」里切回原生 ZL 界面 —— 那时候菜单还是 PCL 样子就很割裂。
+ *  所以这里每个函数都变成「分流器」：
+ *
+ *    · `AllSettings.usePcl2Ui == true`  → PCL2 控件（圆角 5 卡片 + MyListItem 行，
+ *      实现在本文件下半部分，前缀 `Pcl`）；
+ *    · `AllSettings.usePcl2Ui == false` → 上游原生 Material 实现（`MenuZl.kt`，
+ *      前缀 `Zl`）。
+ *
+ *  默认参数一律沿用上游写法（`MaterialTheme.shapes.large` / `itemColor()`），
+ *  因为 PCL 分支本来就忽略 shape / color / contentColor，只有 ZL 分支会用它们。
  * ==========================================================================*/
 
 /**
@@ -115,9 +120,372 @@ enum class MenuState {
 fun MenuSubscreen(
     state: MenuState,
     closeScreen: () -> Unit,
-    shape: Shape = androidx.compose.foundation.shape.RoundedCornerShape(5.dp),
+    shape: Shape = MaterialTheme.shapes.large,
     backgroundColor: Color = Color.Black.copy(alpha = 0.25f),
     content: @Composable ColumnScope.() -> Unit
+) {
+    if (AllSettings.usePcl2Ui.state) {
+        PclMenuSubscreen(
+            state = state,
+            closeScreen = closeScreen,
+            backgroundColor = backgroundColor,
+            content = content,
+        )
+    } else {
+        ZlMenuSubscreen(
+            state = state,
+            closeScreen = closeScreen,
+            shape = shape,
+            backgroundColor = backgroundColor,
+            content = content,
+        )
+    }
+}
+
+/**
+ * 左右两块菜单浮层。
+ *
+ * @param leftTitle  PCL 卡片标题（仅在 PCL2 界面下生效）。为 null 时左栏不占标题位
+ *                   （例如游戏内菜单的左栏自带图标标签栏）。
+ * @param rightTitle PCL 卡片标题（仅在 PCL2 界面下生效）。
+ * @param leftMenuTitle  原生界面的左栏标题布局，`AllSettings.usePcl2Ui == false` 时使用。
+ * @param rightMenuTitle 原生界面的右栏标题布局，同上。
+ *
+ * 两套标题参数并存，是为了同一处调用点能同时喂给两种界面风格。
+ */
+@Composable
+fun DualMenuSubscreen(
+    state: MenuState,
+    closeScreen: () -> Unit,
+    shape: Shape = MaterialTheme.shapes.large,
+    backgroundColor: Color = Color.Black.copy(alpha = 0.25f),
+    titleHeight: Dp = 48.dp,
+    leftMenuTitle: (@Composable BoxScope.() -> Unit)? = null,
+    leftMenuContent: @Composable ColumnScope.() -> Unit = {},
+    rightMenuTitle: (@Composable BoxScope.() -> Unit)? = null,
+    rightMenuContent: @Composable ColumnScope.() -> Unit = {},
+    leftTitle: String? = null,
+    rightTitle: String? = null,
+) {
+    if (AllSettings.usePcl2Ui.state) {
+        PclMenuPanels(
+            visible = state == MenuState.SHOW,
+            onClose = closeScreen,
+            leftTitle = leftTitle,
+            leftContent = leftMenuContent,
+            rightTitle = rightTitle,
+            rightContent = rightMenuContent,
+        )
+    } else {
+        ZlDualMenuSubscreen(
+            state = state,
+            closeScreen = closeScreen,
+            shape = shape,
+            backgroundColor = backgroundColor,
+            titleHeight = titleHeight,
+            leftMenuTitle = leftMenuTitle,
+            leftMenuContent = leftMenuContent,
+            rightMenuTitle = rightMenuTitle,
+            rightMenuContent = rightMenuContent,
+        )
+    }
+}
+
+/* ============================================================================
+ *  行
+ * ==========================================================================*/
+
+/**
+ * 一行菜单文字。
+ *
+ * [appendLayout] 是行尾附加物，直接摆在文字右侧。
+ */
+@Composable
+fun MenuTextButton(
+    modifier: Modifier = Modifier,
+    text: String,
+    enabled: Boolean = true,
+    influencedByBackground: Boolean = false,
+    shape: Shape = MaterialTheme.shapes.large,
+    color: Color = itemColor(influencedByBackground),
+    contentColor: Color = onItemColor(),
+    appendLayout: (@Composable () -> Unit)? = null,
+    onClick: () -> Unit = {}
+) {
+    if (AllSettings.usePcl2Ui.state) {
+        PclMenuTextButton(
+            modifier = modifier,
+            text = text,
+            enabled = enabled,
+            appendLayout = appendLayout,
+            onClick = onClick,
+        )
+    } else {
+        ZlMenuTextButton(
+            modifier = modifier,
+            text = text,
+            enabled = enabled,
+            influencedByBackground = influencedByBackground,
+            shape = shape,
+            color = color,
+            contentColor = contentColor,
+            appendLayout = appendLayout,
+            onClick = onClick,
+        )
+    }
+}
+
+/**
+ * 一行带开关的菜单项。
+ *
+ * `onSwitch` 收到的是**切换后**的值。
+ */
+@Composable
+fun MenuSwitchButton(
+    modifier: Modifier = Modifier,
+    text: String,
+    switch: Boolean,
+    onSwitch: (Boolean) -> Unit,
+    enabled: Boolean = true,
+    influencedByBackground: Boolean = false,
+    shape: Shape = MaterialTheme.shapes.large,
+    color: Color = itemColor(influencedByBackground),
+    contentColor: Color = onItemColor(),
+) {
+    if (AllSettings.usePcl2Ui.state) {
+        PclMenuSwitchButton(
+            modifier = modifier,
+            text = text,
+            switch = switch,
+            onSwitch = onSwitch,
+            enabled = enabled,
+        )
+    } else {
+        ZlMenuSwitchButton(
+            modifier = modifier,
+            text = text,
+            switch = switch,
+            onSwitch = onSwitch,
+            enabled = enabled,
+            influencedByBackground = influencedByBackground,
+            shape = shape,
+            color = color,
+            contentColor = contentColor,
+        )
+    }
+}
+
+/**
+ * 一行「标题 + 下拉」。
+ *
+ * PCL 界面下是下拉框（`MyComboBox`）；原生界面下是就地展开的 RadioButton 列表。
+ */
+@Composable
+fun <E> MenuListLayout(
+    modifier: Modifier = Modifier,
+    title: String,
+    items: List<E>,
+    currentItem: E,
+    onItemChange: (E) -> Unit,
+    getItemText: @Composable (E) -> String,
+    selectedItemLayout: (@Composable ColumnScope.(E) -> Unit)? = null,
+    enabled: Boolean = true,
+    maxListHeight: Dp = 200.dp,
+    influencedByBackground: Boolean = false,
+    shape: Shape = MaterialTheme.shapes.large,
+    color: Color = itemColor(influencedByBackground),
+    contentColor: Color = onItemColor(),
+) {
+    if (AllSettings.usePcl2Ui.state) {
+        // `getItemText` 是 @Composable（要用 stringResource），不能塞进普通 lambda，
+        // 先在组合里把每个条目的文字算好。
+        val labels = items.associateWith { getItemText(it) }
+        PclMenuComboRow(
+            modifier = modifier,
+            label = title,
+            items = items,
+            selected = currentItem,
+            enabled = enabled,
+            labelOf = { labels[it] ?: it.toString() },
+            onSelect = onItemChange,
+        )
+    } else {
+        ZlMenuListLayout(
+            modifier = modifier,
+            title = title,
+            items = items,
+            currentItem = currentItem,
+            onItemChange = onItemChange,
+            getItemText = getItemText,
+            selectedItemLayout = selectedItemLayout,
+            enabled = enabled,
+            maxListHeight = maxListHeight,
+            influencedByBackground = influencedByBackground,
+            shape = shape,
+            color = color,
+            contentColor = contentColor,
+        )
+    }
+}
+
+/**
+ * 一行「标题 + 滑杆」（整数）。
+ */
+@Composable
+fun MenuSliderLayout(
+    modifier: Modifier = Modifier,
+    title: String,
+    value: Int,
+    onValueChange: (Int) -> Unit,
+    valueRange: ClosedFloatingPointRange<Float>,
+    enabled: Boolean = true,
+    onValueChangeFinished: (Int) -> Unit = {},
+    suffix: String? = null,
+    influencedByBackground: Boolean = false,
+    colors: SliderColors = SliderDefaults.colors(),
+    shape: Shape = MaterialTheme.shapes.large,
+    color: Color = itemColor(influencedByBackground),
+    contentColor: Color = onItemColor(),
+) {
+    if (AllSettings.usePcl2Ui.state) {
+        PclMenuSliderLayout(
+            modifier = modifier,
+            title = title,
+            value = value,
+            onValueChange = onValueChange,
+            valueRange = valueRange,
+            enabled = enabled,
+            onValueChangeFinished = onValueChangeFinished,
+            suffix = suffix,
+        )
+    } else {
+        ZlMenuSliderLayout(
+            modifier = modifier,
+            title = title,
+            value = value,
+            onValueChange = onValueChange,
+            valueRange = valueRange,
+            enabled = enabled,
+            onValueChangeFinished = onValueChangeFinished,
+            suffix = suffix,
+            influencedByBackground = influencedByBackground,
+            colors = colors,
+            shape = shape,
+            color = color,
+            contentColor = contentColor,
+        )
+    }
+}
+
+/**
+ * 一行「标题 + 滑杆」（小数）。
+ */
+@Composable
+fun MenuSliderLayout(
+    modifier: Modifier = Modifier,
+    title: String,
+    value: Float,
+    onValueChange: (Float) -> Unit,
+    valueRange: ClosedFloatingPointRange<Float>,
+    enabled: Boolean = true,
+    onValueChangeFinished: (Float) -> Unit = {},
+    suffix: String? = null,
+    decimalFormat: String = "#0.00",
+    influencedByBackground: Boolean = false,
+    colors: SliderColors = SliderDefaults.colors(),
+    shape: Shape = MaterialTheme.shapes.large,
+    color: Color = itemColor(influencedByBackground),
+    contentColor: Color = onItemColor(),
+) {
+    if (AllSettings.usePcl2Ui.state) {
+        PclMenuSliderLayout(
+            modifier = modifier,
+            title = title,
+            value = value,
+            onValueChange = onValueChange,
+            valueRange = valueRange,
+            enabled = enabled,
+            onValueChangeFinished = onValueChangeFinished,
+            suffix = suffix,
+            decimalFormat = decimalFormat,
+        )
+    } else {
+        ZlMenuSliderLayout(
+            modifier = modifier,
+            title = title,
+            value = value,
+            onValueChange = onValueChange,
+            valueRange = valueRange,
+            enabled = enabled,
+            onValueChangeFinished = onValueChangeFinished,
+            suffix = suffix,
+            decimalFormat = decimalFormat,
+            influencedByBackground = influencedByBackground,
+            colors = colors,
+            shape = shape,
+            color = color,
+            contentColor = contentColor,
+        )
+    }
+}
+
+/**
+ * 通用行底板（保留给需要自定义内容的调用处）。
+ */
+@Composable
+fun MenuButtonLayout(
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    influencedByBackground: Boolean = false,
+    shape: Shape = MaterialTheme.shapes.large,
+    color: Color = itemColor(influencedByBackground),
+    contentColor: Color = onItemColor(),
+    blur: Int = AllSettings.backgroundBlur.state,
+    onClick: () -> Unit = {},
+    horizontalArrangement: Arrangement.Horizontal = Arrangement.Start,
+    verticalAlignment: Alignment.Vertical = Alignment.Top,
+    content: @Composable RowScope.() -> Unit
+) {
+    if (AllSettings.usePcl2Ui.state) {
+        PclMenuButtonLayout(
+            modifier = modifier,
+            enabled = enabled,
+            onClick = onClick,
+            horizontalArrangement = horizontalArrangement,
+            verticalAlignment = verticalAlignment,
+            content = content,
+        )
+    } else {
+        ZlMenuButtonLayout(
+            modifier = modifier,
+            enabled = enabled,
+            influencedByBackground = influencedByBackground,
+            shape = shape,
+            color = color,
+            contentColor = contentColor,
+            blur = blur,
+            onClick = onClick,
+            horizontalArrangement = horizontalArrangement,
+            verticalAlignment = verticalAlignment,
+            content = content,
+        )
+    }
+}
+
+/* ============================================================================
+ *  PCL2 版实现
+ *
+ *  版式：浮层 = `MyCard`（圆角 5、影子 3、底色 `#F5FFFFFF`、标题 13 号加粗）；
+ *  行 = `MyListItem` 的指向态（`ColorBrush7 @ alpha 190` + 1px `ColorBrush6` 边框）；
+ *  开关 = `MyCheckBox`；下拉 = `MyComboBox`；滑杆 = `MySlider`。
+ * ==========================================================================*/
+
+@Composable
+private fun PclMenuSubscreen(
+    state: MenuState,
+    closeScreen: () -> Unit,
+    backgroundColor: Color,
+    content: @Composable ColumnScope.() -> Unit,
 ) {
     val visible = state == MenuState.SHOW
     val scrimInteraction = remember { MutableInteractionSource() }
@@ -146,9 +514,7 @@ fun MenuSubscreen(
             AnimatedVisibility(
                 visible = visible,
                 enter = fadeIn() + slideInHorizontally(
-                    animationSpec = androidx.compose.animation.core.tween(
-                        200, easing = com.movtery.zalithlauncher.ui.pcl2.theme.PclMotion.easeOutFluent
-                    )
+                    animationSpec = tween(200, easing = PclMotion.easeOutFluent)
                 ) { 40 },
                 exit = fadeOut() + slideOutHorizontally { 40 }
             ) {
@@ -162,60 +528,13 @@ fun MenuSubscreen(
     }
 }
 
-/**
- * 左右两块菜单浮层。
- *
- * @param leftTitle  左栏标题。为 null 时左栏不占标题位（例如游戏内菜单的左栏自带图标标签栏）。
- * @param rightTitle 右栏标题。
- *
- * 原先的 `leftMenuTitle` / `rightMenuTitle` 是以 `@Composable` 传进来的（调用处自带
- * Material 字体的 `Text`），配色没法在容器里统一，故新增这两个字符串参数代替：
- * 调用处改传标题文字，字体由本容器按 PCL 的卡片标题统一渲染。两个旧参数保留但不再使用。
- */
 @Composable
-fun DualMenuSubscreen(
-    state: MenuState,
-    closeScreen: () -> Unit,
-    shape: Shape = androidx.compose.foundation.shape.RoundedCornerShape(5.dp),
-    backgroundColor: Color = Color.Black.copy(alpha = 0.25f),
-    titleHeight: Dp = 48.dp,
-    leftMenuTitle: (@Composable BoxScope.() -> Unit)? = null,
-    leftMenuContent: @Composable ColumnScope.() -> Unit = {},
-    rightMenuTitle: (@Composable BoxScope.() -> Unit)? = null,
-    rightMenuContent: @Composable ColumnScope.() -> Unit = {},
-    leftTitle: String? = null,
-    rightTitle: String? = null,
-) {
-    com.movtery.zalithlauncher.ui.pcl2.components.PclMenuPanels(
-        visible = state == MenuState.SHOW,
-        onClose = closeScreen,
-        leftTitle = leftTitle,
-        leftContent = leftMenuContent,
-        rightTitle = rightTitle,
-        rightContent = rightMenuContent,
-    )
-}
-
-/* ============================================================================
- *  行
- * ==========================================================================*/
-
-/**
- * 一行菜单文字 —— 走 PCL 的列表项观感。
- *
- * [appendLayout] 是 PCL 里 `MyListItem.Buttons` 那类行尾附加物，直接摆在文字右侧。
- */
-@Composable
-fun MenuTextButton(
-    modifier: Modifier = Modifier,
+private fun PclMenuTextButton(
+    modifier: Modifier,
     text: String,
-    enabled: Boolean = true,
-    influencedByBackground: Boolean = false,
-    shape: Shape = androidx.compose.foundation.shape.RoundedCornerShape(6.dp),
-    color: Color = Color.Transparent,
-    contentColor: Color = Color.Unspecified,
-    appendLayout: (@Composable () -> Unit)? = null,
-    onClick: () -> Unit = {}
+    enabled: Boolean,
+    appendLayout: (@Composable () -> Unit)?,
+    onClick: () -> Unit,
 ) {
     if (appendLayout == null) {
         PclMenuRow(
@@ -227,14 +546,11 @@ fun MenuTextButton(
         )
     } else {
         // 行尾有附加内容时不能直接用 PclMenuRow（它只画文字），这里补一个同款底板
-        com.movtery.zalithlauncher.ui.pcl2.components.PclMenuSurface(
+        PclMenuSurface(
             modifier = modifier,
             enabled = enabled,
             radius = 6.dp,
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                horizontal = 10.dp,
-                vertical = 6.dp,
-            ),
+            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
             onClick = onClick,
         ) {
             Text(
@@ -248,22 +564,13 @@ fun MenuTextButton(
     }
 }
 
-/**
- * 一行带开关的菜单项。
- *
- * `switch` / `onSwitch` 的语义与原来一致（`onSwitch` 收到的是**切换后**的值）。
- */
 @Composable
-fun MenuSwitchButton(
-    modifier: Modifier = Modifier,
+private fun PclMenuSwitchButton(
+    modifier: Modifier,
     text: String,
     switch: Boolean,
     onSwitch: (Boolean) -> Unit,
-    enabled: Boolean = true,
-    influencedByBackground: Boolean = false,
-    shape: Shape = androidx.compose.foundation.shape.RoundedCornerShape(6.dp),
-    color: Color = Color.Transparent,
-    contentColor: Color = Color.Unspecified,
+    enabled: Boolean,
 ) {
     PclMenuCheckRow(
         modifier = modifier,
@@ -274,62 +581,29 @@ fun MenuSwitchButton(
     )
 }
 
-/**
- * 一行「标题 + 下拉」。
- *
- * 原实现是就地展开一列 RadioButton，M3 的圆点选择器在 PCL 里没有对应物 ——
- * 改成 PCL 的下拉框（`MyComboBox`），交互更贴近启动器里的同类设置项。
- */
-@Composable
-fun <E> MenuListLayout(
-    modifier: Modifier = Modifier,
-    title: String,
-    items: List<E>,
-    currentItem: E,
-    onItemChange: (E) -> Unit,
-    getItemText: @Composable (E) -> String,
-    selectedItemLayout: @Composable (ColumnScope.(E) -> Unit) = { item ->
-        PclMenuPillLabel(text = getItemText(item))
-    },
-    enabled: Boolean = true,
-    maxListHeight: Dp = 200.dp,
-    influencedByBackground: Boolean = false,
-    shape: Shape = androidx.compose.foundation.shape.RoundedCornerShape(6.dp),
-    color: Color = Color.Transparent,
-    contentColor: Color = Color.Unspecified,
-) {
-    // `getItemText` 是 @Composable（要用 stringResource），不能塞进普通 lambda，
-    // 先在组合里把每个条目的文字算好。
-    val labels = items.associateWith { getItemText(it) }
-    PclMenuComboRow(
-        modifier = modifier,
-        label = title,
-        items = items,
-        selected = currentItem,
-        enabled = enabled,
-        labelOf = { labels[it] ?: it.toString() },
-        onSelect = onItemChange,
-    )
+/** 把实际值换算成 0..1 的滑杆比例。 */
+private fun pclSliderFraction(value: Float, range: ClosedFloatingPointRange<Float>): Float {
+    val span = range.endInclusive - range.start
+    if (span <= 0f) return 0f
+    return ((value - range.start) / span).coerceIn(0f, 1f)
 }
 
-/**
- * 一行「标题 + 滑杆」（整数）。
- */
+/** 把 0..1 的滑杆比例换算回实际值。 */
+private fun pclSliderValue(fraction: Float, range: ClosedFloatingPointRange<Float>): Float {
+    val span = range.endInclusive - range.start
+    return range.start + fraction.coerceIn(0f, 1f) * span
+}
+
 @Composable
-fun MenuSliderLayout(
-    modifier: Modifier = Modifier,
+private fun PclMenuSliderLayout(
+    modifier: Modifier,
     title: String,
     value: Int,
     onValueChange: (Int) -> Unit,
     valueRange: ClosedFloatingPointRange<Float>,
-    enabled: Boolean = true,
-    onValueChangeFinished: (Int) -> Unit = {},
-    suffix: String? = null,
-    influencedByBackground: Boolean = false,
-    colors: SliderColors = SliderDefaults.colors(),
-    shape: Shape = androidx.compose.foundation.shape.RoundedCornerShape(6.dp),
-    color: Color = Color.Transparent,
-    contentColor: Color = Color.Unspecified,
+    enabled: Boolean,
+    onValueChangeFinished: (Int) -> Unit,
+    suffix: String?,
 ) {
     var showInputDialog by remember { mutableStateOf(false) }
     // `PclSlider` 的 `pointerInput` 只捕获**首次组合**时的 lambda，
@@ -368,25 +642,17 @@ fun MenuSliderLayout(
     }
 }
 
-/**
- * 一行「标题 + 滑杆」（小数）。
- */
 @Composable
-fun MenuSliderLayout(
-    modifier: Modifier = Modifier,
+private fun PclMenuSliderLayout(
+    modifier: Modifier,
     title: String,
     value: Float,
     onValueChange: (Float) -> Unit,
     valueRange: ClosedFloatingPointRange<Float>,
-    enabled: Boolean = true,
-    onValueChangeFinished: (Float) -> Unit = {},
-    suffix: String? = null,
-    decimalFormat: String = "#0.00",
-    influencedByBackground: Boolean = false,
-    colors: SliderColors = SliderDefaults.colors(),
-    shape: Shape = androidx.compose.foundation.shape.RoundedCornerShape(6.dp),
-    color: Color = Color.Transparent,
-    contentColor: Color = Color.Unspecified,
+    enabled: Boolean,
+    onValueChangeFinished: (Float) -> Unit,
+    suffix: String?,
+    decimalFormat: String,
 ) {
     val formatter = DecimalFormat(decimalFormat)
     var showInputDialog by remember { mutableStateOf(false) }
@@ -419,59 +685,23 @@ fun MenuSliderLayout(
     }
 }
 
-/**
- * 通用行底板（保留给需要自定义内容的调用处）。
- *
- * 版式与 [PclMenuRow] 同源 —— PCL `MyListItem` 的指向态。
- */
 @Composable
-fun MenuButtonLayout(
-    modifier: Modifier = Modifier,
-    enabled: Boolean = true,
-    influencedByBackground: Boolean = false,
-    shape: Shape = androidx.compose.foundation.shape.RoundedCornerShape(6.dp),
-    color: Color = Color.Transparent,
-    contentColor: Color = Color.Unspecified,
-    blur: Int = 0,
-    onClick: () -> Unit = {},
-    horizontalArrangement: Arrangement.Horizontal = Arrangement.Start,
-    verticalAlignment: Alignment.Vertical = Alignment.Top,
+private fun PclMenuButtonLayout(
+    modifier: Modifier,
+    enabled: Boolean,
+    onClick: () -> Unit,
+    horizontalArrangement: Arrangement.Horizontal,
+    verticalAlignment: Alignment.Vertical,
     content: @Composable RowScope.() -> Unit
 ) {
-    com.movtery.zalithlauncher.ui.pcl2.components.PclMenuSurface(
+    PclMenuSurface(
         modifier = modifier,
         enabled = enabled,
         radius = 6.dp,
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(
-            horizontal = 10.dp,
-            vertical = 8.dp,
-        ),
+        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
         horizontalArrangement = horizontalArrangement,
         verticalAlignment = verticalAlignment,
         onClick = onClick,
         content = content,
     )
-}
-
-/* ============================================================================
- *  内部小件
- * ==========================================================================*/
-
-/** PCL 的小标签（`MyLabel`），替代原来那个用 M3 `tertiary` 色的胶囊。 */
-@Composable
-private fun PclMenuPillLabel(text: String) {
-    com.movtery.zalithlauncher.ui.pcl2.components.PclMenuPill(text = text)
-}
-
-/** 把实际值换算成 0..1 的滑杆比例。 */
-private fun pclSliderFraction(value: Float, range: ClosedFloatingPointRange<Float>): Float {
-    val span = range.endInclusive - range.start
-    if (span <= 0f) return 0f
-    return ((value - range.start) / span).coerceIn(0f, 1f)
-}
-
-/** 把 0..1 的滑杆比例换算回实际值。 */
-private fun pclSliderValue(fraction: Float, range: ClosedFloatingPointRange<Float>): Float {
-    val span = range.endInclusive - range.start
-    return range.start + fraction.coerceIn(0f, 1f) * span
 }
