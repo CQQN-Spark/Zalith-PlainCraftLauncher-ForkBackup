@@ -1461,7 +1461,12 @@ fun PclHomeRight(nav: PclNavController) {
                     )
                     PclTextButton(
                         text = "清空",
-                        onClick = { runtime.clearLog() },
+                        onClick = {
+                            runtime.clearLog()
+                            // 只清 buffer 是不够的：liveLog 一空，shownLines 立刻回退到
+                            // fileLog（磁盘里上次启动的日志），看起来像「点了没反应」。
+                            fileLog = emptyList()
+                        },
                     )
                 }
                 shownLines.forEach { line ->

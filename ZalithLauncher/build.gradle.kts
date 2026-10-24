@@ -29,11 +29,17 @@ val defaultCurseForgeApiKey = project.findProperty("curseforge_api_key") as? Str
 val projectArch: String = System.getProperty("arch", "all")
 
 fun getKeyFromLocal(envKey: String, fileName: String? = null, default: String? = null): String {
-    val key = System.getenv(envKey)
-    return key ?: fileName?.let {
-        val file = File(rootDir, fileName)
-        if (file.canRead() && file.isFile) file.readText() else null
-    } ?: default ?: run {
+    // 必须 trim：用记事本 / echo 保存的密钥文件常带结尾换行，
+    // 带着 "\n" 的 OAUTH_CLIENT_ID 发给微软会被判为无效 client，
+    // 表现为「登录凭据被服务器拒绝」，且极难从现象反推。
+    System.getenv(envKey)?.trim()?.takeIf { it.isNotEmpty() }?.let { return it }
+    fileName?.let { name ->
+        val file = File(rootDir, name)
+        if (file.canRead() && file.isFile) {
+            file.readText().trim().takeIf { it.isNotEmpty() }?.let { return it }
+        }
+    }
+    return default ?: run {
         logger.warn("BUILD: $envKey not set; related features may throw exceptions.")
         ""
     }

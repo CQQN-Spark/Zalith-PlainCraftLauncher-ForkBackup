@@ -86,6 +86,17 @@ private const val TAG = "MicrosoftAuth"
  */
 private const val CLIENT_TOKEN_SEED = "Zalith Launcher"
 
+/**
+ * 实际使用的 client id，**必须 trim**。
+ *
+ * 构建期从 `.oauth_client_id.txt` 读进来时常带着结尾换行（记事本、`echo` 都会加），
+ * 设备码接口对此是宽容的（照样发码），但**刷新令牌接口不是**：client_id 与令牌
+ * 的签发方对不上就返回 `invalid_grant`，被 [refreshAccessToken] 翻译成
+ * [CredentialsExpiredException]，最终弹「登录凭据已被服务器拒绝」，而账号其实好好的。
+ * 2026-10-24 的 v1.1 就是这样把用户挡在门外的（文件 37 字节 vs 原版 36 字节）。
+ */
+private val OAUTH_CLIENT_ID: String = BuildKeys.OAUTH_CLIENT_ID.trim()
+
 private val SCOPES = listOf("XboxLive.signin", "offline_access", "openid", "profile", "email")
 private const val TENANT = "/consumers"
 
@@ -112,7 +123,7 @@ const val MINECRAFT_SERVICES_URL = "https://api.minecraftservices.com"
  * 莫名其妙的 HTTP 400。
  */
 suspend fun fetchDeviceCodeResponse(context: CoroutineContext): DeviceCodeResponse = coroutineScope {
-    check(BuildKeys.OAUTH_CLIENT_ID.isNotBlank()) {
+    check(OAUTH_CLIENT_ID.isNotBlank()) {
         "未配置正版登录 Client ID：请把微软应用注册的客户端 ID 写入工程根目录的 " +
             ".oauth_client_id.txt，或用环境变量 OAUTH_CLIENT_ID 构建。"
     }
@@ -120,7 +131,7 @@ suspend fun fetchDeviceCodeResponse(context: CoroutineContext): DeviceCodeRespon
         submitForm(
             url = "$MICROSOFT_AUTH_URL$TENANT/oauth2/v2.0/devicecode",
             parameters = Parameters.build {
-                append("client_id", BuildKeys.OAUTH_CLIENT_ID)
+                append("client_id", OAUTH_CLIENT_ID)
                 append("scope", SCOPES.joinToString(" "))
             },
             context = context
@@ -160,7 +171,7 @@ suspend fun getTokenResponse(
                 parameters = Parameters.build {
                     append("grant_type", "urn:ietf:params:oauth:grant-type:device_code")
                     append("device_code", codeResponse.deviceCode)
-                    append("client_id", BuildKeys.OAUTH_CLIENT_ID)
+                    append("client_id", OAUTH_CLIENT_ID)
                     append("tenant", TENANT)
                 },
                 context = context
@@ -290,7 +301,7 @@ private suspend fun refreshAccessToken(
             val response = submitForm<JsonObject>(
                 url = "$LIVE_AUTH_URL/oauth20_token.srf",
                 parameters = Parameters.build {
-                    append("client_id", BuildKeys.OAUTH_CLIENT_ID)
+                    append("client_id", OAUTH_CLIENT_ID)
                     append("refresh_token", refreshToken)
                     append("grant_type", "refresh_token")
                 },
