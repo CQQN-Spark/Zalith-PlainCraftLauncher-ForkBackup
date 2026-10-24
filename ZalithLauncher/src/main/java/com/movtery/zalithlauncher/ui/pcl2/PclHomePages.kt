@@ -22,6 +22,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.rememberCoroutineScope
 import com.movtery.zalithlauncher.game.account.wardrobe.validateSkinFile
 import com.movtery.zalithlauncher.ui.pcl2.data.PclLoginSettings
+import com.movtery.zalithlauncher.ui.pcl2.data.isThirdParty
+import com.movtery.zalithlauncher.ui.pcl2.data.loginTypeValue
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -527,7 +529,10 @@ private fun ColumnScope.PclHomeInput(nav: PclNavController, runtime: PclRuntime)
                 val exists = accounts.any {
                     it.isLocalAccount() && it.username.equals(name, ignoreCase = true)
                 }
-                if (!microsoftPage && name.isNotEmpty() && !exists) {
+                // 该版本设置了第三方登录时，启动链路会自己去解析 / 登录对应服务器的账户，
+                // 这里别依照输入框里的名字顺手建一个离线账户（会凭空多出一个账户）
+                val thirdParty = version?.getVersionConfig()?.loginTypeValue()?.isThirdParty() == true
+                if (!microsoftPage && !thirdParty && name.isNotEmpty() && !exists) {
                     // 名字只在输入框里、还没落库：先把账户建出来再启动
                     runtime.createLocalAccount(name) { runtime.tryLaunch() }
                 } else {

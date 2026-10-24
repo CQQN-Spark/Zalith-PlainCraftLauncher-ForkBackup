@@ -97,6 +97,27 @@ class VersionConfig(
     @SerializedName("serverIp")
     var serverIp: String = ""
         get() = getStringNotNull(field)
+
+    /**
+     * 该版本的登录方式（对应 PCL 的 `版本设置 → 服务器 → 登录方式`）。
+     *
+     * 存成可空是为了容忍旧配置文件：Gson 反序列化时可能把缺失的字段写成 null，
+     * 取值一律用 [VersionLoginType.from] 兜底成「正版登录或离线登录」。
+     */
+    @SerializedName("loginType")
+    var loginType: VersionLoginType? = null
+    /** 第三方登录：Authlib 用认证服务器地址，统一通行证用服务器 ID。 */
+    @SerializedName("loginAuthServer")
+    var loginAuthServer: String = ""
+        get() = getStringNotNull(field)
+    /** 第三方登录的注册链接（只用于展示 / 一键打开，不参与启动）。 */
+    @SerializedName("loginRegisterUrl")
+    var loginRegisterUrl: String = ""
+        get() = getStringNotNull(field)
+    /** 登录页上显示的服务器名称。 */
+    @SerializedName("loginServerName")
+    var loginServerName: String = ""
+        get() = getStringNotNull(field)
     @SerializedName("ramAllocation")
     var ramAllocation: Int = -1
     @SerializedName("touchVibrateDuration")
@@ -119,6 +140,10 @@ class VersionConfig(
         customInfo: String = "",
         versionSummary: String = "",
         serverIp: String = "",
+        loginType: VersionLoginType? = null,
+        loginAuthServer: String = "",
+        loginRegisterUrl: String = "",
+        loginServerName: String = "",
         ramAllocation: Int = -1,
         touchVibrateDuration: Int = 100,
         touchVibrateKind: VibrationHandler.VibrateKind? = null,
@@ -136,6 +161,10 @@ class VersionConfig(
         this.customInfo = customInfo
         this.versionSummary = versionSummary
         this.serverIp = serverIp
+        this.loginType = loginType
+        this.loginAuthServer = loginAuthServer
+        this.loginRegisterUrl = loginRegisterUrl
+        this.loginServerName = loginServerName
         this.ramAllocation = ramAllocation
         this.touchVibrateDuration = touchVibrateDuration
         this.touchVibrateKind = touchVibrateKind
@@ -156,6 +185,10 @@ class VersionConfig(
         getStringNotNull(customInfo),
         getStringNotNull(versionSummary),
         getStringNotNull(serverIp),
+        loginType,
+        getStringNotNull(loginAuthServer),
+        getStringNotNull(loginRegisterUrl),
+        getStringNotNull(loginServerName),
         ramAllocation,
         touchVibrateDuration,
         touchVibrateKind,
@@ -216,6 +249,10 @@ class VersionConfig(
             writeString(getStringNotNull(customInfo))
             writeString(getStringNotNull(versionSummary))
             writeString(getStringNotNull(serverIp))
+            writeInt(loginType?.ordinal ?: 0)
+            writeString(getStringNotNull(loginAuthServer))
+            writeString(getStringNotNull(loginRegisterUrl))
+            writeString(getStringNotNull(loginServerName))
             writeInt(ramAllocation)
             writeInt(touchVibrateDuration)
             writeInt(touchVibrateKind?.ordinal ?: -1)
@@ -238,6 +275,10 @@ class VersionConfig(
             val customInfo = parcel.readString().orEmpty()
             val versionSummary = parcel.readString().orEmpty()
             val serverIp = parcel.readString().orEmpty()
+            val loginType = VersionLoginType.entries.getOrNull(parcel.readInt()) ?: VersionLoginType.MICROSOFT_OR_OFFLINE
+            val loginAuthServer = parcel.readString().orEmpty()
+            val loginRegisterUrl = parcel.readString().orEmpty()
+            val loginServerName = parcel.readString().orEmpty()
             val ramAllocation = parcel.readInt()
             val touchVibrateDuration = parcel.readInt()
             val touchVibrateKind = VibrationHandler.VibrateKind.entries.getOrNull(parcel.readInt())
@@ -257,6 +298,10 @@ class VersionConfig(
                 customInfo,
                 versionSummary,
                 serverIp,
+                loginType,
+                loginAuthServer,
+                loginRegisterUrl,
+                loginServerName,
                 ramAllocation,
                 touchVibrateDuration,
                 touchVibrateKind,
@@ -297,6 +342,37 @@ class VersionConfig(
             config.isolationType = SettingState.ENABLE
             return config
         }
+    }
+}
+
+/**
+ * 版本级「登录方式」（对应 PCL 的 `VersionSetup → 服务器 → 登录方式`）。
+ *
+ * 只决定**启动时用哪一类账户**，账号本身仍由 `AccountsManager` 管理：
+ *   · [MICROSOFT_OR_OFFLINE] 跟随当前账户（PCL 的默认项）
+ *   · [MICROSOFT_ONLY] / [OFFLINE_ONLY] 强制用正版 / 离线账户
+ *   · [UNIFIED_PASSPORT] 统一通行证（Nide8），[loginAuthServer] 存服务器 ID
+ *   · [AUTHLIB] Authlib Injector / LittleSkin，[loginAuthServer] 存认证服务器地址
+ */
+enum class VersionLoginType(val tag: String) {
+    @SerializedName("ONLINE_OR_OFFLINE")
+    MICROSOFT_OR_OFFLINE("OnlineOrOffline"),
+
+    @SerializedName("ONLINE")
+    MICROSOFT_ONLY("Online"),
+
+    @SerializedName("OFFLINE")
+    OFFLINE_ONLY("Offline"),
+
+    @SerializedName("UNIFIED_PASSPORT")
+    UNIFIED_PASSPORT("Nide8"),
+
+    @SerializedName("AUTHLIB")
+    AUTHLIB("Authlib");
+
+    companion object {
+        /** 旧配置里没有这一项（反序列化成 null）时按 PCL 默认值处理。 */
+        fun from(type: VersionLoginType?): VersionLoginType = type ?: MICROSOFT_OR_OFFLINE
     }
 }
 

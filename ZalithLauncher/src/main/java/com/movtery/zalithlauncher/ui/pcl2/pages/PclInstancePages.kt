@@ -40,7 +40,15 @@ import com.movtery.zalithlauncher.coroutine.TaskSystem
 import com.movtery.zalithlauncher.game.control.ControlManager
 import com.movtery.zalithlauncher.game.version.download.DownloadMode
 import com.movtery.zalithlauncher.game.version.download.MinecraftDownloader
+import com.movtery.zalithlauncher.game.version.installed.VersionLoginType
 import com.movtery.zalithlauncher.ui.pcl2.data.PclInstanceMeta
+import com.movtery.zalithlauncher.ui.pcl2.data.LITTLESKIN_AUTH_SERVER
+import com.movtery.zalithlauncher.ui.pcl2.data.LITTLESKIN_REGISTER_URL
+import com.movtery.zalithlauncher.ui.pcl2.data.LITTLESKIN_SERVER_NAME
+import com.movtery.zalithlauncher.ui.pcl2.data.description
+import com.movtery.zalithlauncher.ui.pcl2.data.displayName
+import com.movtery.zalithlauncher.ui.pcl2.data.isThirdParty
+import com.movtery.zalithlauncher.ui.pcl2.data.loginTypeValue
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -993,12 +1001,90 @@ private fun PclInstanceSetupPage(version: Version) {
         }
         Spacer(Modifier.height(PclDimens.cardGap))
 
-        // ---- 服务器
+        // ---- 服务器（`PageInstanceSetup.xaml` 的「服务器」卡）
+        //
+        // 「登录方式」是整个启动器里唯一一处在**版本级**决定「启动时用哪一类账户」的开关：
+        // 选了第三方登录，启动时就必须用对应认证服务器上的账户 —— 本地没有这一台的账户
+        // 时，`PclThirdPartyLogin` 会在那一瞬间问账号密码并当场登录。
         PclCard(
             modifier = Modifier.fillMaxWidth(),
             title = "服务器",
             contentPadding = PaddingValues(25.dp, 40.dp, 25.dp, 15.dp),
         ) {
+            var loginType by remember(version) { mutableStateOf(config.loginTypeValue()) }
+            PclSetupRow("登录方式") {
+                PclComboBox(
+                    items = VersionLoginType.entries,
+                    selected = loginType,
+                    label = { it?.displayName().orEmpty() },
+                    modifier = Modifier.fillMaxWidth(),
+                    onSelect = { selected ->
+                        loginType = selected
+                        config.loginType = selected
+                        saveToken()
+                    },
+                )
+            }
+
+            if (loginType.isThirdParty()) {
+                val isUnifiedPassport = loginType == VersionLoginType.UNIFIED_PASSPORT
+                Spacer(Modifier.height(9.dp))
+                PclSetupRow(if (isUnifiedPassport) "服务器 ID（必填）" else "认证服务器（必填）") {
+                    PclTextBox(
+                        value = config.loginAuthServer,
+                        modifier = Modifier.fillMaxWidth(),
+                        hint = if (isUnifiedPassport) {
+                            "服主后台 → 集成说明 中提供的服务器 ID"
+                        } else {
+                            "Yggdrasil API 认证服务器的完整地址"
+                        },
+                        onValueChange = { config.loginAuthServer = it; saveToken() },
+                    )
+                }
+                if (!isUnifiedPassport) {
+                    Spacer(Modifier.height(9.dp))
+                    PclSetupRow("注册链接") {
+                        PclTextBox(
+                            value = config.loginRegisterUrl,
+                            modifier = Modifier.fillMaxWidth(),
+                            hint = "注册账号的网页地址，如 https://xxxxx.xxx/auth/register",
+                            onValueChange = { config.loginRegisterUrl = it; saveToken() },
+                        )
+                    }
+                    Spacer(Modifier.height(9.dp))
+                    PclSetupRow("服务器名称") {
+                        PclTextBox(
+                            value = config.loginServerName,
+                            modifier = Modifier.fillMaxWidth(),
+                            hint = "显示在登录页面的服务器名称",
+                            onValueChange = { config.loginServerName = it; saveToken() },
+                        )
+                    }
+                    Spacer(Modifier.height(9.dp))
+                    // PCL 的「设置为 LittleSkin」：一键把三项都填成 LittleSkin 的官方值
+                    PclButton(
+                        text = "设置为 LittleSkin",
+                        modifier = Modifier.fillMaxWidth(),
+                        onClick = {
+                            config.loginAuthServer = LITTLESKIN_AUTH_SERVER
+                            config.loginRegisterUrl = LITTLESKIN_REGISTER_URL
+                            config.loginServerName = LITTLESKIN_SERVER_NAME
+                            saveToken()
+                            PclHintHost.push(
+                                "已填入 LittleSkin 的认证服务器，启动该版本时会用 LittleSkin 账户登录。",
+                                PclHintTheme.Green,
+                            )
+                        },
+                    )
+                }
+                Spacer(Modifier.height(9.dp))
+                PclHint(text = loginType.description(), theme = PclHintTheme.Blue)
+            } else {
+                Spacer(Modifier.height(9.dp))
+                PclHint(text = loginType.description(), theme = PclHintTheme.Blue)
+            }
+
+            Spacer(Modifier.height(9.dp))
             PclSetupRow("自动进入服务器") {
                 PclTextBox(
                     value = config.serverIp,

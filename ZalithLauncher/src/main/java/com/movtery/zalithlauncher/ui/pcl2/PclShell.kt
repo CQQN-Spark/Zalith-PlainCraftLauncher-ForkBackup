@@ -424,6 +424,9 @@ private fun PclMainContent(
         // 整合包安装前的「设置版本名称」询问框。挂在这里而不是某个页面里：
         // 下载页那条链是**下载完成后**才问的，此时用户可能已经切到别的版块了。
         PclNamePromptHost()
+        // 第三方登录（authlib-injector / 统一通行证）的询问框：版本设置了第三方登录、
+        // 本地又没有该服务器的账户时，启动那一刻在这里问账号密码。
+        PclThirdPartyLoginHost()
         val p = pclPalette
         // 「千万别点」彩蛋：整扇窗体的视觉变换（缩小 / 平移 / 抖动 / 叠加彩虹色）。
         // 放在最外层，`graphicsLayer` 才会把夹在后面的圆角、底色、窗体背景图一起带走。

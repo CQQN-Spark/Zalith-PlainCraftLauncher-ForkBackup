@@ -35,6 +35,9 @@ import com.movtery.zalithlauncher.coroutine.TitledTask
 import com.movtery.zalithlauncher.game.account.Account
 import com.movtery.zalithlauncher.game.account.AccountsManager
 import com.movtery.zalithlauncher.game.account.localLogin
+import com.movtery.zalithlauncher.game.account.isLocalAccount
+import com.movtery.zalithlauncher.game.account.isMicrosoftAccount
+import com.movtery.zalithlauncher.game.version.installed.VersionLoginType
 import com.movtery.zalithlauncher.game.addons.mirror.SourceSpeedResult
 import com.movtery.zalithlauncher.game.addons.mirror.probeAndApplyFastestSource
 import com.movtery.zalithlauncher.game.download.engine.BatchDownloader
@@ -50,6 +53,7 @@ import com.movtery.zalithlauncher.setting.enums.MirrorSourceType
 import com.movtery.zalithlauncher.ui.androidText
 import com.movtery.zalithlauncher.ui.pcl2.components.PclHintTheme
 import com.movtery.zalithlauncher.ui.pcl2.components.PclWebPage
+import com.movtery.zalithlauncher.ui.pcl2.PclThirdPartyLogin
 import com.movtery.zalithlauncher.ui.screens.content.elements.QuickPlay
 import com.movtery.zalithlauncher.ui.toAndroidString
 import com.movtery.zalithlauncher.viewmodel.ErrorViewModel
@@ -554,7 +558,9 @@ class PclRuntime(
         if (isLaunching) return PclLaunchCheck.AlreadyLaunching
         val version = currentVersion.value ?: return PclLaunchCheck.NoVersion
         if (!version.isValid()) return PclLaunchCheck.InvalidVersion
-        if (currentAccount.value == null) return PclLaunchCheck.NoAccount
+        // 第三方登录的版本允许「暂时没有账户」：真正启动的那一刻会问账号密码当场登
+        val thirdParty = version.getVersionConfig().loginTypeValue().isThirdParty()
+        if (currentAccount.value == null && !thirdParty) return PclLaunchCheck.NoAccount
         return PclLaunchCheck.Ready
     }
 
@@ -563,7 +569,13 @@ class PclRuntime(
      */
     fun tryLaunch() {
         when (checkLaunch()) {
-            PclLaunchCheck.Ready -> launch()
+            PclLaunchCheck.Ready -> {
+                val version = currentVersion.value ?: return
+                scope.launch {
+                    // 按「版本设置 → 服务器 → 登录方式」把账户调整到位（必要时当场登录）
+                    if (prepareAccount(version)) launch()
+                }
+            }
             PclLaunchCheck.NoVersion ->
                 hint("没有可用的游戏版本，请先在「下载」页安装一个版本。", PclHintTheme.Red)
             PclLaunchCheck.InvalidVersion ->
@@ -573,6 +585,95 @@ class PclRuntime(
             PclLaunchCheck.AlreadyLaunching ->
                 hint("游戏已经在启动中了，请稍候。", PclHintTheme.Blue)
             null -> Unit
+        }
+    }
+
+    /**
+     * 按「版本设置 → 服务器 → 登录方式」把当前账户调整到位。
+     *
+     * PCL 的这五项在手机上的落点就是「启动时用哪一类账户」：
+     *   · 正版或离线 —— 跟随当前账户，什么都不做
+     *   · 仅正版 / 仅离线 —— 当前账户不是那种就自动切到已有的那种账户，没有就拦下来说明
+     *   · 统一通行证 / Authlib —— 必须是对应认证服务器上的账户；本地没有就当场问账号密码
+     *
+     * @return true 表示可以继续启动
+     */
+    private suspend fun prepareAccount(version: Version): Boolean {
+        val config = version.getVersionConfig()
+        val type = config.loginTypeValue()
+        val current = currentAccount.value
+        val all = accounts.value
+
+        return when (type) {
+            VersionLoginType.MICROSOFT_OR_OFFLINE -> true
+
+            VersionLoginType.MICROSOFT_ONLY -> {
+                if (current?.isMicrosoftAccount() == true) {
+                    true
+                } else {
+                    val target = all.firstOrNull { it.isMicrosoftAccount() }
+                    if (target == null) {
+                        hint("该版本设置为「仅正版登录」，请先在「更多 → 账号」里登录微软账户。", PclHintTheme.Red)
+                        false
+                    } else {
+                        switchAccount(target)
+                        true
+                    }
+                }
+            }
+
+            VersionLoginType.OFFLINE_ONLY -> {
+                if (current?.isLocalAccount() == true) {
+                    true
+                } else {
+                    val target = all.firstOrNull { it.isLocalAccount() }
+                    if (target == null) {
+                        hint("该版本设置为「仅离线登录」，请先在「更多 → 账号」里创建离线账户。", PclHintTheme.Red)
+                        false
+                    } else {
+                        switchAccount(target)
+                        true
+                    }
+                }
+            }
+
+            VersionLoginType.UNIFIED_PASSPORT, VersionLoginType.AUTHLIB -> {
+                val baseUrl = config.loginBaseUrl()
+                if (baseUrl.isBlank()) {
+                    hint(
+                        if (type == VersionLoginType.UNIFIED_PASSPORT) {
+                            "该版本设置为统一通行证登录，请先在「版本设置 → 服务器」里填写服务器 ID。"
+                        } else {
+                            "该版本设置为第三方登录，请先在「版本设置 → 服务器」里填写认证服务器地址。"
+                        },
+                        PclHintTheme.Red,
+                    )
+                    return false
+                }
+                if (current != null && current.belongsToAuthServer(baseUrl)) {
+                    return true
+                }
+                all.firstOrNull { it.belongsToAuthServer(baseUrl) }?.let { target ->
+                    switchAccount(target)
+                    return true
+                }
+                // 本地没有这一台的账户：当场问账号密码（登录成功后已经是当前账户）
+                val account = PclThirdPartyLogin.ask(
+                    serverName = config.loginServerTitle(),
+                    baseUrl = baseUrl,
+                    registerUrl = config.loginRegisterUrl,
+                )
+                if (account == null) {
+                    hint("已取消第三方登录，本次没有启动游戏。", PclHintTheme.Blue)
+                    return false
+                }
+                hint(
+                    "已登录「${account.username}」" +
+                            "（${account.accountType ?: config.loginServerTitle()}）",
+                    PclHintTheme.Green,
+                )
+                true
+            }
         }
     }
 
