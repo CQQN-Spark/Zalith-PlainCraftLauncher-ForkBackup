@@ -659,6 +659,7 @@ class PclRuntime(
                 }
                 // 本地没有这一台的账户：当场问账号密码（登录成功后已经是当前账户）
                 val account = PclThirdPartyLogin.ask(
+                    context = activity,
                     serverName = config.loginServerTitle(),
                     baseUrl = baseUrl,
                     registerUrl = config.loginRegisterUrl,

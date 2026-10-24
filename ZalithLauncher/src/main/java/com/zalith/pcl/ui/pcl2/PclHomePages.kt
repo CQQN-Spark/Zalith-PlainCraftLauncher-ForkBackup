@@ -120,6 +120,7 @@ import com.zalith.pcl.game.account.microsoftLogin
 import com.zalith.pcl.game.account.wardrobe.SkinModelType
 import com.zalith.pcl.game.account.wardrobe.getLocalUUIDWithSkinModel
 import com.zalith.pcl.game.version.installed.Version
+import com.zalith.pcl.game.version.installed.VersionLoginType
 import com.zalith.pcl.ui.pcl2.components.PclButton
 import com.zalith.pcl.ui.pcl2.components.PclCard
 import com.zalith.pcl.ui.pcl2.components.PclColorState
@@ -140,6 +141,12 @@ import com.zalith.pcl.ui.pcl2.components.PclProgressBar
 import com.zalith.pcl.ui.pcl2.components.PclSelectDialog
 import com.zalith.pcl.ui.pcl2.components.PclText
 import com.zalith.pcl.ui.pcl2.components.PclTextButton
+import com.zalith.pcl.ui.pcl2.components.PclTextBox
+import com.zalith.pcl.ui.pcl2.components.PclCheckBox
+import com.zalith.pcl.ui.pcl2.data.PclAuthLoginSettings
+import com.zalith.pcl.ui.pcl2.data.belongsToAuthServer
+import com.zalith.pcl.ui.pcl2.data.loginBaseUrl
+import com.zalith.pcl.ui.pcl2.data.loginServerTitle
 import com.zalith.pcl.ui.pcl2.data.LocalPclRuntime
 import com.zalith.pcl.ui.pcl2.data.PclAppearance
 import com.zalith.pcl.ui.pcl2.data.PclHomeEntry
@@ -428,11 +435,31 @@ private fun ColumnScope.PclHomeInput(nav: PclNavController, runtime: PclRuntime)
     val account = accountState
     val accounts by runtime.accounts.collectAsStateWithLifecycle()
 
+    // ---- 登录方式：跟着**当前版本的「版本设置 → 服务器 → 登录方式」**走
+    //
+    // 这是用户明确要的口径：版本选了「仅正版登录」，右栏就只剩正版这一种，离线 / 外置
+    // 根本不出现；选了第三方（统一通行证 / Authlib），整块换成该服务器的登录面板，
+    // 版式见 [PclAuthLoginPanel]。
+    val loginType = version?.getVersionConfig()?.loginTypeValue()
+        ?: VersionLoginType.MICROSOFT_OR_OFFLINE
+    val thirdParty = loginType.isThirdParty()
+    val showMicrosoftPill = !thirdParty && loginType != VersionLoginType.OFFLINE_ONLY
+    val showOfflinePill = !thirdParty && loginType != VersionLoginType.MICROSOFT_ONLY
+    val authBaseUrl = remember(version) { version?.getVersionConfig()?.loginBaseUrl().orEmpty() }
+    val authServerName = remember(version) { version?.getVersionConfig()?.loginServerTitle().orEmpty() }
+    val authRegisterUrl = remember(version) { version?.getVersionConfig()?.loginRegisterUrl.orEmpty() }
     // PCL 的 PanType 是「正版 / 离线」两枚可切换胶囊（LoginPageType 决定显示哪一块登录页）。
-    // 这里用同一个语义：默认跟随当前账户的类型，用户点另一个胶囊就切到那种登录方式。
-    var microsoftPage by remember { mutableStateOf(account?.isMicrosoftAccount() ?: false) }
-    LaunchedEffect(account) {
-        account?.let { microsoftPage = it.isMicrosoftAccount() }
+    // 这里多一态「外置登录」，并且**由版本配置决定哪几态可用**。
+    var loginPage by remember { mutableStateOf(HomeLoginPage.Microsoft) }
+    LaunchedEffect(loginType, authBaseUrl, account?.uniqueUUID) {
+        loginPage = when {
+            thirdParty -> HomeLoginPage.Auth
+            loginType == VersionLoginType.MICROSOFT_ONLY -> HomeLoginPage.Microsoft
+            loginType == VersionLoginType.OFFLINE_ONLY -> HomeLoginPage.Offline
+            account?.isMicrosoftAccount() == true -> HomeLoginPage.Microsoft
+            account?.isLocalAccount() == true -> HomeLoginPage.Offline
+            else -> loginPage
+        }
     }
 
     // 离线页输入框的内容（PCL 的 ComboName）：跟随当前的离线账户
@@ -447,42 +474,53 @@ private fun ColumnScope.PclHomeInput(nav: PclNavController, runtime: PclRuntime)
     }
 
     // ---- PanType：登录方式胶囊（PageLaunchLeft.xaml:43-57）
-    //      外层 Margin="20,22,20,0"，两枚 MyRadioButton 各 Margin="4,0"，居中排列。
-    Spacer(Modifier.height(22.dp))
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
-        horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        PclPillButton(
-            text = PclStrings.LangLaunchLeftAccountMicrosoft,
-            logo = PclIcons.loginMicrosoft,
-            logoScale = 1f,
-            highlight = true,
-            checked = microsoftPage,
-            modifier = Modifier.padding(horizontal = 4.dp),
-            onClick = {
-                microsoftPage = true
-                // 当前账户不是正版时顺手切到已有的正版账户；没有就留在本页做登录
-                if (account?.isMicrosoftAccount() != true) {
-                    accounts.firstOrNull { it.isMicrosoftAccount() }?.let(runtime::switchAccount)
-                }
-            },
-        )
-        PclPillButton(
-            text = PclStrings.LangLaunchLeftAccountOffline,
-            logo = PclIcons.loginOffline,
-            logoScale = 0.85f,
-            highlight = true,
-            checked = !microsoftPage,
-            modifier = Modifier.padding(horizontal = 4.dp),
-            onClick = {
-                microsoftPage = false
-                if (account?.isLocalAccount() != true) {
-                    accounts.firstOrNull { it.isLocalAccount() }?.let(runtime::switchAccount)
-                }
-            },
-        )
+    //      外层 Margin="20,22,20,0"，各 MyRadioButton 各 Margin="4,0"，居中排列。
+    //
+    // 第三方登录不画胶囊：那一块的面板自己有「XXX 登录」标题（PCL 的 `PageLoginAuth`
+    // 也是这样），再挂一粒写着「外置登录」的胶囊只是重复。
+    if (thirdParty) {
+        Spacer(Modifier.height(22.dp))
+    } else {
+        Spacer(Modifier.height(22.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (showMicrosoftPill) {
+                PclPillButton(
+                    text = PclStrings.LangLaunchLeftAccountMicrosoft,
+                    logo = PclIcons.loginMicrosoft,
+                    logoScale = 1f,
+                    highlight = true,
+                    checked = loginPage == HomeLoginPage.Microsoft,
+                    modifier = Modifier.padding(horizontal = 4.dp),
+                    onClick = {
+                        loginPage = HomeLoginPage.Microsoft
+                        // 当前账户不是正版时顺手切到已有的正版账户；没有就留在本页做登录
+                        if (account?.isMicrosoftAccount() != true) {
+                            accounts.firstOrNull { it.isMicrosoftAccount() }?.let(runtime::switchAccount)
+                        }
+                    },
+                )
+            }
+            if (showOfflinePill) {
+                PclPillButton(
+                    text = PclStrings.LangLaunchLeftAccountOffline,
+                    logo = PclIcons.loginOffline,
+                    logoScale = 0.85f,
+                    highlight = true,
+                    checked = loginPage == HomeLoginPage.Offline,
+                    modifier = Modifier.padding(horizontal = 4.dp),
+                    onClick = {
+                        loginPage = HomeLoginPage.Offline
+                        if (account?.isLocalAccount() != true) {
+                            accounts.firstOrNull { it.isLocalAccount() }?.let(runtime::switchAccount)
+                        }
+                    },
+                )
+            }
+        }
     }
 
     // ---- PanLogin：登录面板（未登录正版 / 已登录正版 / 离线）
@@ -494,10 +532,11 @@ private fun ColumnScope.PclHomeInput(nav: PclNavController, runtime: PclRuntime)
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        if (microsoftPage) {
-            PclMicrosoftLoginPanel(runtime = runtime, account = account, accounts = accounts)
-        } else {
-            PclOfflineLoginPanel(
+        when (loginPage) {
+            HomeLoginPage.Microsoft ->
+                PclMicrosoftLoginPanel(runtime = runtime, account = account, accounts = accounts)
+
+            HomeLoginPage.Offline -> PclOfflineLoginPanel(
                 runtime = runtime,
                 account = account,
                 accounts = accounts,
@@ -508,6 +547,14 @@ private fun ColumnScope.PclHomeInput(nav: PclNavController, runtime: PclRuntime)
                     PclLoginSettings.applyOfflineName(it)
                     PclLoginSettings.persist(context)
                 },
+            )
+
+            HomeLoginPage.Auth -> PclAuthLoginPanel(
+                serverName = authServerName,
+                baseUrl = authBaseUrl,
+                registerUrl = authRegisterUrl,
+                account = account,
+                accounts = accounts,
             )
         }
     }
@@ -531,8 +578,7 @@ private fun ColumnScope.PclHomeInput(nav: PclNavController, runtime: PclRuntime)
                 }
                 // 该版本设置了第三方登录时，启动链路会自己去解析 / 登录对应服务器的账户，
                 // 这里别依照输入框里的名字顺手建一个离线账户（会凭空多出一个账户）
-                val thirdParty = version?.getVersionConfig()?.loginTypeValue()?.isThirdParty() == true
-                if (!microsoftPage && !thirdParty && name.isNotEmpty() && !exists) {
+                if (loginPage == HomeLoginPage.Offline && !thirdParty && name.isNotEmpty() && !exists) {
                     // 名字只在输入框里、还没落库：先把账户建出来再启动
                     runtime.createLocalAccount(name) { runtime.tryLaunch() }
                 } else {
@@ -1151,6 +1197,171 @@ private fun PclAccountNameField(
                 }
             }
         }
+    }
+}
+
+/** 右栏当前显示哪一块登录页（可用项由版本的「登录方式」决定）。 */
+private enum class HomeLoginPage { Microsoft, Offline, Auth }
+
+/**
+ * `PageLoginAuth` —— 外置登录（authlib-injector / LittleSkin / 统一通行证）面板。
+ *
+ * 版式照 PCL 的启动页右栏：顶部居中「{服务器名} 登录」，中间留白（PCL 那里是角色皮肤
+ * 预览，没登录时就是空的），底部是 `邮箱 / 密码 / 记住密码 / 注册账号` 四件套。
+ *
+ * 没有「登录」按钮 —— 和 PCL 一致：填好之后直接按底下那个**启动游戏**，
+ * 启动链路（`PclRuntime.prepareAccount` → `PclThirdPartyLogin.ask`）会拿这里填的凭据
+ * 去认证服务器换 token 再启动，所以面板只需要把凭据交出去（见 [PclAuthLoginSettings]）。
+ */
+@Composable
+private fun PclAuthLoginPanel(
+    serverName: String,
+    baseUrl: String,
+    registerUrl: String,
+    account: Account?,
+    accounts: List<Account>,
+) {
+    val p = pclPalette
+    val context = LocalContext.current
+    val runtime = LocalPclRuntime.current
+
+    if (baseUrl.isBlank()) {
+        // 版本里还没填认证服务器：给一句提示，别摆一个登不进去的输入框
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            PclHint(
+                text = "该版本还没有填认证服务器。\n" +
+                        "「版本设置 → 服务器 → 认证服务器」填好之后再回来登录。",
+                theme = PclHintTheme.Blue,
+            )
+        }
+        return
+    }
+
+    val saved = remember(baseUrl) { PclAuthLoginSettings.load(context, baseUrl) }
+    val loggedIn = account?.takeIf { it.belongsToAuthServer(baseUrl) }
+    var email by remember(baseUrl) {
+        mutableStateOf(saved.email.ifEmpty { loggedIn?.otherAccount.orEmpty() })
+    }
+    var password by remember(baseUrl) { mutableStateOf(saved.password) }
+    var remember by remember(baseUrl) { mutableStateOf(saved.remember) }
+    var showHistory by remember { mutableStateOf(false) }
+
+    // 输入即同步给启动链路（内存那份），勾了「记住密码」才写盘
+    LaunchedEffect(email, password, remember) {
+        PclAuthLoginSettings.save(context, baseUrl, PclAuthLoginSettings.Saved(email, password, remember))
+    }
+
+    // 「邮箱」下拉里的历史账号：这台服务器上已登录过的账户 + 记住的那个
+    val history = remember(accounts, baseUrl, saved.email) {
+        buildList {
+            accounts.filter { it.belongsToAuthServer(baseUrl) }
+                .mapNotNull { it.otherAccount?.takeIf { value -> value.isNotBlank() } }
+                .forEach { add(it) }
+            if (saved.email.isNotBlank()) add(saved.email)
+        }.distinct()
+    }
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        // ---- 标题：「(图标) {服务器名} 登录」
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = PclIcons.loginAuth,
+                contentDescription = null,
+                tint = p.color3,
+                modifier = Modifier.size(14.dp),
+            )
+            Spacer(Modifier.width(7.dp))
+            PclText(text = "$serverName 登录", color = p.color3, fontSize = 14)
+        }
+
+        // ---- 中间留白：登录后这里显示当前角色，没登录就空着
+        Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+            if (loggedIn != null) {
+                PclText(text = "当前角色：${loggedIn.username}", color = p.gray3, fontSize = 13)
+            }
+        }
+
+        // ---- 邮箱（PCL 的可编辑 ComboBox：手动输入 + 右侧下拉选历史账号）
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            PclText(text = "邮箱", modifier = Modifier.width(36.dp))
+            Spacer(Modifier.width(8.dp))
+            Box(modifier = Modifier.weight(1f)) {
+                PclTextBox(
+                    value = email,
+                    modifier = Modifier.fillMaxWidth(),
+                    onValueChange = { email = it },
+                )
+                if (history.isNotEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.CenterEnd)
+                            .clickable { showHistory = true }
+                            .padding(horizontal = 6.dp, vertical = 8.dp),
+                    ) {
+                        Icon(
+                            imageVector = PclIcons.comboArrow,
+                            contentDescription = "选择已登录的账号",
+                            tint = p.color3,
+                            modifier = Modifier.size(9.dp, 6.dp),
+                        )
+                    }
+                }
+            }
+        }
+        Spacer(Modifier.height(9.dp))
+
+        // ---- 密码
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            PclText(text = "密码", modifier = Modifier.width(36.dp))
+            Spacer(Modifier.width(8.dp))
+            PclTextBox(
+                value = password,
+                modifier = Modifier.weight(1f),
+                secret = true,
+                onValueChange = { password = it },
+            )
+        }
+        Spacer(Modifier.height(11.dp))
+
+        // ---- 记住密码 / 注册账号（缩在输入框那一侧，对应 PCL 的 CheckRemember + BtnLink）
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(start = 44.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            PclCheckBox(
+                text = "记住密码",
+                checked = remember,
+                onCheckedChange = { remember = it },
+            )
+            Spacer(Modifier.weight(1f))
+            if (registerUrl.isNotBlank()) {
+                PclTextButton(text = "注册账号") {
+                    runtime.openWebPage(registerUrl, "$serverName 注册账号")
+                }
+            }
+        }
+        Spacer(Modifier.height(16.dp))
+    }
+
+    if (showHistory) {
+        PclSelectDialog(
+            title = "选择账号",
+            options = history.map { it to it },
+            current = email,
+            onSelect = {
+                email = it
+                showHistory = false
+            },
+            onDismiss = { showHistory = false },
+        )
     }
 }
 

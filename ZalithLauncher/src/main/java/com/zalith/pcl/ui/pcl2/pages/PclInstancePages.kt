@@ -1029,7 +1029,7 @@ private fun PclInstanceSetupPage(version: Version) {
             if (loginType.isThirdParty()) {
                 val isUnifiedPassport = loginType == VersionLoginType.UNIFIED_PASSPORT
                 Spacer(Modifier.height(9.dp))
-                PclSetupRow(if (isUnifiedPassport) "服务器 ID（必填）" else "认证服务器（必填）") {
+                PclSetupRow(if (isUnifiedPassport) "服务器 ID" else "认证服务器") {
                     PclTextBox(
                         value = config.loginAuthServer,
                         modifier = Modifier.fillMaxWidth(),
@@ -1060,30 +1060,11 @@ private fun PclInstanceSetupPage(version: Version) {
                             onValueChange = { config.loginServerName = it; saveToken() },
                         )
                     }
-                    Spacer(Modifier.height(9.dp))
-                    // PCL 的「设置为 LittleSkin」：一键把三项都填成 LittleSkin 的官方值
-                    PclButton(
-                        text = "设置为 LittleSkin",
-                        modifier = Modifier.fillMaxWidth(),
-                        onClick = {
-                            config.loginAuthServer = LITTLESKIN_AUTH_SERVER
-                            config.loginRegisterUrl = LITTLESKIN_REGISTER_URL
-                            config.loginServerName = LITTLESKIN_SERVER_NAME
-                            saveToken()
-                            PclHintHost.push(
-                                "已填入 LittleSkin 的认证服务器，启动该版本时会用 LittleSkin 账户登录。",
-                                PclHintTheme.Green,
-                            )
-                        },
-                    )
                 }
-                Spacer(Modifier.height(9.dp))
-                PclHint(text = loginType.description(), theme = PclHintTheme.Blue)
-            } else {
-                Spacer(Modifier.height(9.dp))
-                PclHint(text = loginType.description(), theme = PclHintTheme.Blue)
             }
 
+            // PCL 的顺序：三行认证信息 → 「自动进入服务器」→ 按钮（`PageInstanceSetup.xaml` 里
+            // 按钮在 Grid 外面，所以永远排在这些行后面）。
             Spacer(Modifier.height(9.dp))
             PclSetupRow("自动进入服务器") {
                 PclTextBox(
@@ -1091,6 +1072,28 @@ private fun PclInstanceSetupPage(version: Version) {
                     modifier = Modifier.fillMaxWidth(),
                     hint = "例如 mc.example.com:25565，留空则直接进主界面",
                     onValueChange = { config.serverIp = it; saveToken() },
+                )
+            }
+
+            if (loginType == VersionLoginType.AUTHLIB) {
+                // PCL 的 `BtnServerAuthLittle`：Height=35、MinWidth=150、靠左、ColorType=Highlight。
+                // 注意别用 fillMaxWidth —— 它在 PCL 里是个小按钮，拉满整行会显得整张卡都散了。
+                Spacer(Modifier.height(12.dp))
+                PclButton(
+                    text = "设置为 LittleSkin",
+                    height = 35.dp,
+                    colorState = PclColorState.Highlight,
+                    modifier = Modifier.widthIn(min = 150.dp),
+                    onClick = {
+                        config.loginAuthServer = LITTLESKIN_AUTH_SERVER
+                        config.loginRegisterUrl = LITTLESKIN_REGISTER_URL
+                        config.loginServerName = LITTLESKIN_SERVER_NAME
+                        saveToken()
+                        PclHintHost.push(
+                            "已填入 LittleSkin 的认证服务器，启动该版本时会用 LittleSkin 账户登录。",
+                            PclHintTheme.Green,
+                        )
+                    },
                 )
             }
         }
