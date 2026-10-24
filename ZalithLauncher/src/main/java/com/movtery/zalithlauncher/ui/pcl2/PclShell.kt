@@ -274,9 +274,28 @@ fun PclMainScreen(
 ) {
     val nav = remember { PclNavController() }
     val runtime = rememberPclRuntime()
-    // 当前版块被「功能隐藏」藏起来时，退回主页
-    LaunchedEffect(nav.section, PclSkinSettings.hidden) {
-        if (PclSkinSettings.isHidden(nav.section.hiddenKey)) nav.go(PclSection.Home)
+    // 当前版块被「功能隐藏」藏起来时，退回主页。
+    // 用 `shouldHide` 而不是 `isHidden`：临时显示期间（右下角连点 10 次）放出来的
+    // 入口是可以真的进去的，不该被人一脚踢回主页。
+    LaunchedEffect(nav.section, PclSkinSettings.hidden, PclSkinSettings.peekUntil) {
+        if (PclSkinSettings.shouldHide(nav.section.hiddenKey)) nav.go(PclSection.Home)
+    }
+
+    // ---- 「临时显示被隐藏的入口」的到期回收
+    //
+    // 连点十次之后所有被隐藏的入口会重新画出来，`PEEK_DURATION_MS` 后自动再藏回去。
+    // 到期时如果人正停在某个被隐藏的页面里（多半就是在设置页里取消勾选），
+    // 直接收走会把人弹回主页 —— 所以再续一轮，等他离开这一页自然结束。
+    LaunchedEffect(PclSkinSettings.peekUntil) {
+        val until = PclSkinSettings.peekUntil
+        if (until <= 0L) return@LaunchedEffect
+        val wait = until - SystemClock.elapsedRealtime()
+        if (wait > 0L) delay(wait)
+        if (PclSkinSettings.isHidden(nav.section.hiddenKey)) {
+            PclSkinSettings.startPeek()
+        } else {
+            PclSkinSettings.stopPeek()
+        }
     }
 
     // ---- 系统返回键（安卓三大金刚键里的「返回」）
@@ -456,9 +475,9 @@ private fun PclMainContent(
             }
             // 左下角提示条栈（PanHint Margin="0,0,0,20"，左对齐）
             PclHintStack(Modifier.align(Alignment.BottomStart).padding(bottom = PclDimens.hintStackBottom))
-            // 右下角「连点 10 次」热区：调出 / 收起「功能隐藏」设置。
+            // 右下角「连点 10 次」热区：临时显示被「功能隐藏」藏起来的入口。
             // 放在悬浮按钮**之前** —— 角落有按钮时，点按钮不该被计进手势。
-            PclHiddenCardGesture(modifier = Modifier.align(Alignment.BottomEnd))
+            PclHiddenPeekGesture(modifier = Modifier.align(Alignment.BottomEnd))
             // 右下角悬浮按钮（StackPanel Margin="15"）
             PclExtraButtons(
                 modifier = Modifier.align(Alignment.BottomEnd).padding(PclDimens.extraButtonStackMargin),
@@ -580,7 +599,7 @@ private fun PclTitleBar(nav: PclNavController) {
                 horizontalArrangement = Arrangement.spacedBy(PclDimens.navPillSpacing),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                PclSection.entries.filter { !PclSkinSettings.isHidden(it.hiddenKey) }.forEach { section ->
+                PclSection.entries.filter { !PclSkinSettings.shouldHide(it.hiddenKey) }.forEach { section ->
                     PclPillButton(
                         text = section.label,
                         checked = nav.section == section,
@@ -1195,20 +1214,21 @@ private fun PclHintToast(
 }
 
 /**
- * 右下角的「连点 10 次」隐形热区：显示 / 收起「功能隐藏」设置卡片。
+ * 右下角的「连点 10 次」隐形热区：**临时**显示被「功能隐藏」勾掉的那些入口。
  *
- * 为什么做成手势：那一整块开关能让用户把「设置」自己藏掉 —— 一旦藏掉，
- * 唯一的恢复入口就在设置页里，等于把自己锁在门外。所以它默认不显示，
- * 只有知道手势的人才能调出来。
+ * 为什么需要这个：整块开关能把「设置」自己藏掉，而恢复它的开关就在设置页里 ——
+ * 勾完等于把自己锁在门外。所以换个路子：勾选状态一个字不改，只是把「画不画」的
+ * 判断临时放开 [PclSkinSettings.PEEK_DURATION_MS]，人趁这段时间进设置取消勾选，
+ * 时间一到入口自动重新藏好。
  *
  * 命中后：
- *   · 打开时顺带把「设置」与「设置 → 个性化」这两个入口恢复出来（否则卡片调出来了也进不去），
- *     并把用户带到「设置 → 个性化」，免得只弹一句提示、人还得自己找。
- *   · 无论开还是关，都在左下角给一条提示说明当前状态与恢复方式。
+ *   · 一个被隐藏的入口都没有时，直接说明「当前没有隐藏功能」，不做无意义的闪烁。
+ *   · 有的话，顺带把用户带到「设置 → 个性化」——“功能隐藏”就在那页底部；
+ *     就算「设置」自己被藏了，顶栏那一条正在临时显示，照样点得进去。
+ *   · 左下角给一条提示，写清「临时」「多久」「怎么提前收起」。
  */
 @Composable
-private fun PclHiddenCardGesture(modifier: Modifier = Modifier) {
-    val context = LocalContext.current
+private fun PclHiddenPeekGesture(modifier: Modifier = Modifier) {
     val nav = LocalPclNav.current
     val interaction = remember { MutableInteractionSource() }
     var taps by remember { mutableIntStateOf(0) }
@@ -1217,59 +1237,48 @@ private fun PclHiddenCardGesture(modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             // 44dp：吸附在右下角，够手指连点，又不会挡到大片内容
-            .size(HIDDEN_CARD_HOTSPOT)
+            .size(PEEK_HOTSPOT)
             .clickable(interactionSource = interaction, indication = null) {
                 val now = SystemClock.elapsedRealtime()
                 // 两次点击隔太久就重新计数 —— 否则「一天里点了 10 次」也会触发
-                taps = if (now - lastTapAt > HIDDEN_CARD_TAP_WINDOW_MS) 1 else taps + 1
+                taps = if (now - lastTapAt > PEEK_TAP_WINDOW_MS) 1 else taps + 1
                 lastTapAt = now
-                if (taps < PclSkinSettings.HIDDEN_CARD_TAP_COUNT) return@clickable
+                if (taps < PclSkinSettings.PEEK_TAP_COUNT) return@clickable
                 taps = 0
 
-                val show = !PclSkinSettings.hiddenCardVisible
-                PclSkinSettings.applyHiddenCardVisible(show)
+                val hiddenCount = PclSkinSettings.hiddenCount
+                if (hiddenCount == 0) {
+                    PclHintHost.push("当前没有被隐藏的功能。", PclHintTheme.Blue)
+                    return@clickable
+                }
 
-                if (show) {
-                    // 卡片所在的位置（设置 / 个性化）如果被自己藏掉了，先放开入口
-                    val released = buildList {
-                        if (PclSkinSettings.isHidden(PclHiddenKeys.SETUP)) {
-                            PclSkinSettings.setHidden(PclHiddenKeys.SETUP, false)
-                            add("设置")
-                        }
-                        if (PclSkinSettings.isHidden(PclHiddenKeys.SETUP_UI)) {
-                            PclSkinSettings.setHidden(PclHiddenKeys.SETUP_UI, false)
-                            add("个性化")
-                        }
-                    }
-                    PclSkinSettings.persist(context)
+                // 已经在临时显示里，再点十次就当「提前收起」—— 免得人不知道怎么关掉
+                if (PclSkinSettings.isPeeking()) {
+                    PclSkinSettings.stopPeek()
                     PclHintHost.push(
-                        buildString {
-                            append("已显示「功能隐藏」设置")
-                            if (released.isNotEmpty()) {
-                                append("（同时恢复了被隐藏的「")
-                                append(released.joinToString("」「"))
-                                append("」入口）")
-                            }
-                            append("。再连点右下角 ${PclSkinSettings.HIDDEN_CARD_TAP_COUNT} 次可收起。")
-                        },
-                        PclHintTheme.Green,
-                    )
-                    // 在「设置 → 个性化」（左栏第 3 项）的底部
-                    nav.go(PclSection.Setup, 2)
-                } else {
-                    PclSkinSettings.persist(context)
-                    PclHintHost.push(
-                        "已收起「功能隐藏」设置。连点右下角 ${PclSkinSettings.HIDDEN_CARD_TAP_COUNT} 次可再次显示。",
+                        "已收起临时显示，$hiddenCount 个入口重新隐藏。",
                         PclHintTheme.Blue,
                     )
+                    return@clickable
                 }
+
+                PclSkinSettings.startPeek()
+                PclHintHost.push(
+                    "已临时显示 $hiddenCount 个被隐藏的入口，" +
+                            "${PclSkinSettings.PEEK_DURATION_MS / 1000} 秒后自动隐藏。" +
+                            "去「设置 → 个性化 → 功能隐藏」取消勾选就能永久恢复；" +
+                            "再连点右下角 ${PclSkinSettings.PEEK_TAP_COUNT} 次可提前收起。",
+                    PclHintTheme.Green,
+                )
+                // 「功能隐藏」在「设置 → 个性化」（左栏第 3 项）底部
+                nav.go(PclSection.Setup, 2)
             }
     )
 }
 
-/** 「功能隐藏」手势：单次计数窗口 / 热区大小（连点次数见 `PclSkinSettings`）。 */
-private const val HIDDEN_CARD_TAP_WINDOW_MS = 1_500L
-private val HIDDEN_CARD_HOTSPOT = 44.dp
+/** 「临时显示」手势：单次计数窗口 / 热区大小（连点次数见 `PclSkinSettings`）。 */
+private const val PEEK_TAP_WINDOW_MS = 1_500L
+private val PEEK_HOTSPOT = 44.dp
 
 /** 右下角悬浮按钮（`MyExtraButton`：40×40 圆形、内缩 10、主题色底 + 10px 模糊阴影、白图标 16）。 */
 @Composable

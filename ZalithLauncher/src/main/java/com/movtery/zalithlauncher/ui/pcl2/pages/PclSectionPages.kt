@@ -3097,7 +3097,7 @@ fun PclSetupLeft(nav: PclNavController) {
             PclLeftEntry.Item(
                 7, PclLeftLabels.setupControlManage, PclIcons.setupControlManage, 0.85f,
             ),
-        ).filterIndexed { index, _ -> !PclSkinSettings.isHidden(PCL_SETUP_KEYS.getOrElse(index) { "" }) },
+        ).filterIndexed { index, _ -> !PclSkinSettings.shouldHide(PCL_SETUP_KEYS.getOrElse(index) { "" }) },
     )
 }
 
@@ -3267,7 +3267,7 @@ fun PclOtherLeft(nav: PclNavController) {
             PclLeftEntry.Item(2, PclLeftLabels.otherTools, PclIcons.otherTools, 0.97f),
             PclLeftEntry.Item(3, PclLeftLabels.otherFeedback, PclIcons.otherFeedback, 0.9f),
             PclLeftEntry.Item(4, PclLeftLabels.otherVoteNew, PclIcons.otherVote, 0.92f),
-        ).filterIndexed { index, _ -> !PclSkinSettings.isHidden(PCL_OTHER_KEYS.getOrElse(index) { "" }) },
+        ).filterIndexed { index, _ -> !PclSkinSettings.shouldHide(PCL_OTHER_KEYS.getOrElse(index) { "" }) },
     )
 }
 

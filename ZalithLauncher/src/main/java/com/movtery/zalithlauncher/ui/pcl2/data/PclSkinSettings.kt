@@ -23,7 +23,9 @@
 package com.movtery.zalithlauncher.ui.pcl2.data
 
 import android.content.Context
+import android.os.SystemClock
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.movtery.zalithlauncher.setting.launcherMMKV
@@ -66,7 +68,6 @@ object PclSkinSettings {
     private const val KEY_LOGO_LEFT = "pcl2.ui.logoLeft"
     private const val KEY_COLORFUL = "pcl2.ui.backgroundColorful"
     private const val KEY_HIDDEN = "pcl2.ui.hidden"
-    private const val KEY_HIDDEN_CARD = "pcl2.ui.hiddenCardVisible"
     private const val KEY_UI_SCALE = "pcl2.ui.scale"
 
     /** 「界面缩放」的自动档：按窗口尺寸挑一个最接近 PCL 观感的档位。 */
@@ -79,12 +80,15 @@ object PclSkinSettings {
     val UI_SCALE_PRESETS = listOf(50, 75, 100, 110, 125, 150)
 
     /**
-     * 「功能隐藏」卡片的唤起手势：右下角连点次数。
+     * 「临时显示被隐藏的入口」手势：右下角连点次数。
      *
      * 写在一处，外壳的手势与设置页的提示文案都引用它 —— 两边一旦不同步，
      * 用户照着提示点就是没反应。
      */
-    const val HIDDEN_CARD_TAP_COUNT = 10
+    const val PEEK_TAP_COUNT = 10
+
+    /** 临时显示保持多久（毫秒）。到期后入口重新藏起来。 */
+    const val PEEK_DURATION_MS = 30_000L
 
     var logoType by mutableStateOf(PclLogoType.Default)
         private set
@@ -102,14 +106,16 @@ object PclSkinSettings {
         private set
 
     /**
-     * 「功能隐藏」那张设置卡片是否可见。
+     * 「临时显示被隐藏的入口」的截止时刻（`SystemClock.elapsedRealtime()` 口径，0 = 未开启）。
      *
-     * **默认关闭** —— 这是一张「一旦乱勾就把界面自己藏没」的开关，
-     * 摆在明面上容易被误触（比如把「设置」藏掉之后就再也进不去设置页了）。
-     * 想用的时候在**右下角连点 10 次**让它出现（见 `PclHiddenCardGesture`），
-     * 再连点 10 次收起。
+     * `UiHiddenPage*` 勾上之后入口会从界面上消失，而取消勾选的开关本身就在被藏起来的
+     * 设置页里 —— 把「设置」勾掉就等于把自己锁在门外。所以右下角连点
+     * [PEEK_TAP_COUNT] 次可以**临时**把被隐藏的入口放出来 [PEEK_DURATION_MS]，
+     * 趁这段时间进去取消勾选；时间一到自动恢复隐藏（[shouldHide] 立刻按老样子过滤）。
+     *
+     * 只影响「画不画」，[hidden] 里的勾选状态一个字都不改 —— 时间过了还是隐藏。
      */
-    var hiddenCardVisible by mutableStateOf(false)
+    var peekUntil by mutableLongStateOf(0L)
         private set
 
     /**
@@ -122,7 +128,30 @@ object PclSkinSettings {
     var uiScale by mutableStateOf(UI_SCALE_AUTO)
         private set
 
+    /** 用户勾的原始状态（设置页的复选框看这个）。 */
     fun isHidden(key: String): Boolean = key in hidden
+
+    /**
+     * 界面渲染用：勾了隐藏、**且**当前不在「临时显示」窗口里，才真的不画。
+     *
+     * 三处生效点（顶部导航、设置左栏、更多左栏）与「当前版块被藏就退回主页」
+     * 都用这个，而不是 [isHidden] —— 否则连点十次放出来的入口点不进去。
+     */
+    fun shouldHide(key: String): Boolean = key in hidden && !isPeeking()
+
+    fun isPeeking(): Boolean = peekUntil > SystemClock.elapsedRealtime()
+
+    /** 被隐藏的入口数量（提示文案用）。 */
+    val hiddenCount: Int get() = hidden.size
+
+    /** 开始（或续上一轮）临时显示。 */
+    fun startPeek(durationMs: Long = PEEK_DURATION_MS) {
+        peekUntil = SystemClock.elapsedRealtime() + durationMs
+    }
+
+    fun stopPeek() {
+        peekUntil = 0L
+    }
 
     /** 设置顶层「主页」是不可隐藏的（隐藏了就没有可去的地方了）。 */
     fun setHidden(key: String, value: Boolean) {
@@ -149,11 +178,6 @@ object PclSkinSettings {
         uiScale = value
     }
 
-    /** 切换「功能隐藏」卡片的显隐（右下角连点 10 次触发）。 */
-    fun applyHiddenCardVisible(value: Boolean) {
-        hiddenCardVisible = value
-    }
-
     /**
      * 实际生效的缩放系数。
      *
@@ -177,7 +201,6 @@ object PclSkinSettings {
             .split('|')
             .filter { it.isNotBlank() }
             .toSet()
-        hiddenCardVisible = mmkv.getBoolean(KEY_HIDDEN_CARD, false)
         uiScale = mmkv.getInt(KEY_UI_SCALE, UI_SCALE_AUTO)
     }
 
@@ -188,7 +211,6 @@ object PclSkinSettings {
             putBoolean(KEY_LOGO_LEFT, logoLeft)
             putBoolean(KEY_COLORFUL, colorfulBackground)
             putString(KEY_HIDDEN, hidden.joinToString("|"))
-            putBoolean(KEY_HIDDEN_CARD, hiddenCardVisible)
             putInt(KEY_UI_SCALE, uiScale)
         }
     }
