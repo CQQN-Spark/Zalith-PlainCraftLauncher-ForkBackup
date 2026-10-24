@@ -12,17 +12,23 @@
 package com.zalith.pcl.ui.pcl2
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.zalith.pcl.BuildConfig
 import com.zalith.pcl.setting.AllSettings
+import com.zalith.pcl.ui.pcl2.components.PclConfirmDialog
 import com.zalith.pcl.ui.pcl2.components.PclSelectDialog
 import com.zalith.pcl.ui.pcl2.components.PclUpgradeDialog
+import com.zalith.pcl.ui.pcl2.components.PclUpgradeDownloadDialog
 import com.zalith.pcl.ui.pcl2.components.PclUpgradeFilesDialog
 import com.zalith.pcl.ui.pcl2.components.pclMarkdownToPlain
 import com.zalith.pcl.upgrade.RemoteData
@@ -43,8 +49,8 @@ import java.util.Locale
  * 表现就是「点了完全没反应，连个弹窗都没有」。
  *
  * 这里挂在 `PclMainContent` 上（与 `PclNamePromptHost` 同一层），所以：
- *   · 「关于」页手动检查 → 本宿主弹出 PCL 风格的更新框；
- *   · 启动时自动检查（[LauncherUpgradeViewModel.checkOnAppStart]）→ 同样是这个框。
+ *   · 每次进入应用自动检查（[LauncherUpgradeViewModel.checkOnAppStart]）→ 本宿主弹出更新框；
+ *   · 「关于」页手动检查 → 同一个框。
  *
  * 用的是 **Activity 作用域的同一个 ViewModel 实例**（`viewModel()` 默认取
  * `LocalViewModelStoreOwner`，与「关于」页里拿到的是同一个），不需要任何额外转发。
@@ -54,9 +60,25 @@ fun PclUpgradeHost() {
     val context = LocalContext.current
     val upgradeViewModel: LauncherUpgradeViewModel = viewModel()
 
-    // 启动时自动检查一次（内部有 1 小时限频，不会每次都打网络）。
+    // 每次进入都查一次（ViewModel 内部对同一个实例只放行一次，不会因重组重复请求）。
     LaunchedEffect(Unit) {
         upgradeViewModel.checkOnAppStart()
+    }
+
+    // 从「安装未知应用」授权页回来时继续安装。系统设置页是另一个 Activity，
+    // 我们这边只会收到 ON_RESUME，所以只能靠生命周期回调来接。
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                val state = PclLauncherUpdate.state
+                if (state is PclLauncherUpdateState.NeedPermission && PclLauncherUpdate.hasPendingInstall) {
+                    PclLauncherUpdate.retryInstall(context)
+                }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
     when (val operation = upgradeViewModel.operation) {
@@ -90,8 +112,8 @@ fun PclUpgradeHost() {
                             }
                         }
                         files.size == 1 -> {
-                            openLink(context, files.first().uri)
                             upgradeViewModel.operation = LauncherUpgradeOperation.None
+                            PclLauncherUpdate.start(context, data.version, files.first())
                         }
                         else -> upgradeViewModel.operation = LauncherUpgradeOperation.SelectApk(data)
                     }
@@ -108,11 +130,27 @@ fun PclUpgradeHost() {
         }
 
         is LauncherUpgradeOperation.SelectApk -> {
+            val data = operation.data
+            val deviceArch = remember { currentLauncherArch() }
+            // 当前设备架构排在最前面，并默认打勾：绝大多数人直接点第一项就是对的。
+            // 没有对应架构时退回 universal。
+            val ordered = remember(data, deviceArch) {
+                data.files.sortedBy { if (it.arch == deviceArch) 0 else 1 }
+            }
+            val defaultFile = remember(ordered, deviceArch) {
+                ordered.firstOrNull { it.arch == deviceArch }?.fileName
+                    ?: ordered.firstOrNull { it.arch == RemoteData.RemoteFile.Arch.ALL }?.fileName
+            }
             PclUpgradeFilesDialog(
-                files = operation.data.files.map { it.fileName to it.uri },
-                onSelect = { uri ->
-                    openLink(context, uri)
+                title = "选择要下载的安装包（${data.version}）",
+                // 只显示「版本 · 架构」，不显示 GitHub 的长链接
+                options = ordered.map { it.fileName to "${data.version} · ${it.arch.abiText()}" },
+                current = defaultFile,
+                onSelect = { fileName ->
                     upgradeViewModel.operation = LauncherUpgradeOperation.None
+                    ordered.firstOrNull { it.fileName == fileName }?.let {
+                        PclLauncherUpdate.start(context, data.version, it)
+                    }
                 },
                 onDismiss = { upgradeViewModel.operation = LauncherUpgradeOperation.None },
             )
@@ -134,6 +172,62 @@ fun PclUpgradeHost() {
                     upgradeViewModel.operation = LauncherUpgradeOperation.None
                 },
                 onDismiss = { upgradeViewModel.operation = LauncherUpgradeOperation.None },
+            )
+        }
+    }
+
+    // ---- 下载 / 安装过程（与上面的「检查更新」各阶段互斥，但独立渲染更省心）
+    when (val update = PclLauncherUpdate.state) {
+        PclLauncherUpdateState.Idle -> {}
+
+        is PclLauncherUpdateState.Downloading -> {
+            val total = update.total
+            val progress = if (total > 0L) {
+                (update.downloaded.toFloat() / total.toFloat()).coerceIn(0f, 1f)
+            } else {
+                0f
+            }
+            PclUpgradeDownloadDialog(
+                title = "正在下载启动器更新",
+                versionText = "${update.version} · ${update.archText}",
+                detailText = buildString {
+                    append(formatUpdateSize(update.downloaded))
+                    if (total > 0L) {
+                        append(" / ").append(formatUpdateSize(total))
+                        append("（").append((progress * 100).toInt()).append("%）")
+                    }
+                    if (update.speed > 0L) {
+                        append(" · ").append(formatUpdateSize(update.speed)).append("/s")
+                    }
+                    append("\n下载完成后会自动打开安装界面。")
+                },
+                progress = progress,
+                onCancel = { PclLauncherUpdate.cancel() },
+            )
+        }
+
+        is PclLauncherUpdateState.Failed -> {
+            PclConfirmDialog(
+                title = "更新下载失败",
+                content = "${update.version} · ${update.archText}\n\n${update.message}\n\n" +
+                    "网络不稳时重试通常就好了；也可以点「取消」后到 GitHub Releases 页手动下载。",
+                confirmText = "重试",
+                dismissText = "取消",
+                danger = true,
+                onConfirm = { PclLauncherUpdate.retry(context) },
+                onDismiss = { PclLauncherUpdate.dismiss() },
+            )
+        }
+
+        is PclLauncherUpdateState.NeedPermission -> {
+            PclConfirmDialog(
+                title = "需要安装权限",
+                content = "安装包已经下载好了（${update.version} · ${update.archText}）。\n\n" +
+                    "系统要求先允许本应用「安装未知应用」，授权后会自动继续安装。",
+                confirmText = "去授权",
+                dismissText = "取消",
+                onConfirm = { PclLauncherUpdate.openInstallSettings(context) },
+                onDismiss = { PclLauncherUpdate.dismiss() },
             )
         }
     }

@@ -883,20 +883,81 @@ fun PclUpgradeDialog(
 /**
  * 选择要下载哪一个安装包（多架构）。
  *
- * 直接复用 [PclSelectDialog]（`MyMsgSelect`）：条目就是各个 APK 的文件名，
- * 选中即打开该资产的下载链接 —— 与本项目其它「选版本」弹窗的观感完全一致。
+ * 直接复用 [PclSelectDialog]（`MyMsgSelect`），但**列表里只写版本与架构** ——
+ * 之前这里把 `fileName to uri` 顺序传反了，弹窗里列出来的是五条一模一样的
+ * `https://github.com/...`，选中后拿到的还是文件名，于是「选完什么都没发生」。
+ *
+ * 默认选中当前设备架构那一条（[current] 传文件名，PclSelectDialog 会打上勾）。
  */
 @Composable
 fun PclUpgradeFilesDialog(
-    files: List<Pair<String, String>>,
-    onSelect: (uri: String) -> Unit,
+    title: String,
+    options: List<Pair<String, String>>,
+    current: String?,
+    onSelect: (fileName: String) -> Unit,
     onDismiss: () -> Unit,
 ) {
     PclSelectDialog(
-        title = "选择要下载的安装包",
-        options = files,
-        current = null,
-        onSelect = { id -> onSelect(id) },
+        title = title,
+        options = options,
+        current = current,
+        onSelect = onSelect,
         onDismiss = onDismiss,
     )
+}
+
+/**
+ * 正在下载启动器安装包（PCL 风格的 `MyMsgProgress`）。
+ *
+ * 进度条用 [PclProgressBar]（4dp、圆角 2、主题色），下面是「已下载 / 总大小 · 速度」，
+ * 与游戏资源下载页的观感一致。总大小未知时 `progress < 0`，进度条停在 0 不动。
+ */
+@Composable
+fun PclUpgradeDownloadDialog(
+    title: String,
+    versionText: String,
+    detailText: String,
+    progress: Float,
+    onCancel: () -> Unit,
+) {
+    val p = pclPalette
+    PclDialogContainer(onDismiss = {}) { requestClose ->
+        PclMsgFrame(
+            title = title,
+            buttons = {
+                PclMsgButton(text = "取消下载", onClick = {
+                    onCancel()
+                    requestClose()
+                })
+            },
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        start = PclDimens.msgBodyStart,
+                        end = PclDimens.msgBodyEnd,
+                        bottom = PclDimens.msgBodyBottomTight,
+                    ),
+            ) {
+                Text(
+                    text = versionText,
+                    style = PclTextStyle.base(p).copy(
+                        fontSize = PclDimens.msgBodyFontSize.sp,
+                        color = MsgBodyColor,
+                    ),
+                )
+                Spacer(Modifier.height(14.dp))
+                PclProgressBar(progress = progress.coerceAtLeast(0f))
+                Spacer(Modifier.height(10.dp))
+                Text(
+                    text = detailText,
+                    style = PclTextStyle.base(p).copy(
+                        fontSize = PclDimens.msgBodyFontSize.sp,
+                        color = p.color2,
+                    ),
+                )
+            }
+        }
+    }
 }

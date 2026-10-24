@@ -132,23 +132,22 @@ class LauncherUpgradeViewModel: ViewModel() {
         AllSettings.lastUpgradeCheck.save(System.currentTimeMillis())
     }
 
+    /** 同一个 ViewModel 实例只做一次启动检查（重组 / 重入不会重复打网络）。 */
+    private var startCheckLaunched = false
+
     /**
-     * 在启动时，快速完成所有的检查
+     * 在启动时检查更新。
+     *
+     * **不再做「一小时一次」的限频**：按需求改成每次进入应用都查一次。
+     * 本地 checks 只防同一个 ViewModel 实例被重复调用（`PclUpgradeHost` 每次组合
+     * 都会调它），跨进程/跨 Activity 重建仍会重新检查，也就是「每次进入都查」。
      */
     fun checkOnAppStart(
         onIsLatest: suspend () -> Unit = {}
     ) {
+        if (startCheckLaunched) return
+        startCheckLaunched = true
         viewModelScope.launch {
-            if (
-                isWithinRateLimit(
-                    time = TimeUnit.HOURS.toMillis(1L),
-                    lastCheckTime = AllSettings.lastUpgradeCheck.getValue()
-                )
-            ) {
-                Logger.info(TAG, "App start check: Within rate limit, skipping")
-                return@launch
-            }
-
             val data = fetchRemoteData()
             if (data != null) {
                 checkForUpgrade(
