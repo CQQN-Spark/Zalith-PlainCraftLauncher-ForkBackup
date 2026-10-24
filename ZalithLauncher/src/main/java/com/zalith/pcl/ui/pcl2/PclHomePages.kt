@@ -1265,6 +1265,12 @@ private fun PclAuthLoginPanel(
         }.distinct()
     }
 
+    // 「切换账号」：和正版面板的 picking 同一个语义 —— 先回到输入框，登录成功再自动收起
+    var picking by remember { mutableStateOf(false) }
+    LaunchedEffect(loggedIn?.uniqueUUID) {
+        if (loggedIn != null) picking = false
+    }
+
     Column(modifier = Modifier.fillMaxSize()) {
         // ---- 标题：「(图标) {服务器名} 登录」
         Row(
@@ -1282,12 +1288,27 @@ private fun PclAuthLoginPanel(
             PclText(text = "$serverName 登录", color = p.color3, fontSize = 14)
         }
 
-        // ---- 中间留白：登录后这里显示当前角色，没登录就空着
-        Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-            if (loggedIn != null) {
-                PclText(text = "当前角色：${loggedIn.username}", color = p.gray3, fontSize = 13)
+        if (loggedIn != null && !picking) {
+            // ---- 已登录：整块换成和正版一样的「皮肤头像 + 角色名 + 按钮行」。
+            //      PCL 的 `PageLoginAuth` 只画输入框，没有已登录样式（它把这件事交给
+            //      `PageLoginMsSkin` 那一套去了），这里是照正版面板补的。
+            Box(
+                modifier = Modifier.weight(1f).fillMaxWidth(),
+                contentAlignment = Alignment.Center,
+            ) {
+                PclAuthAccountPanel(
+                    serverName = serverName,
+                    baseUrl = baseUrl,
+                    registerUrl = registerUrl,
+                    current = loggedIn,
+                    onSwitch = { picking = true },
+                )
             }
+            return@Column
         }
+
+        // ---- 未登录（或刚点了「切换账号」）：中间留白 + 账号密码
+        Box(modifier = Modifier.weight(1f).fillMaxWidth())
 
         // ---- 邮箱（PCL 的可编辑 ComboBox：手动输入 + 右侧下拉选历史账号）
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1362,6 +1383,198 @@ private fun PclAuthLoginPanel(
             },
             onDismiss = { showHistory = false },
         )
+    }
+}
+
+/**
+ * 外置账户已登录面板 —— 版式与 [PclMicrosoftAccountPanel] **完全一致**：
+ *
+ * ```
+ * Row 0  Height=75             64×64 皮肤头像（居中贴顶）
+ * Row 1  Height=Auto MinHeight=30   角色名，17sp，居中、超长省略
+ * Row 2  Height=13             空行
+ * Row 3  Height=30             PanButtons：圆角 5、底色 ColorBrush8，3 枚 24dp 图标按钮
+ * Row 4  Height=19             空行
+ * ```
+ *
+ * 三枚按钮的含义换成外置登录那一套：**皮肤**（本地换皮 / 重新从服务器拉）·
+ * **服务器网站**（注册页 / 账号中心）· **切换账号**。几何常量直接复用
+ * [PCL_MS_SKIN_GRID_HEIGHT]，改一处两边一起动 —— 这两个面板并排切换时不能有位移。
+ */
+@Composable
+private fun PclAuthAccountPanel(
+    serverName: String,
+    baseUrl: String,
+    registerUrl: String,
+    current: Account,
+    onSwitch: () -> Unit,
+) {
+    val p = pclPalette
+    val context = LocalContext.current
+    val runtime = LocalPclRuntime.current
+    val scope = rememberCoroutineScope()
+
+    var skinToken by remember { mutableStateOf(0) }
+    var skinMenu by remember { mutableStateOf(false) }
+    var editMenu by remember { mutableStateOf(false) }
+
+    // 「修改皮肤」：外置账户的真皮肤由认证服务器给（`downloadYggdrasil`），
+    // 这里选的文件只覆盖本地那一份，语义和正版面板的「修改皮肤」相同。
+    val skinPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        scope.launch {
+            val error = withContext(Dispatchers.IO) {
+                runCatching {
+                    val temp = File(context.cacheDir, "pcl_auth_skin.png")
+                    context.contentResolver.openInputStream(uri)?.use { input ->
+                        temp.outputStream().use { input.copyTo(it) }
+                    } ?: return@runCatching "读取不了所选图片"
+                    if (!validateSkinFile(temp)) return@runCatching "文件不是有效的皮肤"
+                    val skinFile = current.getSkinFile()
+                    skinFile.parentFile?.mkdirs()
+                    temp.copyTo(skinFile, overwrite = true)
+                    null
+                }.getOrElse { it.message ?: it.javaClass.simpleName }
+            }
+            if (error == null) {
+                skinToken++
+                AccountsManager.refreshWardrobe()
+                PclHintHost.push("皮肤已更换。", PclHintTheme.Green)
+            } else {
+                PclHintHost.push("换皮肤失败：$error", PclHintTheme.Red)
+            }
+        }
+    }
+
+    // 老账户 / 上次拉皮肤失败：打开面板时补拉一次，别让头像一直停在默认 Steve。
+    LaunchedEffect(current.uniqueUUID) {
+        if (!current.getSkinFile().exists()) {
+            withContext(Dispatchers.IO) { runCatching { current.downloadYggdrasil() } }
+            skinToken++
+        }
+    }
+
+    Box(
+        modifier = Modifier.fillMaxWidth().height(PCL_MS_SKIN_GRID_HEIGHT),
+    ) {
+        // PanData：半透明底 + 五行网格
+        Box(modifier = Modifier.fillMaxSize().background(p.semiTransparent))
+
+        Column(modifier = Modifier.fillMaxSize()) {
+            Spacer(Modifier.height(75.dp))
+
+            Box(
+                modifier = Modifier.fillMaxWidth().heightIn(min = 30.dp).padding(horizontal = 8.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = current.username,
+                    style = androidx.compose.ui.text.TextStyle(fontSize = 17.sp, color = p.color1),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+
+            Spacer(Modifier.height(13.dp))
+
+            Box(
+                modifier = Modifier.fillMaxWidth().height(30.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Row(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(5.dp))
+                        .background(p.color8)
+                        .padding(start = 10.dp, top = 3.dp, end = 9.dp, bottom = 3.dp),
+                    horizontalArrangement = Arrangement.spacedBy(9.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    PclIconButton(
+                        logo = PclIcons.loginMsSkin,
+                        size = 24.dp,
+                        logoSize = 14.dp,
+                        logoScale = 1.08f,
+                        contentDescription = "皮肤与披风",
+                        onClick = { skinMenu = true },
+                    )
+                    PclIconButton(
+                        logo = PclIcons.loginMsEdit,
+                        size = 24.dp,
+                        logoSize = 14.dp,
+                        logoScale = 1.1f,
+                        contentDescription = "服务器网站",
+                        onClick = { editMenu = true },
+                    )
+                    PclIconButton(
+                        logo = PclIcons.loginMsSwitch,
+                        size = 24.dp,
+                        logoSize = 14.dp,
+                        logoScale = 1.15f,
+                        contentDescription = "切换账号",
+                        onClick = onSwitch,
+                    )
+                }
+
+                DropdownMenu(
+                    expanded = skinMenu,
+                    onDismissRequest = { skinMenu = false },
+                    modifier = Modifier.background(p.white),
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("修改皮肤", style = PclTextStyle.base(p)) },
+                        onClick = { skinMenu = false; skinPicker.launch("image/png") },
+                    )
+                    DropdownMenuItem(
+                        text = { Text("刷新皮肤", style = PclTextStyle.base(p)) },
+                        onClick = {
+                            skinMenu = false
+                            scope.launch {
+                                withContext(Dispatchers.IO) {
+                                    runCatching { current.downloadYggdrasil() }
+                                }
+                                skinToken++
+                                AccountsManager.refreshWardrobe()
+                                PclHintHost.push("已刷新皮肤。", PclHintTheme.Blue)
+                            }
+                        },
+                    )
+                }
+
+                // 外置账户没有「修改密码」这类统一路径：跳服务器自己的网站就对了
+                DropdownMenu(
+                    expanded = editMenu,
+                    onDismissRequest = { editMenu = false },
+                    modifier = Modifier.background(p.white),
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("$serverName 网站", style = PclTextStyle.base(p)) },
+                        onClick = {
+                            editMenu = false
+                            runtime.openWebPage(
+                                registerUrl.ifBlank { baseUrl },
+                                "$serverName 网站",
+                            )
+                        },
+                    )
+                    if (registerUrl.isNotBlank()) {
+                        DropdownMenuItem(
+                            text = { Text("注册新账号", style = PclTextStyle.base(p)) },
+                            onClick = {
+                                editMenu = false
+                                runtime.openWebPage(registerUrl, "$serverName 注册账号")
+                            },
+                        )
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(19.dp))
+        }
+
+        // Skin：64×64，居中贴顶（和正版面板同一层）
+        Box(modifier = Modifier.align(Alignment.TopCenter)) {
+            PclSkinAvatar(account = current, size = 64.dp, refreshKey = skinToken)
+        }
     }
 }
 
