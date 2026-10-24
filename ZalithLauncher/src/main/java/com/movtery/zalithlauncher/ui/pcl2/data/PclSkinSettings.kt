@@ -66,6 +66,7 @@ object PclSkinSettings {
     private const val KEY_LOGO_LEFT = "pcl2.ui.logoLeft"
     private const val KEY_COLORFUL = "pcl2.ui.backgroundColorful"
     private const val KEY_HIDDEN = "pcl2.ui.hidden"
+    private const val KEY_HIDDEN_CARD = "pcl2.ui.hiddenCardVisible"
     private const val KEY_UI_SCALE = "pcl2.ui.scale"
 
     /** 「界面缩放」的自动档：按窗口尺寸挑一个最接近 PCL 观感的档位。 */
@@ -76,6 +77,14 @@ object PclSkinSettings {
 
     /** 手动可选档位（百分比）。 */
     val UI_SCALE_PRESETS = listOf(50, 75, 100, 110, 125, 150)
+
+    /**
+     * 「功能隐藏」卡片的唤起手势：右下角连点次数。
+     *
+     * 写在一处，外壳的手势与设置页的提示文案都引用它 —— 两边一旦不同步，
+     * 用户照着提示点就是没反应。
+     */
+    const val HIDDEN_CARD_TAP_COUNT = 10
 
     var logoType by mutableStateOf(PclLogoType.Default)
         private set
@@ -90,6 +99,17 @@ object PclSkinSettings {
 
     /** 被隐藏的版块 / 子页面（见 [PclHiddenKeys]）。 */
     var hidden by mutableStateOf<Set<String>>(emptySet())
+        private set
+
+    /**
+     * 「功能隐藏」那张设置卡片是否可见。
+     *
+     * **默认关闭** —— 这是一张「一旦乱勾就把界面自己藏没」的开关，
+     * 摆在明面上容易被误触（比如把「设置」藏掉之后就再也进不去设置页了）。
+     * 想用的时候在**右下角连点 10 次**让它出现（见 `PclHiddenCardGesture`），
+     * 再连点 10 次收起。
+     */
+    var hiddenCardVisible by mutableStateOf(false)
         private set
 
     /**
@@ -129,6 +149,11 @@ object PclSkinSettings {
         uiScale = value
     }
 
+    /** 切换「功能隐藏」卡片的显隐（右下角连点 10 次触发）。 */
+    fun applyHiddenCardVisible(value: Boolean) {
+        hiddenCardVisible = value
+    }
+
     /**
      * 实际生效的缩放系数。
      *
@@ -152,6 +177,7 @@ object PclSkinSettings {
             .split('|')
             .filter { it.isNotBlank() }
             .toSet()
+        hiddenCardVisible = mmkv.getBoolean(KEY_HIDDEN_CARD, false)
         uiScale = mmkv.getInt(KEY_UI_SCALE, UI_SCALE_AUTO)
     }
 
@@ -162,6 +188,7 @@ object PclSkinSettings {
             putBoolean(KEY_LOGO_LEFT, logoLeft)
             putBoolean(KEY_COLORFUL, colorfulBackground)
             putString(KEY_HIDDEN, hidden.joinToString("|"))
+            putBoolean(KEY_HIDDEN_CARD, hiddenCardVisible)
             putInt(KEY_UI_SCALE, uiScale)
         }
     }

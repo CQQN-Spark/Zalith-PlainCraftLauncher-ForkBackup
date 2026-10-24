@@ -599,16 +599,30 @@ fun PclSetupLinkPage() {
  *  PageSetupUI —— 个性化
  * ==========================================================================*/
 
-/** 「功能隐藏」里的一项：勾上就藏起来（存 [PclSkinSettings]）。 */
+/**
+ * 「功能隐藏」里的一项：勾上就藏起来（存 [PclSkinSettings]）。
+ *
+ * 勾/取消都当场给一条提示：勾上之后界面上少的是一整个入口，用户很可能
+ * 既不知道「为什么不见了」，也不知道「怎么找回来」—— 提示里把恢复手势一并写清楚。
+ */
 @Composable
 private fun PclSkinHiddenCheck(key: String, label: String) {
     val context = LocalContext.current
     PclCheckBox(
         text = label,
         checked = PclSkinSettings.isHidden(key),
-        onCheckedChange = {
-            PclSkinSettings.setHidden(key, it)
+        onCheckedChange = { checked ->
+            PclSkinSettings.setHidden(key, checked)
             PclSkinSettings.persist(context)
+            if (checked) {
+                PclHintHost.push(
+                    "「$label」已隐藏。连点右下角 ${PclSkinSettings.HIDDEN_CARD_TAP_COUNT} 次" +
+                            "可显示「功能隐藏」设置来恢复。",
+                    PclHintTheme.Yellow,
+                )
+            } else {
+                PclHintHost.push("「$label」已恢复显示。", PclHintTheme.Green)
+            }
         },
     )
 }
@@ -1114,41 +1128,52 @@ fun PclSetupUiPage() {
         Spacer(Modifier.height(PclDimens.cardGap))
 
         // ---- 功能隐藏（PCL `PageSetupUI.xaml:723` 的 CardSwitch）
-        PclCard(modifier = Modifier.fillMaxWidth(), title = PclStrings.LangSetFuncHidden) {
-            Column {
-                PclSkinHiddenCheck(key = PclHiddenKeys.DOWNLOAD, label = PclStrings.LangSetFuncHiddenDownload)
-                PclSkinHiddenCheck(key = PclHiddenKeys.LINK, label = PclStrings.LangSetFuncHiddenLink)
-                PclSkinHiddenCheck(key = PclHiddenKeys.SETUP, label = PclStrings.LangSetFuncHiddenSettings)
-                PclSkinHiddenCheck(key = PclHiddenKeys.OTHER, label = PclStrings.LangSetFuncHiddenMore)
-                Spacer(Modifier.height(6.dp))
-                PclText(
-                    text = PclStrings.LangSetFuncHiddenSettingsSubPage,
-                    color = pclPalette.gray2,
-                    modifier = Modifier.padding(vertical = 4.dp),
-                )
-                PclSkinHiddenCheck(PclHiddenKeys.SETUP_GAME, PclStrings.LangSetFuncHiddenSettingsGame)
-                PclSkinHiddenCheck(PclHiddenKeys.SETUP_LINK, PclStrings.LangSetFuncHiddenSettingsLink)
-                PclSkinHiddenCheck(PclHiddenKeys.SETUP_UI, PclStrings.LangSetFuncHiddenSettingsPersonalize)
-                PclSkinHiddenCheck(PclHiddenKeys.SETUP_SYSTEM, PclStrings.LangSetFuncHiddenSettingsLaunch)
-                Spacer(Modifier.height(6.dp))
-                PclText(
-                    text = PclStrings.LangSetFuncHiddenMoreSubPage,
-                    color = pclPalette.gray2,
-                    modifier = Modifier.padding(vertical = 4.dp),
-                )
-                PclSkinHiddenCheck(PclHiddenKeys.OTHER_HELP, PclStrings.LangSetFuncHiddenMoreHelp)
-                PclSkinHiddenCheck(PclHiddenKeys.OTHER_ABOUT, PclStrings.LangSetFuncHiddenMoreAbout)
-                PclSkinHiddenCheck(PclHiddenKeys.OTHER_TOOLS, PclStrings.LangSetFuncHiddenMoreTool)
-                PclSkinHiddenCheck(PclHiddenKeys.OTHER_FEEDBACK, PclStrings.LangSetFuncHiddenMoreFeedback)
-                PclSkinHiddenCheck(PclHiddenKeys.OTHER_VOTE, PclStrings.LangSetFuncHiddenMoreVote)
-                PclHint(
-                    text = "勾上就把对应入口藏起来（顶部导航的那一排、以及设置/更多的子页面）。" +
-                            "「主页面」不允许隐藏，否则就没地方可去了。",
-                    theme = PclHintTheme.Blue,
-                )
+        //
+        // 默认**不显示**：这张卡能把「设置」自己藏掉，藏完就再也进不来设置页了。
+        // 要用的时候在右下角连点 10 次让它出现（见 `PclHiddenCardGesture`）。
+        if (PclSkinSettings.hiddenCardVisible) {
+            PclCard(modifier = Modifier.fillMaxWidth(), title = PclStrings.LangSetFuncHidden) {
+                Column {
+                    PclSkinHiddenCheck(key = PclHiddenKeys.DOWNLOAD, label = PclStrings.LangSetFuncHiddenDownload)
+                    PclSkinHiddenCheck(key = PclHiddenKeys.LINK, label = PclStrings.LangSetFuncHiddenLink)
+                    PclSkinHiddenCheck(key = PclHiddenKeys.SETUP, label = PclStrings.LangSetFuncHiddenSettings)
+                    PclSkinHiddenCheck(key = PclHiddenKeys.OTHER, label = PclStrings.LangSetFuncHiddenMore)
+                    Spacer(Modifier.height(6.dp))
+                    PclText(
+                        text = PclStrings.LangSetFuncHiddenSettingsSubPage,
+                        color = pclPalette.gray2,
+                        modifier = Modifier.padding(vertical = 4.dp),
+                    )
+                    PclSkinHiddenCheck(PclHiddenKeys.SETUP_GAME, PclStrings.LangSetFuncHiddenSettingsGame)
+                    PclSkinHiddenCheck(PclHiddenKeys.SETUP_LINK, PclStrings.LangSetFuncHiddenSettingsLink)
+                    PclSkinHiddenCheck(PclHiddenKeys.SETUP_UI, PclStrings.LangSetFuncHiddenSettingsPersonalize)
+                    PclSkinHiddenCheck(PclHiddenKeys.SETUP_SYSTEM, PclStrings.LangSetFuncHiddenSettingsLaunch)
+                    Spacer(Modifier.height(6.dp))
+                    PclText(
+                        text = PclStrings.LangSetFuncHiddenMoreSubPage,
+                        color = pclPalette.gray2,
+                        modifier = Modifier.padding(vertical = 4.dp),
+                    )
+                    PclSkinHiddenCheck(PclHiddenKeys.OTHER_HELP, PclStrings.LangSetFuncHiddenMoreHelp)
+                    PclSkinHiddenCheck(PclHiddenKeys.OTHER_ABOUT, PclStrings.LangSetFuncHiddenMoreAbout)
+                    PclSkinHiddenCheck(PclHiddenKeys.OTHER_TOOLS, PclStrings.LangSetFuncHiddenMoreTool)
+                    PclSkinHiddenCheck(PclHiddenKeys.OTHER_FEEDBACK, PclStrings.LangSetFuncHiddenMoreFeedback)
+                    PclSkinHiddenCheck(PclHiddenKeys.OTHER_VOTE, PclStrings.LangSetFuncHiddenMoreVote)
+                    PclHint(
+                        text = "勾上就把对应入口藏起来（顶部导航的那一排、以及设置/更多的子页面）。" +
+                                "「主页面」不允许隐藏，否则就没地方可去了。",
+                        theme = PclHintTheme.Blue,
+                    )
+                    PclHint(
+                        text = "这块设置本身也是隐藏的：想看它，在右下角连点 " +
+                                "${PclSkinSettings.HIDDEN_CARD_TAP_COUNT} 次；点完会自动回到这一页。" +
+                                "万一连「设置」或「个性化」也被藏了，同一个手势会一并把它们放开。",
+                        theme = PclHintTheme.Yellow,
+                    )
+                }
             }
+            Spacer(Modifier.height(PclDimens.cardGap))
         }
-        Spacer(Modifier.height(PclDimens.cardGap))
         PclBottomSpacer()
     }
 

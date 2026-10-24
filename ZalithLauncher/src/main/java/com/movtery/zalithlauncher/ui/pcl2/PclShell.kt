@@ -22,6 +22,7 @@
 
 package com.movtery.zalithlauncher.ui.pcl2
 
+import android.os.SystemClock
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateDpAsState
@@ -65,6 +66,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
@@ -107,6 +109,7 @@ import com.movtery.zalithlauncher.ui.pcl2.components.PclBackgroundImageLayer
 import com.movtery.zalithlauncher.ui.pcl2.components.PclDownloadTaskDialog
 import com.movtery.zalithlauncher.ui.pcl2.components.PclIconButton
 import com.movtery.zalithlauncher.ui.pcl2.components.PclIconTheme
+import com.movtery.zalithlauncher.ui.pcl2.components.PclHintTheme
 import com.movtery.zalithlauncher.ui.pcl2.components.PclIcons
 import com.movtery.zalithlauncher.ui.pcl2.components.PclImageLoader
 import com.movtery.zalithlauncher.ui.pcl2.pages.pclDownloadManagerPage
@@ -453,6 +456,9 @@ private fun PclMainContent(
             }
             // 左下角提示条栈（PanHint Margin="0,0,0,20"，左对齐）
             PclHintStack(Modifier.align(Alignment.BottomStart).padding(bottom = PclDimens.hintStackBottom))
+            // 右下角「连点 10 次」热区：调出 / 收起「功能隐藏」设置。
+            // 放在悬浮按钮**之前** —— 角落有按钮时，点按钮不该被计进手势。
+            PclHiddenCardGesture(modifier = Modifier.align(Alignment.BottomEnd))
             // 右下角悬浮按钮（StackPanel Margin="15"）
             PclExtraButtons(
                 modifier = Modifier.align(Alignment.BottomEnd).padding(PclDimens.extraButtonStackMargin),
@@ -1187,6 +1193,83 @@ private fun PclHintToast(
         )
     }
 }
+
+/**
+ * 右下角的「连点 10 次」隐形热区：显示 / 收起「功能隐藏」设置卡片。
+ *
+ * 为什么做成手势：那一整块开关能让用户把「设置」自己藏掉 —— 一旦藏掉，
+ * 唯一的恢复入口就在设置页里，等于把自己锁在门外。所以它默认不显示，
+ * 只有知道手势的人才能调出来。
+ *
+ * 命中后：
+ *   · 打开时顺带把「设置」与「设置 → 个性化」这两个入口恢复出来（否则卡片调出来了也进不去），
+ *     并把用户带到「设置 → 个性化」，免得只弹一句提示、人还得自己找。
+ *   · 无论开还是关，都在左下角给一条提示说明当前状态与恢复方式。
+ */
+@Composable
+private fun PclHiddenCardGesture(modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    val nav = LocalPclNav.current
+    val interaction = remember { MutableInteractionSource() }
+    var taps by remember { mutableIntStateOf(0) }
+    var lastTapAt by remember { mutableLongStateOf(0L) }
+
+    Box(
+        modifier = modifier
+            // 44dp：吸附在右下角，够手指连点，又不会挡到大片内容
+            .size(HIDDEN_CARD_HOTSPOT)
+            .clickable(interactionSource = interaction, indication = null) {
+                val now = SystemClock.elapsedRealtime()
+                // 两次点击隔太久就重新计数 —— 否则「一天里点了 10 次」也会触发
+                taps = if (now - lastTapAt > HIDDEN_CARD_TAP_WINDOW_MS) 1 else taps + 1
+                lastTapAt = now
+                if (taps < PclSkinSettings.HIDDEN_CARD_TAP_COUNT) return@clickable
+                taps = 0
+
+                val show = !PclSkinSettings.hiddenCardVisible
+                PclSkinSettings.applyHiddenCardVisible(show)
+
+                if (show) {
+                    // 卡片所在的位置（设置 / 个性化）如果被自己藏掉了，先放开入口
+                    val released = buildList {
+                        if (PclSkinSettings.isHidden(PclHiddenKeys.SETUP)) {
+                            PclSkinSettings.setHidden(PclHiddenKeys.SETUP, false)
+                            add("设置")
+                        }
+                        if (PclSkinSettings.isHidden(PclHiddenKeys.SETUP_UI)) {
+                            PclSkinSettings.setHidden(PclHiddenKeys.SETUP_UI, false)
+                            add("个性化")
+                        }
+                    }
+                    PclSkinSettings.persist(context)
+                    PclHintHost.push(
+                        buildString {
+                            append("已显示「功能隐藏」设置")
+                            if (released.isNotEmpty()) {
+                                append("（同时恢复了被隐藏的「")
+                                append(released.joinToString("」「"))
+                                append("」入口）")
+                            }
+                            append("。再连点右下角 ${PclSkinSettings.HIDDEN_CARD_TAP_COUNT} 次可收起。")
+                        },
+                        PclHintTheme.Green,
+                    )
+                    // 在「设置 → 个性化」（左栏第 3 项）的底部
+                    nav.go(PclSection.Setup, 2)
+                } else {
+                    PclSkinSettings.persist(context)
+                    PclHintHost.push(
+                        "已收起「功能隐藏」设置。连点右下角 ${PclSkinSettings.HIDDEN_CARD_TAP_COUNT} 次可再次显示。",
+                        PclHintTheme.Blue,
+                    )
+                }
+            }
+    )
+}
+
+/** 「功能隐藏」手势：单次计数窗口 / 热区大小（连点次数见 `PclSkinSettings`）。 */
+private const val HIDDEN_CARD_TAP_WINDOW_MS = 1_500L
+private val HIDDEN_CARD_HOTSPOT = 44.dp
 
 /** 右下角悬浮按钮（`MyExtraButton`：40×40 圆形、内缩 10、主题色底 + 10px 模糊阴影、白图标 16）。 */
 @Composable
