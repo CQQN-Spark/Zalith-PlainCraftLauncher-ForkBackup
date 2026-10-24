@@ -19,6 +19,7 @@
 package com.zalith.pcl.utils.device
 
 import android.os.Build
+import android.os.Process as AndroidProcess
 
 /**
  * [from Architecture.java](https://github.com/PojavLauncherTeam/PojavLauncher/blob/v3_openjdk/app_pojavlauncher/src/main/java/net/kdt/pojavlaunch/Architecture.java)
@@ -35,8 +36,17 @@ object Architecture {
 
     fun getAddressSpaceLimit() = if (is64BitsDevice) ADDRESS_SPACE_LIMIT_64_BIT else ADDRESS_SPACE_LIMIT_32_BIT
 
+    // 注意：这里判定的是「当前进程实际位数」，而不是设备能力。
+    // 设备是 64 位（SUPPORTED_64_BIT_ABIS 非空）不代表我们在跑 64 位——
+    // 单架构 v7a / x86 APK 装在 64 位设备上时进程是 32 位的，
+    // 这时 APK 里只打包了 bin-arm / bin-x86 的 JRE 和 32 位 natives，
+    // 若按设备位数判定成 64 位，JRE 解压检查会找不到 bin-arm64.tar.xz，
+    // 表现为「需要安装的内容」列表里 Java 整个消失（第 210 轮踩坑）。
+    // Process.is64Bit() 反映当前进程真实位数，与 APK 实际打包的架构一致。
     val is64BitsDevice: Boolean
-        get() = Build.SUPPORTED_64_BIT_ABIS.isNotEmpty()
+        get() = runCatching { AndroidProcess.is64Bit() }.getOrElse {
+            Build.SUPPORTED_64_BIT_ABIS.isNotEmpty()
+        }
 
     val is32BitsDevice: Boolean
         get() = !is64BitsDevice
