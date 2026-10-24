@@ -66,6 +66,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.zalith.pcl.R
+import com.zalith.pcl.setting.AllSettings
+import com.zalith.pcl.ui.pcl2.components.PclConfirmDialog
+import com.zalith.pcl.ui.pcl2.components.PclNoticeDialog
 import com.zalith.pcl.ui.theme.cardColor
 import com.zalith.pcl.ui.theme.onCardColor
 import kotlinx.coroutines.Dispatchers
@@ -89,6 +92,11 @@ fun rememberDialogMaxHeight(): Dp {
 /**
  * 展示警告对话框
  *
+ * PCL2 界面（`AllSettings.usePcl2Ui`）下走 [PclConfirmDialog]，**不是** Material 的
+ * `AlertDialog` —— 否则游戏内菜单、版本设置这些 PCL 页面里会突然弹出一个圆角胶囊按钮的
+ * Material 框，和周围的自绘控件完全不是一个风格（用户实测反馈「强制关闭怎么不是 pcl 风格」）。
+ * 原生界面保持上游实现不动。
+ *
  * @param title 对话框标题
  * @param text 对话框内容
  * @param dismissByDialog 是否允许Dialog自己请求关闭
@@ -105,6 +113,18 @@ fun SimpleAlertDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
 ) {
+    if (AllSettings.usePcl2Ui.state) {
+        PclConfirmDialog(
+            title = title,
+            content = text,
+            onConfirm = onConfirm,
+            onDismiss = onDismiss,
+            confirmText = confirmText,
+            dismissText = dismissText,
+            dismissOnOutsideClick = dismissByDialog,
+        )
+        return
+    }
     AlertDialog(
         onDismissRequest = {
             if (dismissByDialog) onDismiss()
@@ -139,7 +159,7 @@ fun SimpleAlertDialog(
 }
 
 /**
- * 展示警告对话框
+ * 展示单按钮提示对话框（PCL2 界面下走 [PclNoticeDialog]，理由同上一个重载）
  *
  * @param title 对话框标题
  * @param text 对话框内容
@@ -154,6 +174,16 @@ fun SimpleAlertDialog(
     dismissByDialog: Boolean = true,
     onDismiss: () -> Unit
 ) {
+    if (AllSettings.usePcl2Ui.state) {
+        PclNoticeDialog(
+            title = title,
+            content = text,
+            confirmText = confirmText,
+            dismissOnOutsideClick = dismissByDialog,
+            onDismiss = onDismiss,
+        )
+        return
+    }
     AlertDialog(
         onDismissRequest = {
             if (dismissByDialog) onDismiss()

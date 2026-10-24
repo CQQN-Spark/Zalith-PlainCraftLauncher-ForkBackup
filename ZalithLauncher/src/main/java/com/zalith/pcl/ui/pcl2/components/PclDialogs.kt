@@ -561,8 +561,12 @@ fun PclConfirmDialog(
     onDismiss: () -> Unit,
     confirmText: String = MSG_BTN_OK,
     danger: Boolean = false,
+    /** 第二个按钮的文案，默认「取消」。上游 `SimpleAlertDialog` 有「忽略 / 刷新 / 关闭」这类自定义。 */
+    dismissText: String = MSG_BTN_CANCEL,
+    /** 点遮罩 / 返回键是否算取消。上游 `SimpleAlertDialog(dismissByDialog = false)` 的强制用法靠它。 */
+    dismissOnOutsideClick: Boolean = true,
 ) {
-    PclDialogContainer(onDismiss = onDismiss) { requestClose ->
+    PclDialogContainer(onDismiss = onDismiss, dismissOnOutsideClick = dismissOnOutsideClick) { requestClose ->
         PclMsgFrame(
             title = title,
             buttons = {
@@ -573,7 +577,7 @@ fun PclConfirmDialog(
                     onConfirm()
                     requestClose()
                 }
-                PclMsgButton(text = MSG_BTN_CANCEL, onClick = requestClose)
+                PclMsgButton(text = dismissText, onClick = requestClose)
             },
         ) {
             // Row3：PanCaption —— 容器 Padding="7,0,15,0"、Margin="0,0,0,17"
@@ -695,9 +699,10 @@ fun PclNoticeDialog(
     title: String,
     content: String,
     confirmText: String = MSG_BTN_OK,
+    dismissOnOutsideClick: Boolean = true,
     onDismiss: () -> Unit,
 ) {
-    PclDialogContainer(onDismiss = onDismiss) { requestClose ->
+    PclDialogContainer(onDismiss = onDismiss, dismissOnOutsideClick = dismissOnOutsideClick) { requestClose ->
         PclMsgFrame(
             title = title,
             buttons = {
