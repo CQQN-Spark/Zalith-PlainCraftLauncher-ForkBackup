@@ -51,8 +51,8 @@ import androidx.appcompat.app.AlertDialog;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
-import com.movtery.zalithlauncher.game.sdl.SdlBridge;
-import com.movtery.zalithlauncher.utils.logging.Logger;
+import com.zalith.pcl.game.sdl.SdlBridge;
+import com.zalith.pcl.utils.logging.Logger;
 
 import java.io.FileNotFoundException;
 import java.util.ArrayList;

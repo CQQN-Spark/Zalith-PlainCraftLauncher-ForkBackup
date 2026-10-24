@@ -61,7 +61,7 @@
 
         <activity-alias
             android:label="@string/import_modpack"
-            android:name="com.movtery.activity.ImportModpackActivity"
+            android:name="com.zalith.pcl.activity.ImportModpackActivity"
             android:exported="true"
             android:targetActivity=".ui.activities.SplashActivity">
 
@@ -85,7 +85,7 @@
 
         <activity-alias
             android:label="@string/control_manage_import"
-            android:name="com.movtery.activity.ImportControlsActivity"
+            android:name="com.zalith.pcl.activity.ImportControlsActivity"
             android:exported="true"
             android:targetActivity=".ui.activities.SplashActivity">
 
@@ -160,7 +160,7 @@
             android:process=":filemanager"
             android:exported="false">
             <intent-filter>
-                <action android:name="com.movtery.zalithlauncher.filemanager.EVENT_SERVICE" />
+                <action android:name="com.zalith.pcl.filemanager.EVENT_SERVICE" />
             </intent-filter>
         </service>
 
