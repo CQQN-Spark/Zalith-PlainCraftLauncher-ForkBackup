@@ -36,8 +36,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import com.jakewharton.processphoenix.ProcessPhoenix
@@ -47,7 +49,10 @@ import com.movtery.zalithlauncher.path.PathManager
 import com.movtery.zalithlauncher.game.launch.GameExitDiagnostics
 import com.movtery.zalithlauncher.setting.AllSettings
 import com.movtery.zalithlauncher.ui.base.BaseAppCompatActivity
+import com.movtery.zalithlauncher.ui.pcl2.data.PclThemeState
+import com.movtery.zalithlauncher.ui.pcl2.theme.PclTheme
 import com.movtery.zalithlauncher.ui.screens.main.ErrorScreen
+import com.movtery.zalithlauncher.ui.screens.main.PclCrashBody
 import com.movtery.zalithlauncher.ui.screens.main.crashlogs.ShareLinkOperation
 import com.movtery.zalithlauncher.ui.theme.ZalithLauncherTheme
 import com.movtery.zalithlauncher.ui.theme.backgroundColor
@@ -197,85 +202,108 @@ class ErrorActivity : BaseAppCompatActivity() {
                     }
                 )
 
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = backgroundColor(),
-                    contentColor = onBackgroundColor()
-                ) {
-                    ErrorScreen(
-                        crashType = errorMessage.crashType,
-                        shareLogs = logExists,
-                        canUpload = viewModel.canUpload,
-                        canRestart = canRestart,
-                        onShareLogsClick = {
-                            if (logExists) {
-                                shareFile(this@ErrorActivity, logFile)
-                            }
-                        },
-                        onUploadClick = {
-                            viewModel.operation = ShareLinkOperation.Tip
-                        },
-                        onRestartClick = {
-                            // 带上「崩溃前所在的启动器界面」的 Intent，把用户送回原来的地方。
-                            // 见 `restartTarget()` 的说明：**一定要带 Intent**，
-                            // 不带的话 `triggerRebirth` 会去查 manifest 的 LAUNCHER，
-                            // 命中导入用的 activity-alias 时会掉进原生的 MainActivity。
-                            ProcessPhoenix.triggerRebirth(this@ErrorActivity, restartTarget())
-                        },
-                        onExitClick = { finish() },
-                        onOrientationChanged = {
-                            this@ErrorActivity.requestedOrientation = it
-                        },
+                //界面风格：PCL2 界面下退出页也走 PCL 的一套窗体 / 卡片 / 按钮。
+                //PclTheme 只注入调色板并钉住 density/fontScale（PCL 的尺寸全是固定 DIP），
+                //Material 主题仍由外层的 ZalithLauncherTheme 提供 —— 原生分支还在用。
+                val usePcl2Ui = AllSettings.usePcl2Ui.state
+                val errorPage: @Composable () -> Unit = {
+                    Surface(
+                        modifier = Modifier.fillMaxSize(),
+                        color = if (usePcl2Ui) Color.Transparent else backgroundColor(),
+                        contentColor = onBackgroundColor()
                     ) {
-                        Text(
-                            text = errorMessage.message,
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                        Text(
-                            text = errorMessage.messageBody,
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                        suspectedCause?.let { cause ->
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                                    .padding(12.dp)
-                            ) {
-                                Text(
-                                    text = getString(R.string.crash_exit_reason),
-                                    style = MaterialTheme.typography.labelLarge
+                        ErrorScreen(
+                            crashType = errorMessage.crashType,
+                            shareLogs = logExists,
+                            canUpload = viewModel.canUpload,
+                            canRestart = canRestart,
+                            onShareLogsClick = {
+                                if (logExists) {
+                                    shareFile(this@ErrorActivity, logFile)
+                                }
+                            },
+                            onUploadClick = {
+                                viewModel.operation = ShareLinkOperation.Tip
+                            },
+                            onRestartClick = {
+                                // 带上「崩溃前所在的启动器界面」的 Intent，把用户送回原来的地方。
+                                // 见 `restartTarget()` 的说明：**一定要带 Intent**，
+                                // 不带的话 `triggerRebirth` 会去查 manifest 的 LAUNCHER，
+                                // 命中导入用的 activity-alias 时会掉进原生的 MainActivity。
+                                ProcessPhoenix.triggerRebirth(this@ErrorActivity, restartTarget())
+                            },
+                            onExitClick = { finish() },
+                            onOrientationChanged = {
+                                this@ErrorActivity.requestedOrientation = it
+                            },
+                        ) {
+                            if (usePcl2Ui) {
+                                PclCrashBody(
+                                    message = errorMessage.message,
+                                    messageBody = errorMessage.messageBody,
+                                    reasonTitle = getString(R.string.crash_exit_reason),
+                                    suspectedCause = suspectedCause,
+                                    adviceTitle = getString(R.string.crash_exit_advice_title),
+                                    advice = adviceRes?.let { getString(it) }
                                 )
-                                Spacer(modifier = Modifier.height(6.dp))
+                            } else {
                                 Text(
-                                    text = cause,
-                                    style = MaterialTheme.typography.bodySmall.copy(
-                                        fontFamily = FontFamily.Monospace
-                                    )
-                                )
-                            }
-                        }
-                        adviceRes?.let { res ->
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(MaterialTheme.colorScheme.secondaryContainer)
-                                    .padding(12.dp)
-                            ) {
-                                Text(
-                                    text = getString(R.string.crash_exit_advice_title),
-                                    style = MaterialTheme.typography.labelLarge
-                                )
-                                Spacer(modifier = Modifier.height(6.dp))
-                                Text(
-                                    text = getString(res),
+                                    text = errorMessage.message,
                                     style = MaterialTheme.typography.bodyMedium
                                 )
+                                Text(
+                                    text = errorMessage.messageBody,
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                                suspectedCause?.let { cause ->
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                                            .padding(12.dp)
+                                    ) {
+                                        Text(
+                                            text = getString(R.string.crash_exit_reason),
+                                            style = MaterialTheme.typography.labelLarge
+                                        )
+                                        Spacer(modifier = Modifier.height(6.dp))
+                                        Text(
+                                            text = cause,
+                                            style = MaterialTheme.typography.bodySmall.copy(
+                                                fontFamily = FontFamily.Monospace
+                                            )
+                                        )
+                                    }
+                                }
+                                adviceRes?.let { res ->
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(MaterialTheme.colorScheme.secondaryContainer)
+                                            .padding(12.dp)
+                                    ) {
+                                        Text(
+                                            text = getString(R.string.crash_exit_advice_title),
+                                            style = MaterialTheme.typography.labelLarge
+                                        )
+                                        Spacer(modifier = Modifier.height(6.dp))
+                                        Text(
+                                            text = getString(res),
+                                            style = MaterialTheme.typography.bodyMedium
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
+                }
+
+                if (usePcl2Ui) {
+                    PclTheme(palette = PclThemeState.palette) { errorPage() }
+                } else {
+                    errorPage()
                 }
             }
         }
