@@ -94,46 +94,80 @@ object ControlManager {
         currentJob?.cancel()
         currentJob = scope.launch(Dispatchers.IO) {
             _isRefreshing.update { true }
-
-            _dataList.update { emptyList() }
-            PathManager.DIR_CONTROL_LAYOUTS.listFiles()?.mapNotNull { file ->
-                if (!(file.isFile && file.exists() && file.extension.equals("json", true))) return@mapNotNull null
-
-                var isSupport = true
-                val layout: ControlLayout = try {
-                    loadLayoutFromFile(file)
-                } catch (_: IllegalArgumentException) {
-                    isSupport = false
-                    runCatching {
-                        loadLayoutFromFileUncheck(file)
-                    }.onFailure { e ->
-                        Logger.warning(TAG, "Failed to load control layout! file = $file", e)
-                    }.getOrNull() ?: EmptyControlLayout
-                } catch (e: Exception) {
-                    // 【别再 return@mapNotNull null】以前这里把解析不了的文件直接丢掉，
-                    // 表现就是「导进来了，但这一页什么都不多」—— 用户完全无从判断是没导进去
-                    // 还是文件坏了。现在保留成一行「不支持的布局」，至少看得见、能删掉。
-                    Logger.warning(TAG, "Failed to load control layout! file = $file", e)
-                    isSupport = false
-                    EmptyControlLayout
+            try {
+                val dir = PathManager.DIR_CONTROL_LAYOUTS
+                if (!dir.exists() && !dir.mkdirs()) {
+                    Logger.warning(TAG, "Failed to create control layout directory: ${dir.absolutePath}")
                 }
+                val files = dir.listFiles() ?: emptyArray()
 
-                ControlData(
-                    file = file,
-                    controlLayout = ObservableControlLayout(layout),
-                    isSupport = isSupport
-                )
-            }?.let { list ->
+                // 【别再「先清空再逐个解析」】原来第一行就是 `_dataList.update { emptyList() }`，
+                // 然后才顺着 listFiles 往下走。只要有一个文件让 `ObservableControlLayout(...)`
+                // 的构造抛异常（它不在任何 try 里），这个协程就死在中途：
+                //   · 列表永远停在刚清空的空表 —— 连原来那份正常显示的默认布局也一起没了
+                //   · `isRefreshing` 永远为 true —— 页面一直显示「正在读取控制布局…」
+                // 用户看到的就是「导入完布局，这一页什么都不显示了」。而且下次进来还这样
+                // （坏文件还在目录里），除非手动去文件夹里删掉。
+                // 现在改成：整张表先算好再一次性替换，单个文件三层兜底，绝不影响别人。
+                val list = files.mapNotNull { file ->
+                    if (!(file.isFile && file.exists() && file.extension.equals("json", true))) return@mapNotNull null
+                    buildControlData(file)
+                }
                 _dataList.update {
                     list.sortedBy {
                         if (it.isSupport) it.controlLayout.info.name.default
                         else it.file.name
                     }
                 }
+                checkSettings()
+            } catch (e: Exception) {
+                Logger.warning(TAG, "Failed to refresh control layouts", e)
+            } finally {
+                _isRefreshing.update { false }
             }
-            checkSettings()
+        }
+    }
 
-            _isRefreshing.update { false }
+    /**
+     * 把一个布局文件读成列表里的一行。
+     *
+     * **任何异常都不允许漏到 `refresh()` 外面**（漏出去就是整页空白，见上面的注释）。
+     * 两层兜底：
+     * 1. 解析失败（版本过新 / 不是合法 JSON / 根本不是这种格式）→ 用 `EmptyControlLayout`
+     *    占位并标 `isSupport = false`，列表里显示成「不支持或无法读取，只能删除」。
+     * 2. 解析出来了但 `ObservableControlLayout` 构造不出来（图层里有本版本不认识的控件）→
+     *    同样退回占位行，而不是把这个文件从列表里抹掉。
+     */
+    private fun buildControlData(file: File): ControlData {
+        var isSupport = true
+        val layout: ControlLayout = try {
+            loadLayoutFromFile(file)
+        } catch (_: IllegalArgumentException) {
+            isSupport = false
+            runCatching {
+                loadLayoutFromFileUncheck(file)
+            }.onFailure { e ->
+                Logger.warning(TAG, "Failed to load control layout! file = $file", e)
+            }.getOrNull() ?: EmptyControlLayout
+        } catch (e: Exception) {
+            Logger.warning(TAG, "Failed to load control layout! file = $file", e)
+            isSupport = false
+            EmptyControlLayout
+        }
+
+        return runCatching {
+            ControlData(
+                file = file,
+                controlLayout = ObservableControlLayout(layout),
+                isSupport = isSupport
+            )
+        }.getOrElse { e ->
+            Logger.warning(TAG, "Failed to observe control layout! file = $file", e)
+            ControlData(
+                file = file,
+                controlLayout = ObservableControlLayout(EmptyControlLayout),
+                isSupport = false
+            )
         }
     }
 
@@ -278,7 +312,18 @@ object ControlManager {
         } catch (e: SerializationException) {
             FileUtils.deleteQuietly(file)
             Logger.warning(TAG, "控制布局不是可识别的 JSON 格式", e)
-            onSerializationError(e)
+            // 原始异常里全是一句英文（`The file does not contain the key "editorVersion".`
+            // / `Unexpected JSON token at offset 0`），用户根本看不出问题在哪。
+            // 这里换成能对号入座的说法。
+            val message = when {
+                e.message?.contains("editorVersion") == true ->
+                    "这个 json 不是本启动器的控制布局（缺少 editorVersion 字段）。" +
+                            "电脑版 PCL2 导出的键位文件格式和手机版不通用，需要在启动器的布局编辑器里重做一份。"
+                e.message?.contains("Unexpected JSON token", ignoreCase = true) == true ->
+                    "这个文件不是合法的 JSON，内容可能已损坏（比如从网页复制时丢了括号或引号）。"
+                else -> "无法把这个文件读成控制布局：${e.message}"
+            }
+            onSerializationError(SerializationException(message, e))
         } catch (e: IllegalArgumentException) {
             // `loadLayoutFromString` 在文件的 editorVersion 比本启动器新时抛这个
             // （`Control layout versions are not supported!`）。原样抛给用户是一句英文，

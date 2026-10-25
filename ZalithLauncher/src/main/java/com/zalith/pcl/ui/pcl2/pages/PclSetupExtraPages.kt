@@ -100,6 +100,7 @@ import com.zalith.pcl.ui.pcl2.components.PclInputDialog
 import com.zalith.pcl.ui.pcl2.components.PclListItem
 import com.zalith.pcl.ui.pcl2.components.PclListItemButton
 import com.zalith.pcl.ui.pcl2.components.PclListItemType
+import com.zalith.pcl.ui.pcl2.components.PclNoticeDialog
 import com.zalith.pcl.ui.pcl2.components.PclPillButton
 import com.zalith.pcl.ui.pcl2.components.PclSlider
 import com.zalith.pcl.ui.pcl2.components.PclText
@@ -1248,6 +1249,14 @@ fun PclSetupControlManagePage() {
 
     var createDialog by remember { mutableStateOf(false) }
     var deleteTarget by remember { mutableStateOf<ControlData?>(null) }
+    /**
+     * 导入失败的具体原因。
+     *
+     * 【别只推左下角 hint】「缺 editorVersion」「JSON 损坏」「版本过新」这些是用户唯一
+     * 能拿去排查的线索，hint 三秒就没了，观感上跟「点了没反应」一模一样 ——
+     * 第 213 轮就是栽在这儿。改成必须点掉的提示框。
+     */
+    var importError by remember { mutableStateOf<String?>(null) }
 
     // 原生界面进入这一页时会先确保至少有一份默认布局（`checkDefaultAndRefresh`），
     // 否则全新安装的用户会看到一份空列表、没得选。
@@ -1301,12 +1310,14 @@ fun PclSetupControlManagePage() {
                 // 至少能作为「不支持的布局」行显出来，不会静默消失。
                 ControlManager.refresh()
             }
-            when {
-                imported > 0 -> PclHintHost.push(
+            if (imported > 0) {
+                PclHintHost.push(
                     if (imported == 1) "控制布局已导入。" else "已导入 $imported 个控制布局。",
                     PclHintTheme.Green,
                 )
-                else -> PclHintHost.push(failure ?: "导入失败。", PclHintTheme.Red)
+            } else {
+                // 一个都没进来 —— 原因必须让人看见，不能三秒后自己消失
+                importError = failure ?: "无法读取所选文件。"
             }
         }
     }
@@ -1393,6 +1404,14 @@ fun PclSetupControlManagePage() {
                 deleteTarget = null
             },
             onDismiss = { deleteTarget = null },
+        )
+    }
+
+    importError?.let { message ->
+        PclNoticeDialog(
+            title = "控制布局导入失败",
+            content = message,
+            onDismiss = { importError = null },
         )
     }
 }
