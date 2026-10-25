@@ -819,6 +819,10 @@ fun PclNoticeDialog(
  * 单选项弹窗（`MyMsgSelect`）。条目是 `MyListItem Type=RadioBox MinHeight=24`，
  * 无 Logo 时图标列宽 4、标题下边距 2 —— 与 PclListItem 在 height ≥40 时的分支一致
  * （源码里 Height 未设置，WPF 中 `NaN < 40` 为 False，因此走的就是「高 ≥40」这一支）。
+ *
+ * [extraButtonText] / [onExtraButton] 是可选的**附加动作**（例如启动器更新里的
+ * 「123 云盘」）：给了就在「取消」左边多画一个按钮，点它先执行动作再关框。
+ * 默认不传 —— 其它调用点行为完全不变。
  */
 @Composable
 fun PclSelectDialog(
@@ -827,12 +831,21 @@ fun PclSelectDialog(
     current: String?,
     onSelect: (String) -> Unit,
     onDismiss: () -> Unit,
+    extraButtonText: String? = null,
+    onExtraButton: (() -> Unit)? = null,
 ) {
     val p = pclPalette
+    val extraText = extraButtonText?.takeIf { it.isNotBlank() && onExtraButton != null }
     PclDialogContainer(onDismiss = onDismiss) { requestClose ->
         PclMsgFrame(
             title = title,
             buttons = {
+                if (extraText != null) {
+                    PclMsgButton(text = extraText) {
+                        onExtraButton?.invoke()
+                        requestClose()
+                    }
+                }
                 PclMsgButton(text = MSG_BTN_CANCEL, onClick = requestClose)
             },
         ) {
@@ -913,6 +926,10 @@ internal fun pclMarkdownToPlain(md: String): String {
  *
  * 按钮顺序按 PCL 的习惯**主要按钮在最左**：立即更新 / 忽略此版本 / 稍后。
  * 正文必须限高可滚动：更新说明有好几十行，不限高会把按钮顶到屏幕外。
+ *
+ * 官网配了「123 云盘」时（[cloudButtonText] 非空）会多出一个网盘按钮。四个按钮塞一行
+ * 在窄屏上会把最左边的「立即更新」挤出屏幕 —— 那是主按钮，绝不能看不见 ——
+ * 所以有网盘按钮时改成两行：上面「立即更新 / 网盘」，下面「忽略此版本 / 稍后」。
  */
 @Composable
 fun PclUpgradeDialog(
@@ -921,21 +938,56 @@ fun PclUpgradeDialog(
     onDownload: () -> Unit,
     onIgnore: () -> Unit,
     onLater: () -> Unit,
+    cloudButtonText: String? = null,
+    onCloudButton: (() -> Unit)? = null,
 ) {
     val p = pclPalette
+    val cloudText = cloudButtonText?.takeIf { it.isNotBlank() && onCloudButton != null }
     PclDialogContainer(onDismiss = onLater) { requestClose ->
         PclMsgFrame(
             title = "发现新版本",
             buttons = {
-                PclMsgButton(text = "立即更新", colorState = PclColorState.Highlight) {
-                    onDownload()
-                    requestClose()
+                if (cloudText == null) {
+                    PclMsgButton(text = "立即更新", colorState = PclColorState.Highlight) {
+                        onDownload()
+                        requestClose()
+                    }
+                    PclMsgButton(text = "忽略此版本") {
+                        onIgnore()
+                        requestClose()
+                    }
+                    PclMsgButton(text = "稍后", onClick = requestClose)
+                } else {
+                    Column(
+                        modifier = Modifier.align(Alignment.CenterVertically),
+                        horizontalAlignment = Alignment.End,
+                        verticalArrangement = Arrangement.spacedBy(PclDimens.msgButtonGap),
+                    ) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(PclDimens.msgButtonGap),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            PclMsgButton(text = "立即更新", colorState = PclColorState.Highlight) {
+                                onDownload()
+                                requestClose()
+                            }
+                            PclMsgButton(text = cloudText) {
+                                onCloudButton?.invoke()
+                                requestClose()
+                            }
+                        }
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(PclDimens.msgButtonGap),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            PclMsgButton(text = "忽略此版本") {
+                                onIgnore()
+                                requestClose()
+                            }
+                            PclMsgButton(text = "稍后", onClick = requestClose)
+                        }
+                    }
                 }
-                PclMsgButton(text = "忽略此版本") {
-                    onIgnore()
-                    requestClose()
-                }
-                PclMsgButton(text = "稍后", onClick = requestClose)
             },
         ) {
             Column(
@@ -986,6 +1038,8 @@ fun PclUpgradeFilesDialog(
     current: String?,
     onSelect: (fileName: String) -> Unit,
     onDismiss: () -> Unit,
+    extraButtonText: String? = null,
+    onExtraButton: (() -> Unit)? = null,
 ) {
     PclSelectDialog(
         title = title,
@@ -993,6 +1047,8 @@ fun PclUpgradeFilesDialog(
         current = current,
         onSelect = onSelect,
         onDismiss = onDismiss,
+        extraButtonText = extraButtonText,
+        onExtraButton = onExtraButton,
     )
 }
 

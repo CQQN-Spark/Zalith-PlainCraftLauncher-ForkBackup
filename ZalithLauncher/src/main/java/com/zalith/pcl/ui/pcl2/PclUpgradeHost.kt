@@ -31,6 +31,7 @@ import com.zalith.pcl.ui.pcl2.components.PclUpgradeDialog
 import com.zalith.pcl.ui.pcl2.components.PclUpgradeDownloadDialog
 import com.zalith.pcl.ui.pcl2.components.PclUpgradeFilesDialog
 import com.zalith.pcl.ui.pcl2.components.pclMarkdownToPlain
+import com.zalith.pcl.ui.pcl2.data.PclUpdateSources
 import com.zalith.pcl.upgrade.RemoteData
 import com.zalith.pcl.upgrade.findCurrentBody
 import com.zalith.pcl.upgrade.getCurrentCouldDrive
@@ -65,6 +66,12 @@ fun PclUpgradeHost() {
         upgradeViewModel.checkOnAppStart()
     }
 
+    // 预热官网的网盘入口：这样「发现新版本」弹出时按钮已经是最终形态，
+    // 不会先三按钮、零点几秒后变两行（看起来像闪一下）。
+    LaunchedEffect(Unit) {
+        PclUpdateSources.fetch()
+    }
+
     // 从「安装未知应用」授权页回来时继续安装。系统设置页是另一个 Activity，
     // 我们这边只会收到 ON_RESUME，所以只能靠生命周期回调来接。
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -88,6 +95,12 @@ fun PclUpgradeHost() {
             val data = operation.data
             val body = remember(data) {
                 data.findCurrentBody(Locale.getDefault()) ?: data.defaultBody
+            }
+            // 官网「下载方式」里配了 123 云盘就多给一个按钮。首帧先用缓存（断网也有），
+            // 联网拉到新地址就替换 —— 后台改链接不用重新发版。
+            var cloudDrive by remember(data) { mutableStateOf(PclUpdateSources.cachedSource()) }
+            LaunchedEffect(data) {
+                PclUpdateSources.fetch()?.let { cloudDrive = it }
             }
             // 按钮回调里已经把 operation 推到下一步（或清空）了，退出动画结束时的
             // `onLater` 就不能再写一次 —— 否则会把刚设置的 SelectApk 覆盖成 None，
@@ -126,12 +139,25 @@ fun PclUpgradeHost() {
                 onLater = {
                     if (!navigated) upgradeViewModel.operation = LauncherUpgradeOperation.None
                 },
+                cloudButtonText = cloudDrive?.name,
+                // 「立即更新」是直接装；网盘是给下不动 / 想留一份的人的备选入口，
+                // 点了就用系统浏览器打开，安装包在网盘里自己取。
+                onCloudButton = {
+                    val target = cloudDrive
+                    upgradeViewModel.operation = LauncherUpgradeOperation.None
+                    if (target != null) openLink(context, target.url)
+                },
             )
         }
 
         is LauncherUpgradeOperation.SelectApk -> {
             val data = operation.data
             val deviceArch = remember { currentLauncherArch() }
+            // 选了架构这一步同样给网盘入口：有人点到这儿才发现 GitHub 下不动。
+            var cloudDrive by remember(data) { mutableStateOf(PclUpdateSources.cachedSource()) }
+            LaunchedEffect(data) {
+                PclUpdateSources.fetch()?.let { cloudDrive = it }
+            }
             // 当前设备架构排在最前面，并默认打勾：绝大多数人直接点第一项就是对的。
             // 没有对应架构时退回 universal。
             val ordered = remember(data, deviceArch) {
@@ -153,6 +179,11 @@ fun PclUpgradeHost() {
                     }
                 },
                 onDismiss = { upgradeViewModel.operation = LauncherUpgradeOperation.None },
+                extraButtonText = cloudDrive?.name,
+                onExtraButton = {
+                    val target = cloudDrive
+                    if (target != null) openLink(context, target.url)
+                },
             )
         }
 
