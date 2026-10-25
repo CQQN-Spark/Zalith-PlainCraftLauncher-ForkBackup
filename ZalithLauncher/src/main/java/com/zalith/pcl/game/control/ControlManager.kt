@@ -290,10 +290,19 @@ object ControlManager {
     }
 
     /**
-     * 尝试导入控制布局
+     * 导入一份控制布局。
      *
-     * 解析失败时**不要**把文件留在目录里（否则列表里会多一份「不支持的布局」，
-     * 看着像导入成功了却打不开），所以两条错误分支都会先删文件再回调。
+     * 【顺序很重要：先落盘，再解析】
+     * 导入的本质是**把这份文件放进控制布局目录**（用户分享的、选中的就是一个文件），
+     * 解析只决定它能不能被正常显示，不该决定它能不能留下。
+     * 以前的写法是「解析成功才 `saveToFile`」，格式差一点点就什么都不剩 —— 用户看到的
+     * 是「导入了，列表里还是只有 default」，连失败的那个文件都找不到，无从排查。
+     *
+     * 现在的顺序：
+     * 1. 原样 `copyTo` 进目录（一个字节都不改）；
+     * 2. 清掉 BOM / 零宽空格（Windows 记事本另存过的 json 必带，不清必定解析失败）；
+     * 3. 能解析 → 按标准格式重写一遍（补齐的字段真正落盘）；解析不了 → 文件照样留在
+     *    目录里，列表里占一行「不支持或无法读取」，可删、可导出。
      */
     suspend fun importControl(
         inputStream: InputStream,
@@ -302,43 +311,65 @@ object ControlManager {
         onFinished: () -> Unit = {},
     ) = withContext(Dispatchers.IO) {
         val file = getNewRandomFile()
-        // 原始文本留着：解析失败时要拿它落盘，否则用户「列表里什么都没有」
-        var rawJson: String? = null
+
+        // ① 原样落盘
         try {
+            file.parentFile?.mkdirs()
             inputStream.use { stream ->
-                val jsonString = stream.readString().stripJsonNoise()
-                rawJson = jsonString
-                val layout = parseLayoutLeniently(jsonString)
-                layout.saveToFile(file)
+                file.outputStream().use { out -> stream.copyTo(out) }
             }
+        } catch (e: Exception) {
+            FileUtils.deleteQuietly(file)
+            Logger.warning(TAG, "控制布局写盘失败", e)
+            catchedError(e)
+            return@withContext
+        }
+
+        // ② 清理隐形垃圾。`loadLayoutFromFile` 读的时候会原样带着 BOM，
+        //    kotlinx 直接抛 `Unexpected JSON token at offset 0`。
+        val text = try {
+            file.readText()
+        } catch (e: Exception) {
+            Logger.warning(TAG, "控制布局读出失败（可能不是 UTF-8 文本）", e)
+            catchedError(e)
+            return@withContext
+        }
+        val cleaned = text.stripJsonNoise()
+        if (cleaned != text) {
+            runCatching { file.writeText(cleaned) }
+        }
+
+        // ③ 再谈能不能解析
+        try {
+            val layout = parseLayoutLeniently(cleaned)
+            // 解析成功就按标准格式重写一遍：补齐过的字段要真正落到磁盘，
+            // 否则列表重新扫的时候读的还是原始那份，又变回「不支持」。
+            layout.saveToFile(file)
             Logger.info(TAG, "控制布局导入成功：${file.name}")
             onFinished()
         } catch (e: SerializationException) {
-            keepRawForInspection(file, rawJson)
             Logger.warning(TAG, "控制布局不是可识别的 JSON 格式", e)
-            // 原始异常里全是一句英文（`The file does not contain the key "editorVersion".`
-            // / `Unexpected JSON token at offset 0`），用户根本看不出问题在哪。
-            // 这里换成能对号入座的说法。
+            // 原始异常是一句英文（`The file does not contain the key "editorVersion".`），
+            // 用户看不出问题在哪；这里换成能对号入座的说法，并强调文件已经存下来了。
             val message = when {
                 e.message?.contains("editorVersion") == true ->
-                    "这个 json 不是本启动器的控制布局（缺少 editorVersion 字段）。" +
-                            "电脑版 PCL2 导出的键位文件格式和手机版不通用，需要在启动器的布局编辑器里重做一份。"
+                    "文件已保存，但读不出来：这份 json 缺少 editorVersion 字段，不是本启动器的控制布局格式。"
                 e.message?.contains("Unexpected JSON token", ignoreCase = true) == true ->
-                    "这个文件不是合法的 JSON，内容可能已损坏（比如从网页复制时丢了括号或引号）。"
-                else -> "无法把这个文件读成控制布局：${e.message}"
+                    "文件已保存，但读不出来：不是合法的 JSON，内容可能已损坏（比如从网页复制时丢了括号）。"
+                else -> "文件已保存，但读不出来：${e.message}"
             }
             onSerializationError(SerializationException(message, e))
         } catch (e: IllegalArgumentException) {
-            // `loadLayoutFromString` 在文件的 editorVersion 比本启动器新时抛这个
-            // （`Control layout versions are not supported!`）。原样抛给用户是一句英文，
-            // 这里换成能看懂的话 —— 注意 SerializationException 也继承自
-            // IllegalArgumentException，所以必须排在它后面。
-            keepRawForInspection(file, rawJson)
+            // `loadLayoutFromString` 在文件的 editorVersion 比本启动器新时抛这个。
+            // 注意 SerializationException 也继承自 IllegalArgumentException，必须排在它后面。
             Logger.warning(TAG, "控制布局版本过新", e)
-            catchedError(IllegalArgumentException("这个布局来自更新版本的启动器，请先升级启动器再导入。", e))
+            catchedError(
+                IllegalArgumentException(
+                    "文件已保存，但这个布局来自更新版本的启动器，需要先升级启动器才能打开。", e
+                )
+            )
         } catch (e: Exception) {
-            FileUtils.deleteQuietly(file)
-            Logger.warning(TAG, "控制布局导入失败", e)
+            Logger.warning(TAG, "控制布局解析失败", e)
             catchedError(e)
         }
     }
@@ -363,21 +394,6 @@ object ControlManager {
         throw first.exceptionOrNull() ?: SerializationException("无法把这个文件读成控制布局")
     }
 
-    /**
-     * 解析失败时把原始内容留在控制布局目录里。
-     *
-     * 以前这里直接 `deleteQuietly(file)` —— 而那个 file 压根没被创建过，等于删了个空气。
-     * 结果就是「分享进来、提示一句、列表里什么都没有」，用户连失败的证据都拿不到。
-     * 现在把原文写进去：`refresh()` 会把它显示成一行「不支持或无法读取」，看得见、能删掉，
-     * 也能导出来发给开发者看究竟是哪一步不对。
-     */
-    private fun keepRawForInspection(file: File, raw: String?) {
-        if (raw.isNullOrBlank() || raw.length > 2 * 1024 * 1024) return
-        runCatching {
-            file.parentFile?.mkdirs()
-            file.writeText(raw)
-        }.onFailure { Logger.warning(TAG, "Failed to keep raw layout file", it) }
-    }
 }
 
 /**

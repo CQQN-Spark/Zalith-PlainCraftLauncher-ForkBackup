@@ -126,6 +126,20 @@ import kotlin.math.roundToInt
 /** 设置项标签列宽度，与 `PclSetupPages.LabelWidth` 一致。 */
 private val ExtraLabelWidth = 140.dp
 
+/**
+ * 控制布局「最近一次导入」的记录。
+ *
+ * 放文件级单例而不是 `remember`：`nav.push()` 进二级页会让当前 composable 整个离开组合，
+ * 回来时 `remember` 全部作废 —— 而用户恰恰是「导入完切走、再切回来看结果」。
+ *
+ * 这个字段只为一件事存在：**导入没反应时，屏幕上得有东西说明卡在哪一步**
+ * （没选到文件 / 读不到流 / 解析失败 / 写盘失败）。否则「列表空白」根本无从定位。
+ */
+private object PclControlImportLog {
+    val text = mutableStateOf<String?>(null)
+    fun set(value: String) { text.value = value }
+}
+
 /** 控制布局相关操作的日志标签（导入失败原因要能在「首页 → 日志」里看到）。 */
 private const val LOG_TAG = "PclSetupExtraPages"
 
@@ -1257,6 +1271,8 @@ fun PclSetupControlManagePage() {
      * 第 213 轮就是栽在这儿。改成必须点掉的提示框。
      */
     var importError by remember { mutableStateOf<String?>(null) }
+    // 最近一次导入的结果：放在文件级单例里，切走再回来也还在
+    val lastImportResult by PclControlImportLog.text
 
     // 原生界面进入这一页时会先确保至少有一份默认布局（`checkDefaultAndRefresh`），
     // 否则全新安装的用户会看到一份空列表、没得选。
@@ -1273,10 +1289,16 @@ fun PclSetupControlManagePage() {
     val importPicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenMultipleDocuments(),
     ) { uris ->
-        if (uris.isEmpty()) return@rememberLauncherForActivityResult
+        if (uris.isEmpty()) {
+            // 【别再静默 return】选择器没给回 uri（用户点了取消 / 某些文件管理器返回空）
+            // 和「导入失败」在界面上长得一模一样，必须能区分开
+            PclControlImportLog.set("没有拿到文件：文件选择器没有返回可读取的地址。")
+            return@rememberLauncherForActivityResult
+        }
+        PclControlImportLog.set("已选中 ${uris.size} 个文件，正在导入…")
         importScope.launch {
             var imported = 0
-            var failure: String? = null
+            val failures = mutableListOf<String>()
             withContext(Dispatchers.IO) {
                 uris.forEach { uri ->
                     // 提示里带上文件名：一次选好几个文件时，不然根本不知道是哪个出的问题
@@ -1288,11 +1310,13 @@ fun PclSetupControlManagePage() {
                         stream.use {
                             ControlManager.importControl(
                                 inputStream = it,
+                                // `ControlManager` 的消息里已经写明「文件已保存，但读不出来：…」，
+                                // 直接透传，别再套一层
                                 onSerializationError = { e ->
-                                    parseError = "不是启动器能识别的键位布局（${e.message}）"
+                                    parseError = e.message ?: "文件已保存，但读不出来。"
                                 },
                                 catchedError = { e ->
-                                    parseError = "导入失败：${e.message}"
+                                    parseError = "写盘失败：${e.message}"
                                 },
                             )
                         }
@@ -1300,24 +1324,31 @@ fun PclSetupControlManagePage() {
                         imported++
                     }.onFailure {
                         val reason = it.message ?: it.javaClass.simpleName
-                        failure = "「$displayName」$reason"
+                        failures += "「$displayName」$reason"
                         Logger.warning(LOG_TAG, "控制布局导入失败：$displayName / $uri", it)
                     }
                 }
                 // 列表要重新扫一遍：`dataList` 是 ControlManager 里的 StateFlow，
-                // 不 refresh 的话导进来的那份永远不出现在这一页。
-                // 失败时也刷 —— 万一有文件其实已经落盘了（比如保存到一半抛异常），
-                // 至少能作为「不支持的布局」行显出来，不会静默消失。
+                // 不 refresh 的话导进来的那份永远不出现在这一页
                 ControlManager.refresh()
             }
+            // `refresh()` 内部是异步的，等它把表算完再报「当前列表里到底有几份」
+            delay(150)
+            val names = ControlManager.dataList.value.map { it.file.name }
+            val listInfo =
+                if (names.isEmpty()) "列表仍为空"
+                else "列表现有 ${names.size} 份：${names.joinToString("、")}"
             if (imported > 0) {
+                PclControlImportLog.set("已导入 $imported 个 —— $listInfo")
                 PclHintHost.push(
                     if (imported == 1) "控制布局已导入。" else "已导入 $imported 个控制布局。",
                     PclHintTheme.Green,
                 )
             } else {
-                // 一个都没进来 —— 原因必须让人看见，不能三秒后自己消失
-                importError = failure ?: "无法读取所选文件。"
+                val reason = failures.firstOrNull() ?: "无法读取所选文件。"
+                // 一个都没能正常用上 —— 原因必须让人看见，不能三秒后自己消失
+                PclControlImportLog.set("$reason —— $listInfo")
+                importError = reason
             }
         }
     }
@@ -1334,7 +1365,19 @@ fun PclSetupControlManagePage() {
                     PclButton(
                         text = "导入布局（.json）",
                         logo = PclIcons.addBox,
-                        onClick = { importPicker.launch(arrayOf("application/json", "*/*")) },
+                        onClick = {
+                            // 【只给一个 `*/*`】以前传的是
+                            // `arrayOf("application/json", "*/*")`，部分系统的文件选择器会拿
+                            // EXTRA_MIME_TYPES 去过滤，结果选完之后一个 uri 都不返回 ——
+                            // 回调里 uris 为空，直接 return，表现就是「点了完全没反应」。
+                            // 给通配就一定选得到任何文件，后缀对不对交给导入流程自己判断。
+                            runCatching { importPicker.launch(arrayOf("*/*")) }
+                                .onFailure {
+                                    val why = "打不开文件选择器：${it.message}"
+                                    PclControlImportLog.set(why)
+                                    PclHintHost.push(why, PclHintTheme.Red)
+                                }
+                        },
                     )
                     PclButton(
                         text = "新建空白布局",
@@ -1367,10 +1410,21 @@ fun PclSetupControlManagePage() {
                     }
                 }
 
+                lastImportResult?.let { message ->
+                    Spacer(Modifier.height(6.dp))
+                    PclHint(
+                        text = message,
+                        // 失败留下的是黄条，成功是绿条 —— 扫一眼就知道上一次到底怎么了
+                        theme = if (message.startsWith("已导入")) PclHintTheme.Green
+                        else PclHintTheme.Yellow,
+                    )
+                }
+
                 Spacer(Modifier.height(8.dp))
                 PclHint(
-                    text = "布局文件保存在启动器的控制布局目录里。点一行即可把它设为当前布局；" +
-                            "「编辑布局」会打开可视化编辑器，调整按键的位置与大小。",
+                    text = "布局文件保存在：${PathManager.DIR_CONTROL_LAYOUTS.absolutePath}\n" +
+                            "点一行即可把它设为当前布局；「编辑布局」会打开可视化编辑器，" +
+                            "调整按键的位置与大小。",
                     theme = PclHintTheme.Blue,
                 )
             }
@@ -1409,7 +1463,7 @@ fun PclSetupControlManagePage() {
 
     importError?.let { message ->
         PclNoticeDialog(
-            title = "控制布局导入失败",
+            title = "控制布局导入未完成",
             content = message,
             onDismiss = { importError = null },
         )
