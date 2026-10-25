@@ -13,6 +13,7 @@ package com.zalith.pcl.ui.pcl2
 
 import android.content.Context
 import android.net.Uri
+import android.provider.OpenableColumns
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -22,10 +23,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import com.zalith.pcl.game.control.ControlManager
 import com.zalith.pcl.game.download.modpack.install.ModpackImporter
+import com.zalith.pcl.ui.activities.IMPORT_TYPE_AUTO
 import com.zalith.pcl.ui.activities.IMPORT_TYPE_CONTROLS
 import com.zalith.pcl.ui.activities.IMPORT_TYPE_MODPACK
 import com.zalith.pcl.ui.pcl2.components.PclHintTheme
 import com.zalith.pcl.ui.pcl2.data.PclImportBridge
+import com.zalith.pcl.ui.pcl2.data.PclImportRequest
 import com.zalith.pcl.ui.pcl2.data.PclRuntime
 import com.zalith.pcl.ui.pcl2.pages.pclDiscardIncompleteVersion
 // 注意：`PclTitledTaskDialog` / `modpackImportErrorText` 在 `PclSectionPages.kt` 里，
@@ -58,10 +61,19 @@ fun PclExternalImportHost(runtime: PclRuntime) {
 
     LaunchedEffect(request) {
         val req = PclImportBridge.take() ?: return@LaunchedEffect
-        when (req.type) {
+        when (val type = resolveImportKind(context, req)) {
             IMPORT_TYPE_MODPACK -> importer = startModpackImport(context, runtime, req.uri)
             IMPORT_TYPE_CONTROLS -> importControlLayout(context, req.uri)
-            else -> PclHintHost.push("这个文件不是启动器能识别的类型。", PclHintTheme.Yellow)
+            else -> {
+                // `auto` 入口拿到的是 `*/*`，认不出来就明确告诉用户，别再「跳个界面就没动静」
+                val name = displayNameOf(context, req.uri) ?: "这个文件"
+                PclHintHost.push(
+                    "「$name」不是启动器能识别的类型（支持 .json 键位布局与 .zip/.mrpack 整合包）。",
+                    PclHintTheme.Yellow
+                )
+                // 类型常量留个引用，避免 when 分支被 lint 当成死代码
+                if (type == IMPORT_TYPE_AUTO) return@LaunchedEffect
+            }
         }
     }
 
@@ -81,7 +93,37 @@ fun PclExternalImportHost(runtime: PclRuntime) {
 }
 
 /**
- * 起一条本地整合包导入。
+ * 把一次导入请求解析成具体的处理类型。
+ *
+ * `auto` 入口（manifest 里声明通配类型的那个）拿到的类型信息全是通配，
+ * 只能靠文件名后缀判断：`.json` → 键位布局，`.zip/.mrpack/.modpack` → 整合包。
+ * 其它情况原样返回 `auto`，由调用方提示不支持。
+ */
+private fun resolveImportKind(context: Context, req: PclImportRequest): String {
+    if (req.type != IMPORT_TYPE_AUTO) return req.type
+    val name = displayNameOf(context, req.uri)?.lowercase().orEmpty()
+    return when {
+        name.endsWith(".json") -> IMPORT_TYPE_CONTROLS
+        name.endsWith(".zip") ||
+        name.endsWith(".mrpack") ||
+        name.endsWith(".modpack") ||
+        name.endsWith(".mcbbs") ||
+        name.endsWith(".rar") ||
+        name.endsWith(".7z") -> IMPORT_TYPE_MODPACK
+        else -> IMPORT_TYPE_AUTO
+    }
+}
+
+/** 取内容 URI 对应的文件名（没有就返回 null）。 */
+private fun displayNameOf(context: Context, uri: Uri): String? = runCatching {
+    if (uri.scheme == "file") return@runCatching uri.lastPathSegment
+    context.contentResolver.query(uri, null, null, null, null)?.use { c ->
+        val idx = c.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+        if (idx >= 0 && c.moveToFirst()) c.getString(idx) else null
+    }
+}.getOrNull()
+
+/** 起一条本地整合包导入。
  *
  * 逻辑照搬版本页「安装整合包 → 从本地文件」那条链（排队、撞名规避、失败清理半成品），
  * 只把「页面里的 holder」换成这里的 `importer` 状态。
@@ -154,6 +196,8 @@ private fun startModpackImport(
 
 /** 导入一个键位（控制布局）JSON。 */
 private suspend fun importControlLayout(context: Context, uri: Uri) {
+    // 先给个即时反馈：导入到落盘之间有一小段耗时，什么都不显示会被当成「点了没反应」
+    PclHintHost.push("正在导入键位布局…", PclHintTheme.Blue)
     val error = withContext(Dispatchers.IO) {
         runCatching {
             val stream = context.contentResolver.openInputStream(uri)

@@ -21,6 +21,7 @@ package com.zalith.pcl.ui.activities
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.net.Uri
+import android.provider.OpenableColumns
 import android.os.Build
 import android.os.Bundle
 import android.view.KeyEvent
@@ -710,12 +711,39 @@ class MainActivity : BaseAppCompatActivity() {
         val importing = when (type) {
             IMPORT_TYPE_MODPACK -> handleModpackImport(intent)
             IMPORT_TYPE_CONTROLS -> handleControlsImport(intent)
+            // `auto` 入口（manifest 声明 */* 的那个）：按文件名后缀分流，
+            // 否则原生界面下从「分享」进来的文件会毫无反应
+            IMPORT_TYPE_AUTO -> {
+                val uri: Uri? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    intent.getParcelableExtra(EXTRA_IMPORT_URI, Uri::class.java)
+                } else {
+                    @Suppress("DEPRECATION")
+                    intent.getParcelableExtra(EXTRA_IMPORT_URI)
+                }
+                val name = uri?.let { resolveDisplayName(it) }?.lowercase().orEmpty()
+                when {
+                    name.endsWith(".json") -> handleControlsImport(intent)
+                    name.endsWith(".zip") || name.endsWith(".mrpack") ||
+                        name.endsWith(".modpack") || name.endsWith(".rar") ||
+                        name.endsWith(".7z") -> handleModpackImport(intent)
+                    else -> false
+                }
+            }
             else -> false
         }
 
         intent.removeExtra(EXTRA_IMPORT_TYPE)
         return importing
     }
+
+    /** 取内容 URI 对应的文件名（`auto` 导入按后缀分流时用）。 */
+    private fun resolveDisplayName(uri: Uri): String? = runCatching {
+        if (uri.scheme == "file") return@runCatching uri.lastPathSegment
+        contentResolver.query(uri, null, null, null, null)?.use { c ->
+            val idx = c.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+            if (idx >= 0 && c.moveToFirst()) c.getString(idx) else null
+        }
+    }.getOrNull()
 
     /**
      * @return 是否已经触发了整合包导入程序

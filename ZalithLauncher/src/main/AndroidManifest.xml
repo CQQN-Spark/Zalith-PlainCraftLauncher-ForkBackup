@@ -100,11 +100,49 @@
                 <data android:scheme="file"/>
                 <data android:scheme="content"/>
                 <data android:mimeType="application/json"/>
+                <!-- 很多文件管理器 / 聊天软件分享 .json 时用的是下面这些类型，
+                     只声明 application/json 会导致“分享过来只启动启动器、布局没导入” -->
+                <data android:mimeType="application/x-json"/>
+                <data android:mimeType="text/plain"/>
+                <data android:mimeType="application/octet-stream"/>
+                <data android:mimeType="text/json"/>
             </intent-filter>
             <intent-filter>
                 <category android:name="android.intent.category.DEFAULT"/>
                 <action android:name="android.intent.action.SEND"/>
                 <data android:mimeType="application/json"/>
+                <data android:mimeType="application/x-json"/>
+                <data android:mimeType="text/plain"/>
+                <data android:mimeType="application/octet-stream"/>
+                <data android:mimeType="text/json"/>
+            </intent-filter>
+        </activity-alias>
+
+        <!-- 通用「导入到启动器」入口。
+             必须声明 */* 才能被那些分享时 type=*/* 的应用（含本应用自己的 shareFile）
+             匹配到 —— Android 的规则是 intent 类型 */* 只匹配同声明 */* 的过滤器。
+             真正的类型判断放到界面层按文件名后缀做（json → 键位，zip/mrpack → 整合包）。 -->
+        <activity-alias
+            android:label="@string/import_anything"
+            android:name="com.zalith.pcl.activity.ImportAnythingActivity"
+            android:exported="true"
+            android:targetActivity=".ui.activities.SplashActivity">
+
+            <meta-data
+                android:name="import_type"
+                android:value="auto" />
+
+            <intent-filter>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <action android:name="android.intent.action.SEND"/>
+                <data android:mimeType="*/*"/>
+            </intent-filter>
+            <intent-filter>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <action android:name="android.intent.action.VIEW"/>
+                <data android:scheme="file"/>
+                <data android:scheme="content"/>
+                <data android:mimeType="*/*" android:pathPattern=".*\\.json"/>
             </intent-filter>
         </activity-alias>
 

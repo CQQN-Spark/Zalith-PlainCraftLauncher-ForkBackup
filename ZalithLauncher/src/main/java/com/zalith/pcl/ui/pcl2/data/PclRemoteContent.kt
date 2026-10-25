@@ -48,7 +48,7 @@ object PclRemoteContent {
      * 站点根地址（编译期默认值）。站点域名确定后填这里，例如 `https://xxx.example.com`。
      * 留空表示还没配置 —— 这时只看 MMKV，两者都空则完全不联网、只用本地文案。
      */
-    private const val DEFAULT_BASE_URL = "http://103.85.86.151:25997"
+    private const val DEFAULT_BASE_URL = "https://z-pcl.cc.cd:28722"
 
     private const val TIMEOUT_MS = 8000
 
