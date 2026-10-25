@@ -108,10 +108,14 @@ object ControlManager {
                         loadLayoutFromFileUncheck(file)
                     }.onFailure { e ->
                         Logger.warning(TAG, "Failed to load control layout! file = $file", e)
-                    }.getOrNull() ?: return@mapNotNull null
+                    }.getOrNull() ?: EmptyControlLayout
                 } catch (e: Exception) {
+                    // 【别再 return@mapNotNull null】以前这里把解析不了的文件直接丢掉，
+                    // 表现就是「导进来了，但这一页什么都不多」—— 用户完全无从判断是没导进去
+                    // 还是文件坏了。现在保留成一行「不支持的布局」，至少看得见、能删掉。
                     Logger.warning(TAG, "Failed to load control layout! file = $file", e)
-                    return@mapNotNull null
+                    isSupport = false
+                    EmptyControlLayout
                 }
 
                 ControlData(
@@ -252,6 +256,9 @@ object ControlManager {
 
     /**
      * 尝试导入控制布局
+     *
+     * 解析失败时**不要**把文件留在目录里（否则列表里会多一份「不支持的布局」，
+     * 看着像导入成功了却打不开），所以两条错误分支都会先删文件再回调。
      */
     suspend fun importControl(
         inputStream: InputStream,
@@ -262,17 +269,59 @@ object ControlManager {
         val file = getNewRandomFile()
         try {
             inputStream.use { stream ->
-                val jsonString = stream.readString()
+                val jsonString = stream.readString().stripJsonNoise()
                 val layout = loadLayoutFromString(jsonString)
                 layout.saveToFile(file)
             }
+            Logger.info(TAG, "控制布局导入成功：${file.name}")
             onFinished()
         } catch (e: SerializationException) {
             FileUtils.deleteQuietly(file)
+            Logger.warning(TAG, "控制布局不是可识别的 JSON 格式", e)
             onSerializationError(e)
+        } catch (e: IllegalArgumentException) {
+            // `loadLayoutFromString` 在文件的 editorVersion 比本启动器新时抛这个
+            // （`Control layout versions are not supported!`）。原样抛给用户是一句英文，
+            // 这里换成能看懂的话 —— 注意 SerializationException 也继承自
+            // IllegalArgumentException，所以必须排在它后面。
+            FileUtils.deleteQuietly(file)
+            Logger.warning(TAG, "控制布局版本过新", e)
+            catchedError(IllegalArgumentException("这个布局来自更新版本的启动器，请先升级启动器再导入。", e))
         } catch (e: Exception) {
             FileUtils.deleteQuietly(file)
+            Logger.warning(TAG, "控制布局导入失败", e)
             catchedError(e)
         }
     }
+}
+
+/**
+ * 去掉 JSON 文本里的「隐形垃圾」。
+ *
+ * 最常见的两种：
+ *   · **UTF-8 BOM**（`EF BB BF`）—— 用 Windows 记事本 / 某些下载站另存过的文件都带，
+ *     `IOUtils.toString(UTF_8)` 会把它保留成 `\uFEFF`，kotlinx.serialization 直接抛
+ *     「Unexpected JSON token at offset 0」，表现就是「这份布局导不进来」，而且报错
+ *     里一个中文字符都没有，用户根本看不出是 BOM 的问题。
+ *   · **零宽空格 / 首尾空白** —— 复制粘贴拼出来的文件常见。
+ */
+private fun String.stripJsonNoise(): String =
+    trimStart('\uFEFF', '\u200B').trim()
+
+/**
+ * 打开 SAF 文档 Uri 的输入流。
+ *
+ * `openInputStream` 对少数第三方文件管理器（以及没有给 MIME 提示的 provider）
+ * 会返回 null 甚至抛异常，这时退回 `openFileDescriptor` 拿原始 fd —— 两条都失败
+ * 才真的读不到。
+ */
+fun openDocumentStream(context: Context, uri: android.net.Uri): InputStream? {
+    runCatching { context.contentResolver.openInputStream(uri) }
+        .getOrNull()
+        ?.let { return it }
+    return runCatching {
+        context.contentResolver.openFileDescriptor(uri, "r")?.let {
+            java.io.FileInputStream(it.fileDescriptor)
+        }
+    }.getOrNull()
 }

@@ -67,6 +67,7 @@ import com.zalith.pcl.context.copyLocalFile
 import com.zalith.pcl.context.getFileName
 import com.zalith.pcl.game.control.ControlData
 import com.zalith.pcl.game.control.ControlManager
+import com.zalith.pcl.game.control.openDocumentStream
 import com.zalith.pcl.game.multirt.Runtime
 import com.zalith.pcl.game.multirt.RuntimesManager
 import com.zalith.pcl.path.PathManager
@@ -106,6 +107,7 @@ import com.zalith.pcl.ui.pcl2.theme.PclDimens
 import com.zalith.pcl.ui.pcl2.theme.pclPalette
 import com.zalith.pcl.utils.file.checkExtensionOrThrow
 import com.zalith.pcl.utils.image.isImageFile
+import com.zalith.pcl.utils.logging.Logger
 import com.zalith.pcl.viewmodel.EventViewModel
 import com.zalith.pcl.viewmodel.GamepadViewModel
 import kotlinx.coroutines.Dispatchers
@@ -122,6 +124,9 @@ import kotlin.math.roundToInt
 
 /** 设置项标签列宽度，与 `PclSetupPages.LabelWidth` 一致。 */
 private val ExtraLabelWidth = 140.dp
+
+/** 控制布局相关操作的日志标签（导入失败原因要能在「首页 → 日志」里看到）。 */
+private const val LOG_TAG = "PclSetupExtraPages"
 
 /** 摘要小字用的灰色（PCL 的 `ColorBrushGray3`）。`pclPalette` 本身是 @Composable，所以这里也用取值器。 */
 private val summaryColor: Color
@@ -1265,28 +1270,36 @@ fun PclSetupControlManagePage() {
             var failure: String? = null
             withContext(Dispatchers.IO) {
                 uris.forEach { uri ->
+                    // 提示里带上文件名：一次选好几个文件时，不然根本不知道是哪个出的问题
+                    val displayName = context.getFileName(uri) ?: "所选文件"
                     runCatching {
-                        val stream = context.contentResolver.openInputStream(uri)
-                            ?: error("无法读取这个文件（没有读取权限）。")
+                        val stream = openDocumentStream(context, uri)
+                            ?: error("读不到这个文件，可能是文件管理器没给读取权限。")
                         var parseError: String? = null
                         stream.use {
                             ControlManager.importControl(
                                 inputStream = it,
                                 onSerializationError = { e ->
-                                    parseError = "这个文件不是启动器能识别的控制布局：${e.message}"
+                                    parseError = "不是启动器能识别的键位布局（${e.message}）"
                                 },
                                 catchedError = { e ->
-                                    parseError = "布局导入失败：${e.message}"
+                                    parseError = "导入失败：${e.message}"
                                 },
                             )
                         }
                         parseError?.let { message -> error(message) }
                         imported++
-                    }.onFailure { failure = it.message ?: it.javaClass.simpleName }
+                    }.onFailure {
+                        val reason = it.message ?: it.javaClass.simpleName
+                        failure = "「$displayName」$reason"
+                        Logger.warning(LOG_TAG, "控制布局导入失败：$displayName / $uri", it)
+                    }
                 }
                 // 列表要重新扫一遍：`dataList` 是 ControlManager 里的 StateFlow，
-                // 不 refresh 的话导进来的那份永远不出现在这一页
-                if (imported > 0) ControlManager.refresh()
+                // 不 refresh 的话导进来的那份永远不出现在这一页。
+                // 失败时也刷 —— 万一有文件其实已经落盘了（比如保存到一半抛异常），
+                // 至少能作为「不支持的布局」行显出来，不会静默消失。
+                ControlManager.refresh()
             }
             when {
                 imported > 0 -> PclHintHost.push(
@@ -1397,7 +1410,10 @@ private fun PclControlRow(
     val title = if (data.isSupport) data.controlLayout.info.name.default else data.file.name
     val info = buildString {
         if (!data.isSupport) {
-            append("不支持的布局版本，只可删除")
+            // 这类行有两种来源：布局版本比本启动器新，或者文件本身损坏。
+            // 以前损坏的文件会被 refresh 直接丢掉（用户只看到「导入完了但列表没变化」），
+            // 现在保留成一行，至少能删。
+            append("不支持或无法读取，只能删除")
         } else {
             val author = data.controlLayout.info.author.default
             if (author.isNotEmpty()) append("作者：").append(author)

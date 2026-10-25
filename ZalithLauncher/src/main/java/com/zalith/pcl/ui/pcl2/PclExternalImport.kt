@@ -22,6 +22,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import com.zalith.pcl.game.control.ControlManager
+import com.zalith.pcl.game.control.openDocumentStream
 import com.zalith.pcl.game.download.modpack.install.ModpackImporter
 import com.zalith.pcl.ui.activities.IMPORT_TYPE_AUTO
 import com.zalith.pcl.ui.activities.IMPORT_TYPE_CONTROLS
@@ -31,6 +32,7 @@ import com.zalith.pcl.ui.pcl2.data.PclImportBridge
 import com.zalith.pcl.ui.pcl2.data.PclImportRequest
 import com.zalith.pcl.ui.pcl2.data.PclRuntime
 import com.zalith.pcl.ui.pcl2.pages.pclDiscardIncompleteVersion
+import com.zalith.pcl.utils.logging.Logger
 // 注意：`PclTitledTaskDialog` / `modpackImportErrorText` 在 `PclSectionPages.kt` 里，
 // 那个文件的 package 是 `...ui.pcl2`（不是 `.pages`），与本文件同包，不需要 import。
 import kotlinx.coroutines.CancellationException
@@ -200,13 +202,13 @@ private suspend fun importControlLayout(context: Context, uri: Uri) {
     PclHintHost.push("正在导入键位布局…", PclHintTheme.Blue)
     val error = withContext(Dispatchers.IO) {
         runCatching {
-            val stream = context.contentResolver.openInputStream(uri)
-                ?: return@runCatching "无法读取这个键位文件（没有读取权限）。"
+            val stream = openDocumentStream(context, uri)
+                ?: return@runCatching "读不到这个键位文件，可能是文件管理器没给读取权限。"
             var failure: String? = null
             stream.use {
                 ControlManager.importControl(
                     inputStream = it,
-                    onSerializationError = { e -> failure = "这个文件不是启动器能识别的键位布局：${e.message}" },
+                    onSerializationError = { e -> failure = "不是启动器能识别的键位布局（${e.message}）" },
                     catchedError = { e -> failure = "键位导入失败：${e.message}" },
                 )
             }
@@ -218,6 +220,7 @@ private suspend fun importControlLayout(context: Context, uri: Uri) {
     if (error == null) {
         PclHintHost.push("键位布局已导入，在「控制布局」里就能选到它。", PclHintTheme.Green)
     } else {
+        Logger.warning("PclExternalImport", "键位布局导入失败：$uri / $error")
         PclHintHost.push(error, PclHintTheme.Red)
     }
 }
