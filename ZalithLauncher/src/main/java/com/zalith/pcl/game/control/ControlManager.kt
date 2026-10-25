@@ -43,6 +43,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.SerializationException
 import org.apache.commons.io.FileUtils
 import java.io.File
@@ -312,16 +313,27 @@ object ControlManager {
     ) = withContext(Dispatchers.IO) {
         val file = getNewRandomFile()
 
-        // ① 原样落盘
-        try {
-            file.parentFile?.mkdirs()
-            inputStream.use { stream ->
-                file.outputStream().use { out -> stream.copyTo(out) }
+        // ① 原样落盘。
+        //    **必须带超时**：SAF 的流由文件管理器提供，个别 provider 会一直不给数据，
+        //    `copyTo` 就永远阻塞在 IO 线程上 —— 界面上永远停在「正在导入键位布局…」，
+        //    连失败提示都出不来。20 秒足够拷完任何正常大小的布局 json。
+        val copied = try {
+            withTimeoutOrNull(20_000) {
+                file.parentFile?.mkdirs()
+                inputStream.use { stream ->
+                    file.outputStream().use { out -> stream.copyTo(out) }
+                }
+                true
             }
         } catch (e: Exception) {
-            FileUtils.deleteQuietly(file)
             Logger.warning(TAG, "控制布局写盘失败", e)
-            catchedError(e)
+            null
+        }
+        if (copied == null) {
+            FileUtils.deleteQuietly(file)
+            catchedError(
+                IllegalStateException("读取这个文件失败或超时（20 秒），可能是文件太大，或者文件管理器没有正常返回数据。")
+            )
             return@withContext
         }
 

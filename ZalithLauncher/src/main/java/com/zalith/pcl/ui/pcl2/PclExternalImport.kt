@@ -20,6 +20,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.platform.LocalContext
 import com.zalith.pcl.game.control.ControlManager
 import com.zalith.pcl.game.control.openDocumentStream
@@ -39,6 +40,7 @@ import com.zalith.pcl.utils.logging.Logger
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.withLock
@@ -68,24 +70,34 @@ fun PclExternalImportHost(runtime: PclRuntime) {
      * 这里改成必须点掉的提示框。
      */
     var controlError by remember { mutableStateOf<String?>(null) }
-    val request = PclImportBridge.pending
 
-    LaunchedEffect(request) {
-        val req = PclImportBridge.take() ?: return@LaunchedEffect
-        when (val type = resolveImportKind(context, req)) {
-            IMPORT_TYPE_MODPACK -> importer = startModpackImport(context, runtime, req.uri)
-            IMPORT_TYPE_CONTROLS -> controlError = importControlLayout(context, req.uri)
-            else -> {
-                // `auto` 入口拿到的是 `*/*`，认不出来就明确告诉用户，别再「跳个界面就没动静」
-                val name = displayNameOf(context, req.uri) ?: "这个文件"
-                PclHintHost.push(
-                    "「$name」不是启动器能识别的类型（支持 .json 键位布局与 .zip/.mrpack 整合包）。",
-                    PclHintTheme.Yellow
-                )
-                // 类型常量留个引用，避免 when 分支被 lint 当成死代码
-                if (type == IMPORT_TYPE_AUTO) return@LaunchedEffect
+    // 【key 必须是 Unit，绝对不能是 `PclImportBridge.pending`】
+    // `take()` 会把 `pending` 置成 null，于是这个 key 立刻从「有请求」变成 null ——
+    // `LaunchedEffect(key)` 判定 key 变了，就会**取消正在跑的那个协程**、再启动一个新的
+    // （新的那次 `take()` 拿到 null，直接 return）。
+    // 导入干到一半被杀掉，屏幕上只剩「正在导入键位布局…」那条蓝提示，之后什么都不发生、
+    // 弹窗也不出 —— 这正是「搞完这个就没反应了」的真因。
+    LaunchedEffect(Unit) {
+        snapshotFlow { PclImportBridge.pending }
+            .filterNotNull()
+            .collect { pending ->
+                val req = PclImportBridge.take() ?: return@collect
+                when (val type = resolveImportKind(context, req)) {
+                    IMPORT_TYPE_MODPACK -> importer = startModpackImport(context, runtime, req.uri)
+                    IMPORT_TYPE_CONTROLS -> controlError = importControlLayout(context, req.uri)
+                    else -> {
+                        // `auto` 入口拿到的是通配类型，认不出来就明确告诉用户，
+                        // 别再「跳个界面就没动静」
+                        val name = displayNameOf(context, req.uri) ?: "这个文件"
+                        PclHintHost.push(
+                            "「$name」不是启动器能识别的类型（支持 .json 键位布局与 .zip/.mrpack 整合包）。",
+                            PclHintTheme.Yellow
+                        )
+                        // 类型常量留个引用，避免 when 分支被 lint 当成死代码
+                        if (type == IMPORT_TYPE_AUTO) return@collect
+                    }
+                }
             }
-        }
     }
 
     importer?.let { imp ->
