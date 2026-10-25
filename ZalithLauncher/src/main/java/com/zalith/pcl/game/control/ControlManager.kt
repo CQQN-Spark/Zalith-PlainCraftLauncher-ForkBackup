@@ -28,6 +28,7 @@ import com.movtery.layer_controller.layout.loadLayoutFromFileUncheck
 import com.movtery.layer_controller.layout.loadLayoutFromString
 import com.movtery.layer_controller.observable.ObservableControlLayout
 import com.movtery.layer_controller.utils.newRandomFileName
+import com.movtery.layer_controller.layout.patchLayoutJson
 import com.movtery.layer_controller.utils.saveToFile
 import com.zalith.pcl.context.copyAssetFile
 import com.zalith.pcl.path.PathManager
@@ -301,16 +302,19 @@ object ControlManager {
         onFinished: () -> Unit = {},
     ) = withContext(Dispatchers.IO) {
         val file = getNewRandomFile()
+        // 原始文本留着：解析失败时要拿它落盘，否则用户「列表里什么都没有」
+        var rawJson: String? = null
         try {
             inputStream.use { stream ->
                 val jsonString = stream.readString().stripJsonNoise()
-                val layout = loadLayoutFromString(jsonString)
+                rawJson = jsonString
+                val layout = parseLayoutLeniently(jsonString)
                 layout.saveToFile(file)
             }
             Logger.info(TAG, "控制布局导入成功：${file.name}")
             onFinished()
         } catch (e: SerializationException) {
-            FileUtils.deleteQuietly(file)
+            keepRawForInspection(file, rawJson)
             Logger.warning(TAG, "控制布局不是可识别的 JSON 格式", e)
             // 原始异常里全是一句英文（`The file does not contain the key "editorVersion".`
             // / `Unexpected JSON token at offset 0`），用户根本看不出问题在哪。
@@ -329,7 +333,7 @@ object ControlManager {
             // （`Control layout versions are not supported!`）。原样抛给用户是一句英文，
             // 这里换成能看懂的话 —— 注意 SerializationException 也继承自
             // IllegalArgumentException，所以必须排在它后面。
-            FileUtils.deleteQuietly(file)
+            keepRawForInspection(file, rawJson)
             Logger.warning(TAG, "控制布局版本过新", e)
             catchedError(IllegalArgumentException("这个布局来自更新版本的启动器，请先升级启动器再导入。", e))
         } catch (e: Exception) {
@@ -337,6 +341,42 @@ object ControlManager {
             Logger.warning(TAG, "控制布局导入失败", e)
             catchedError(e)
         }
+    }
+
+    /**
+     * 先按标准格式解析，失败再补齐缺字段重试一次。
+     *
+     * `ControlLayout` 只有 `info` 和 `editorVersion` 没有默认值，从别处下载的布局
+     * 往往就缺这一个 `editorVersion` —— 报错是英文的 `The file does not contain
+     * the key "editorVersion".`，用户看着就像「格式不兼容，废了」。补上再试，
+     * 大部分还能正常打开。
+     */
+    private fun parseLayoutLeniently(jsonString: String): ControlLayout {
+        val first = runCatching { loadLayoutFromString(jsonString) }
+        first.getOrNull()?.let { return it }
+
+        val patched = runCatching { patchLayoutJson(jsonString) }.getOrNull()
+        if (patched != null && patched != jsonString) {
+            Logger.info(TAG, "布局缺少部分字段，补齐后重试解析")
+            runCatching { loadLayoutFromString(patched) }.getOrNull()?.let { return it }
+        }
+        throw first.exceptionOrNull() ?: SerializationException("无法把这个文件读成控制布局")
+    }
+
+    /**
+     * 解析失败时把原始内容留在控制布局目录里。
+     *
+     * 以前这里直接 `deleteQuietly(file)` —— 而那个 file 压根没被创建过，等于删了个空气。
+     * 结果就是「分享进来、提示一句、列表里什么都没有」，用户连失败的证据都拿不到。
+     * 现在把原文写进去：`refresh()` 会把它显示成一行「不支持或无法读取」，看得见、能删掉，
+     * 也能导出来发给开发者看究竟是哪一步不对。
+     */
+    private fun keepRawForInspection(file: File, raw: String?) {
+        if (raw.isNullOrBlank() || raw.length > 2 * 1024 * 1024) return
+        runCatching {
+            file.parentFile?.mkdirs()
+            file.writeText(raw)
+        }.onFailure { Logger.warning(TAG, "Failed to keep raw layout file", it) }
     }
 }
 

@@ -28,6 +28,7 @@ import com.zalith.pcl.ui.activities.IMPORT_TYPE_AUTO
 import com.zalith.pcl.ui.activities.IMPORT_TYPE_CONTROLS
 import com.zalith.pcl.ui.activities.IMPORT_TYPE_MODPACK
 import com.zalith.pcl.ui.pcl2.components.PclHintTheme
+import com.zalith.pcl.ui.pcl2.components.PclNoticeDialog
 import com.zalith.pcl.ui.pcl2.data.PclImportBridge
 import com.zalith.pcl.ui.pcl2.data.PclImportRequest
 import com.zalith.pcl.ui.pcl2.data.PclRuntime
@@ -59,13 +60,21 @@ fun PclExternalImportHost(runtime: PclRuntime) {
     val context = LocalContext.current
     // 正在跑的整合包导入器（非空时显示进度弹窗）
     var importer by remember { mutableStateOf<ModpackImporter?>(null) }
+    /**
+     * 键位导入失败的原因。
+     *
+     * 分享进来失败时原来只推一条三秒消失的左下角 hint —— 用户刚切到启动器，
+     * 眼睛还在找列表，提示已经没了，观感上就是「分享过来什么都没发生」。
+     * 这里改成必须点掉的提示框。
+     */
+    var controlError by remember { mutableStateOf<String?>(null) }
     val request = PclImportBridge.pending
 
     LaunchedEffect(request) {
         val req = PclImportBridge.take() ?: return@LaunchedEffect
         when (val type = resolveImportKind(context, req)) {
             IMPORT_TYPE_MODPACK -> importer = startModpackImport(context, runtime, req.uri)
-            IMPORT_TYPE_CONTROLS -> importControlLayout(context, req.uri)
+            IMPORT_TYPE_CONTROLS -> controlError = importControlLayout(context, req.uri)
             else -> {
                 // `auto` 入口拿到的是 `*/*`，认不出来就明确告诉用户，别再「跳个界面就没动静」
                 val name = displayNameOf(context, req.uri) ?: "这个文件"
@@ -90,6 +99,14 @@ fun PclExternalImportHost(runtime: PclRuntime) {
                 importer = null
             },
             onDismiss = { importer = null },
+        )
+    }
+
+    controlError?.let { message ->
+        PclNoticeDialog(
+            title = "键位布局导入失败",
+            content = message,
+            onDismiss = { controlError = null },
         )
     }
 }
@@ -196,8 +213,8 @@ private fun startModpackImport(
     return newImporter
 }
 
-/** 导入一个键位（控制布局）JSON。 */
-private suspend fun importControlLayout(context: Context, uri: Uri) {
+/** 导入一个键位（控制布局）JSON，返回失败原因（`null` 表示成功）。 */
+private suspend fun importControlLayout(context: Context, uri: Uri): String? {
     // 先给个即时反馈：导入到落盘之间有一小段耗时，什么都不显示会被当成「点了没反应」
     PclHintHost.push("正在导入键位布局…", PclHintTheme.Blue)
     val error = withContext(Dispatchers.IO) {
@@ -208,7 +225,10 @@ private suspend fun importControlLayout(context: Context, uri: Uri) {
             stream.use {
                 ControlManager.importControl(
                     inputStream = it,
-                    onSerializationError = { e -> failure = "不是启动器能识别的键位布局（${e.message}）" },
+                    // `ControlManager` 已经把原因翻成中文并按情况分类了，直接用
+                    onSerializationError = { e ->
+                        failure = e.message ?: "这个文件不是启动器能识别的键位布局。"
+                    },
                     catchedError = { e -> failure = "键位导入失败：${e.message}" },
                 )
             }
@@ -217,10 +237,11 @@ private suspend fun importControlLayout(context: Context, uri: Uri) {
             failure
         }.getOrElse { "键位导入失败：${it.message}" }
     }
-    if (error == null) {
+    return if (error == null) {
         PclHintHost.push("键位布局已导入，在「控制布局」里就能选到它。", PclHintTheme.Green)
+        null
     } else {
         Logger.warning("PclExternalImport", "键位布局导入失败：$uri / $error")
-        PclHintHost.push(error, PclHintTheme.Red)
+        error
     }
 }

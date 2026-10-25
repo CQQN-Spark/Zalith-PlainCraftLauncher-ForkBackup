@@ -32,7 +32,11 @@ import com.movtery.layer_controller.utils.layoutJson
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonPrimitive
 import java.io.File
@@ -149,4 +153,58 @@ fun loadLayoutFromString(jsonString: String): ControlLayout {
 fun loadLayoutFromFileUncheck(file: File): ControlLayout {
     val jsonString = file.readText()
     return layoutJson.decodeFromString<ControlLayout>(jsonString)
+}
+
+/**
+ * 尽量把一份「字段不全」的布局 json 补成能解析的样子。
+ *
+ * `ControlLayout` 里只有 `info` 和 `editorVersion` 没有默认值 —— 其余
+ * （`layers` / `styles` / `joystickStyles`）缺了都能解析。所以从别处下载、
+ * 或者手工拼出来的布局，最常见的死法就是少一个 `editorVersion`，
+ * 而报错信息是 `The file does not contain the key "editorVersion".`，
+ * 用户完全看不懂。
+ *
+ * @return 补齐后的 json；返回 null 表示没法补（不是 JSON 对象，或本来就不缺字段）。
+ */
+fun patchLayoutJson(jsonString: String): String? {
+    val obj = runCatching {
+        Json.parseToJsonElement(jsonString) as? JsonObject
+    }.getOrNull() ?: return null
+
+    val map = obj.toMutableMap()
+    var changed = false
+
+    if (!map.containsKey("editorVersion")) {
+        // 没有版本号 → 当作最老的格式，交给 `updateLayoutToNew` 逐级升级
+        map["editorVersion"] = JsonPrimitive(EDITOR_VERSION)
+        changed = true
+    }
+    if (!map.containsKey("info")) {
+        map["info"] = buildJsonObject {
+            put("name", buildJsonObject {
+                put("default", JsonPrimitive("导入的布局"))
+                put("matchQueue", buildJsonArray { })
+            })
+            put("author", buildJsonObject {
+                put("default", JsonPrimitive(""))
+                put("matchQueue", buildJsonArray { })
+            })
+            put("description", buildJsonObject {
+                put("default", JsonPrimitive(""))
+                put("matchQueue", buildJsonArray { })
+            })
+            put("versionCode", JsonPrimitive(0))
+            put("versionName", JsonPrimitive(""))
+        }
+        changed = true
+    }
+    listOf("layers", "styles", "joystickStyles").forEach { key ->
+        if (!map.containsKey(key)) {
+            map[key] = buildJsonArray { }
+            changed = true
+        }
+    }
+
+    if (!changed) return null
+    return JsonObject(map).toString()
 }
