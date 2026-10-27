@@ -245,16 +245,16 @@ fun PclSetupLaunchPage() {
                     label = PclStrings.LangPageSetupLaunchLaunchVersionIsolation,
                     items = listOf(true, false),
                     selected = AllSettings.versionIsolation.state,
-                    labelOf = { if (it) "开启版本隔离" else "关闭版本隔离" },
+                    labelOf = { if (it) "Turn on version isolation" else "Turn off version isolation" },
                     onSelect = { AllSettings.versionIsolation.save(it) },
                 )
                 SetupRow(PclStrings.LangPageSetupLaunchLaunchCustomInfo) {
                     SettingTextBox(AllSettings.versionCustomInfo, Modifier.fillMaxWidth())
                 }
-                SettingCheck("不检查游戏完整性（跳过文件校验，启动更快）", AllSettings.skipGameIntegrityCheck)
-                SettingCheck("游戏页面全屏化", AllSettings.gameFullScreen)
-                SettingCheck("使用 SurfaceView 渲染", AllSettings.useSurfaceView)
-                SettingCheck("持续性能模式", AllSettings.sustainedPerformance)
+                SettingCheck("Does not check game integrity (skips file verification, starts faster)", AllSettings.skipGameIntegrityCheck)
+                SettingCheck("Game page full screen", AllSettings.gameFullScreen)
+                SettingCheck("Rendering using SurfaceView", AllSettings.useSurfaceView)
+                SettingCheck("continuous performance mode", AllSettings.sustainedPerformance)
             }
         }
 
@@ -291,7 +291,7 @@ fun PclSetupLaunchPage() {
         }
         Spacer(Modifier.height(PclDimens.cardGap))
         PclHint(
-            text = "以上设置项均直接读写 Zalith 的真实配置，修改后立即保存并生效。",
+            text = "The above setting items directly read and write the real configuration of Zalith, and are saved and effective immediately after modification.",
             theme = PclHintTheme.Blue,
         )
         Spacer(Modifier.height(PclDimens.cardGap))
@@ -303,7 +303,7 @@ fun PclSetupLaunchPage() {
 private fun PclRenderingCard() {
     val rendererOptions = remember { PclSettings.rendererOptions() }
     val rendererIds = listOf("") + rendererOptions.map { it.first }
-    val rendererNames = mapOf("" to "自动选择") + rendererOptions.associate { it.first to it.second }
+    val rendererNames = mapOf("" to "automatic selection") + rendererOptions.associate { it.first to it.second }
 
     val driverOptions = remember {
         runCatching { DriverPluginManager.getDriverList().map { it.id to it.name } }
@@ -330,9 +330,9 @@ private fun PclRenderingCard() {
     }
     var showRendererConfig by remember { mutableStateOf(false) }
 
-    PclCard( modifier = Modifier.fillMaxWidth(),title = "渲染器") {
+    PclCard( modifier = Modifier.fillMaxWidth(),title = "Renderer") {
         Column {
-            SetupRow("渲染器") {
+            SetupRow("Renderer") {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
@@ -343,7 +343,7 @@ private fun PclRenderingCard() {
                         modifier = Modifier.weight(1f),
                         // PclComboBox 的 label 收到的是可空项（列表里允许出现 null），
                         // 所以这里要先兜住 null 再查名字。
-                        label = { id -> id?.let { rendererNames[it] ?: it.ifEmpty { "自动选择" } }.orEmpty() },
+                        label = { id -> id?.let { rendererNames[it] ?: it.ifEmpty { "automatic selection" } }.orEmpty() },
                         onSelect = { AllSettings.renderer.save(it) },
                     )
                     // 只有「选中新一代渲染器插件 + 它确实有可配置项」时才出现，和原生一致
@@ -353,40 +353,40 @@ private fun PclRenderingCard() {
                             logo = PclIcons.setupGear,
                             size = 30.dp,
                             logoScale = 0.95f,
-                            contentDescription = "渲染器配置",
+                            contentDescription = "Renderer configuration",
                             onClick = { showRendererConfig = true },
                         )
                     }
                 }
             }
             SettingCombo(
-                label = "Vulkan 驱动",
+                label = "Vulkan driver",
                 items = driverIds,
                 selected = currentDriver,
                 labelOf = { driverNames[it] ?: it },
                 onSelect = { AllSettings.vulkanDriver.save(it) },
             )
             SettingCombo(
-                label = "图形 API",
+                label = "Graphics API",
                 items = GraphicsApi.entries.toList(),
                 selected = AllSettings.graphicsApi.state,
                 labelOf = {
                     when (it) {
-                        GraphicsApi.DEFAULT -> "跟随游戏设定"
-                        GraphicsApi.DEFAULT_OPENGL -> "默认 OpenGL"
+                        GraphicsApi.DEFAULT -> "Follow game settings"
+                        GraphicsApi.DEFAULT_OPENGL -> "DefaultOpenGL"
                         else -> it.displayName
                     }
                 },
                 onSelect = { AllSettings.graphicsApi.save(it) },
             )
             SettingCombo(
-                label = "分辨率规则",
+                label = "Resolution rules",
                 items = ResolutionRule.entries.toList(),
                 selected = AllSettings.resolutionRule.state,
-                labelOf = { if (it == ResolutionRule.PERCENTAGE) "按屏幕百分比缩放" else "自定义宽高" },
+                labelOf = { if (it == ResolutionRule.PERCENTAGE) "Scale by screen percentage" else "Custom width and height" },
                 onSelect = { AllSettings.resolutionRule.save(it) },
             )
-            SetupRow("分辨率（%）") {
+            SetupRow("Resolution (%)") {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     SettingSlider(
                         unit = AllSettings.resolutionRatio,
@@ -401,28 +401,28 @@ private fun PclRenderingCard() {
                 }
             }
             if (AllSettings.resolutionRule.state == ResolutionRule.CUSTOM) {
-                SetupRow("自定义宽度") {
+                SetupRow("custom width") {
                     SettingSlider(AllSettings.customResolutionWidth, 320, 7680, Modifier.fillMaxWidth())
                 }
-                SetupRow("自定义高度") {
+                SetupRow("Custom height") {
                     SettingSlider(AllSettings.customResolutionHeight, 240, 4320, Modifier.fillMaxWidth())
                 }
             }
             Spacer(Modifier.height(6.dp))
-            SettingCheck("着色器日志输出（调试用）", AllSettings.dumpShaders)
-            SettingCheck("Zink 垂直同步", AllSettings.vsyncInZink)
-            SettingCheck("使用系统 Vulkan 驱动（Zink）", AllSettings.zinkPreferSystemDriver)
-            SettingCheck("Sodium / Iris 自动切换到兼容渲染器", AllSettings.autoRendererCompat)
+            SettingCheck("Shader log output (for debugging)", AllSettings.dumpShaders)
+            SettingCheck("Zink vertical sync", AllSettings.vsyncInZink)
+            SettingCheck("Using the system Vulkan driver (Zink)", AllSettings.zinkPreferSystemDriver)
+            SettingCheck("Sodium/Iris automatically switches to compatible renderer", AllSettings.autoRendererCompat)
             Spacer(Modifier.height(4.dp))
             PclHint(
-                text = "渲染器与驱动列表来自设备上实际安装的插件，未安装插件时仅显示内置 Turnip 驱动。",
+                text = "The renderer and driver list comes from the plug-ins actually installed on the device. When the plug-in is not installed, only the built-in Turnip driver is displayed.",
                 theme = PclHintTheme.Blue,
             )
             PclHint(
-                text = "「Sodium / Iris 自动切换」只在渲染器为「自动选择」时生效：若 mods 里装了 Sodium、Iris " +
-                        "这类需要桌面 OpenGL 3.3+ 的模组，而当前解析到的渲染器属于 GL4ES 翻译层" +
-                        "（会在加载界面卡死且不报错），启动器会自动改用 Kopper Zink 启动这一次游戏，" +
-                        "不会改动你的设置。手动指定过渲染器时不会被替换。",
+                text = "\"Sodium / Iris automatic switching\" only takes effect when the renderer is \"automatic selection\": if Sodium and Iris are installed in the mods" +
+                        "This type of module requires desktop OpenGL 3.3+, and the currently parsed renderer belongs to the GL4ES translation layer" +
+                        "(It will get stuck on the loading interface without reporting an error). The launcher will automatically switch to Kopper Zink to start the game this time." +
+                        "Your settings will not be changed. ",
                 theme = PclHintTheme.Blue,
             )
         }
@@ -494,7 +494,7 @@ private fun PclMemoryCard(context: Context) {
                         color = p.color1.copy(alpha = 0.7f),
                     )
                     PclText(
-                        text = if (ramAuto) "自动（约 %.2f GB）".format(ramMb / 1024f)
+                        text = if (ramAuto) "Automatic (approx. %.2f GB)".format(ramMb / 1024f)
                         else "%.2f GB".format(ramMb / 1024f),
                         fontSize = 16,
                     )
@@ -502,7 +502,7 @@ private fun PclMemoryCard(context: Context) {
             }
             Spacer(Modifier.height(6.dp))
             PclHint(
-                text = "本机可为启动器分配的内存上限为 $limitMb MB。设为「自动」时由 Zalith 按设备情况决定。",
+                text = "The memory that can be allocated natively to a launcher is limited to $limitMb MB. ",
                 theme = PclHintTheme.Blue,
             )
         }
@@ -522,9 +522,9 @@ private fun PclJavaCard() {
 
     PclCard( modifier = Modifier.fillMaxWidth(),title = PclStrings.LangPageSetupLaunchLaunchJava) {
         Column {
-            SettingCheck("自动选择合适的 Java 环境", AllSettings.autoPickJavaRuntime)
+            SettingCheck("Automatically select the appropriate Java environment", AllSettings.autoPickJavaRuntime)
             SettingCombo(
-                label = "Java 环境",
+                label = "Java environment",
                 items = ids,
                 selected = AllSettings.javaRuntime.state,
                 labelOf = { names[it] ?: it.ifEmpty { PclStrings.LangPageSetupLaunchLaunchJavaAutoChoice } },
@@ -533,7 +533,7 @@ private fun PclJavaCard() {
             if (runtimes.isEmpty()) {
                 Spacer(Modifier.height(4.dp))
                 PclHint(
-                    text = "尚未在设备上检测到任何 Java 运行库，可在此页之外下载安装后再回到这里选择。",
+                    text = "No Java runtime has been detected on the device. You can download and install it outside this page and then come back here to select it.",
                     theme = PclHintTheme.Yellow,
                 )
             }
@@ -553,7 +553,7 @@ private fun PclAdvancedCard() {
             SetupRow(PclStrings.LangPageSetupLaunchLaunchAdvanceOptionsJVMHead) {
                 SettingTextBox(AllSettings.jvmArgs, Modifier.fillMaxWidth(), singleLine = false)
             }
-            SetupRow("日志字体大小") {
+            SetupRow("Log font size") {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     SettingSlider(AllSettings.logTextSize, 5, 20, Modifier.weight(1f))
                     PclText(
@@ -562,13 +562,13 @@ private fun PclAdvancedCard() {
                     )
                 }
             }
-            SetupRow("日志缓冲刷新间隔（毫秒）") {
+            SetupRow("Log buffer refresh interval (milliseconds)") {
                 SettingSlider(AllSettings.logBufferFlushInterval, 100, 1000, Modifier.fillMaxWidth())
             }
-            SettingCheck("启动游戏时自动展示日志（直到游戏开始渲染）", AllSettings.showLogAutomatic)
+            SettingCheck("Automatically display the log when starting the game (until the game starts rendering)", AllSettings.showLogAutomatic)
             Spacer(Modifier.height(5.dp))
             PclHint(
-                text = "JVM 参数会原样追加到游戏启动命令行末尾，请谨慎填写。",
+                text = "The JVM parameters will be appended to the end of the game startup command line as they are, so please fill them in carefully.",
                 theme = PclHintTheme.Yellow,
             )
         }
@@ -610,10 +610,10 @@ fun PclSetupLinkPage() {
     PclContent {
         PclCard( modifier = Modifier.fillMaxWidth(),title = PclStrings.LangPageSetupLinkConnectionOptions) {
             Column {
-                SettingCheck("启用陶瓦联机（Terracotta）", AllSettings.enableTerracotta)
+                SettingCheck("Enable Terracotta Online", AllSettings.enableTerracotta)
                 Spacer(Modifier.height(6.dp))
                 PclHint(
-                    text = "陶瓦联机可在没有公网 IP 的情况下与好友一起游玩，由 Zalith 内置的联机模块提供。",
+                    text = "Terracotta connection allows you to play with friends without a public IP, provided by Zalith's built-in connection module.",
                     theme = PclHintTheme.Blue,
                 )
             }
@@ -625,7 +625,7 @@ fun PclSetupLinkPage() {
             collapsible = true,
         ) {
             Column {
-                SettingCheck("使用自定义 EasyTier 服务器节点", AllSettings.enableTerracottaNodes)
+                SettingCheck("Using a custom EasyTier server node", AllSettings.enableTerracottaNodes)
                 SetupRow(PclStrings.LangPageSetupLinkCustomPeer) {
                     SettingTextBox(
                         unit = AllSettings.terracottaNodes,
@@ -635,7 +635,7 @@ fun PclSetupLinkPage() {
                 }
                 Spacer(Modifier.height(10.dp))
                 PclHint(
-                    text = "多个节点请用英文逗号或分号分隔；留空则使用默认公共节点。",
+                    text = "Please separate multiple nodes with commas or semicolons; if left blank, the default public node will be used.",
                     theme = PclHintTheme.Blue,
                 )
             }
@@ -665,13 +665,13 @@ private fun PclSkinHiddenCheck(key: String, label: String) {
             PclSkinSettings.persist(context)
             if (checked) {
                 PclHintHost.push(
-                    "「$label」已隐藏。连点右下角 ${PclSkinSettings.PEEK_TAP_COUNT} 次" +
-                            "可临时显示被隐藏的入口，" +
-                            "去「设置 → 个性化 → 功能隐藏」取消勾选即可恢复。",
+                    "\"$label\" is hidden. " +
+                            "Hidden entrances can be temporarily displayed," +
+                            "Go to \"Settings → Personalization → Function Hide\" and uncheck it to restore it.",
                     PclHintTheme.Yellow,
                 )
             } else {
-                PclHintHost.push("「$label」已恢复显示。", PclHintTheme.Green)
+                PclHintHost.push("\"$label\" has been restored.", PclHintTheme.Green)
             }
         },
     )
@@ -718,9 +718,9 @@ fun PclSetupUiPage() {
             PclImageLoader.invalidate()
             PclImageLoader.load(PclAppearance.backgroundImage)
             PclAppearance.persist(context)
-            PclHintHost.push("背景图片已设置。", PclHintTheme.Green)
+            PclHintHost.push("The background image is set.", PclHintTheme.Green)
         } else {
-            PclHintHost.push("背景图片导入失败。", PclHintTheme.Red)
+            PclHintHost.push("Background image import failed.", PclHintTheme.Red)
         }
     }
 
@@ -732,9 +732,9 @@ fun PclSetupUiPage() {
             PclImageLoader.invalidate()
             PclImageLoader.load(PclAppearance.logoImage)
             PclAppearance.persist(context)
-            PclHintHost.push("标题栏图片已设置。", PclHintTheme.Green)
+            PclHintHost.push("Title bar image has been set.", PclHintTheme.Green)
         } else {
-            PclHintHost.push("标题栏图片导入失败。", PclHintTheme.Red)
+            PclHintHost.push("The title bar image failed to import.", PclHintTheme.Red)
         }
     }
 
@@ -750,20 +750,20 @@ fun PclSetupUiPage() {
             when {
                 PclAppearance.musicPlaying ->
                     PclHintHost.push(
-                        "已导入 $count 首背景音乐，正在播放「${PclAppearance.musicTitle}」。",
+                        "$count pieces of background music have been imported and \"${PclAppearance.musicTitle}\" is playing.",
                         PclHintTheme.Green,
                     )
                 total > 0 ->
-                    PclHintHost.push("已导入 $count 首背景音乐，已开始播放。", PclHintTheme.Green)
+                    PclHintHost.push("$count pieces of background music have been imported and started playing.", PclHintTheme.Green)
                 else ->
                     PclHintHost.push(
-                        "已导入 $count 个文件，但都不是可识别的音频格式" +
-                                "（支持 mp3 / ogg / wav / m4a / aac / flac / opus）。",
+                        "$count files imported, but none are in a recognized audio format" +
+                                "(Supports mp3/ogg/wav/m4a/aac/flac/opus).",
                         PclHintTheme.Red,
                     )
             }
         } else {
-            PclHintHost.push("音乐导入失败。", PclHintTheme.Red)
+            PclHintHost.push("Music import failed.", PclHintTheme.Red)
         }
     }
 
@@ -773,27 +773,27 @@ fun PclSetupUiPage() {
         val ok = PclAppearance.importHomeFile(context, uri, queryDisplayName(context, uri))
         if (ok) {
             PclAppearance.persist(context)
-            PclHintHost.push("本地主页已导入。", PclHintTheme.Green)
+            PclHintHost.push("The local home page has been imported.", PclHintTheme.Green)
         } else {
-            PclHintHost.push("本地主页导入失败。", PclHintTheme.Red)
+            PclHintHost.push("Import of local home page failed.", PclHintTheme.Red)
         }
     }
 
     PclContent {
         // ---- 基础（PCL `PageSetupUI.xaml:16` 的 CardLauncher，Title 是 `LangSetTheme` =「基础」）
-        PclCard(modifier = Modifier.fillMaxWidth(), title = "基础") {
+        PclCard(modifier = Modifier.fillMaxWidth(), title = "Base") {
             Column {
                 // ---- 界面缩放
                 // PCL 是桌面程序，字号跟着 Windows 的显示缩放走；Android 上没有这个入口，
                 // 所以这里补一档：整张界面（含字号）等比放大，字小到看不清笔画时直接调它。
-                SetupRow("界面缩放") {
+                SetupRow("Interface scaling") {
                     Row(
                         modifier = Modifier.horizontalScroll(rememberScrollState()),
                         horizontalArrangement = Arrangement.spacedBy(18.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         PclRadioBox(
-                            text = "自动",
+                            text = "automatic",
                             checked = PclSkinSettings.uiScale == PclSkinSettings.UI_SCALE_AUTO,
                             onCheckedChange = {
                                 PclSkinSettings.applyUiScale(PclSkinSettings.UI_SCALE_AUTO)
@@ -813,15 +813,15 @@ fun PclSetupUiPage() {
                     }
                 }
                 PclHint(
-                    text = "「界面缩放」是照着 PCL 在 Windows 显示缩放下的行为做的：" +
-                            "整个界面（字号、控件、间距）一起等比放大，不会像系统「字体大小」那样" +
-                            "只放大文字、把固定高的容器撑破。自动档会按窗口大小挑一档；" +
-                            "50% / 75% 是给「窗口本来就小、想把界面压得更紧凑」的情况留的。",
+                    text = "\"Interface scaling\" is based on the behavior of PCL under Windows display scaling:" +
+                            "The entire interface (font size, controls, spacing) is enlarged proportionally, and it will not be like the system \"font size\"" +
+                            "Only enlarge the text and burst the fixed height container. " +
+                            "50% / 75% is reserved for situations where \"the window is already small and you want to make the interface more compact\".",
                     theme = PclHintTheme.Blue,
                 )
                 PclHint(
-                    text = "下面几张卡（背景图片 / 背景音乐 / 标题栏 / 主页 / 功能隐藏）都是真的在生效；" +
-                            "深色模式、语言、动画这类 Zalith 原生外观设置请到 Zalith 自己的设置里改。",
+                    text = "The following cards (background image/background music/title bar/home page/function hiding) are all really in effect;" +
+                            "Please change Zalith’s native appearance settings such as dark mode, language, and animation in Zalith’s own settings.",
                     theme = PclHintTheme.Blue,
                 )
             }
@@ -871,7 +871,7 @@ fun PclSetupUiPage() {
                     horizontalArrangement = Arrangement.spacedBy(15.dp),
                 ) {
                     PclButton(
-                        text = "选择背景图片",
+                        text = "Select background image",
                         colorState = PclColorState.Highlight,
                         onClick = { backgroundPicker.launch("image/*") },
                     )
@@ -894,12 +894,12 @@ fun PclSetupUiPage() {
                     )
                 }
                 PclHint(
-                    text = "「不透明度」与「背景模糊」用的是 Zalith 的同名设置项（`launcherBackgroundOpacity` / " +
-                            "`backgroundBlur`），两边改的是同一个值。" +
-                            "背景模糊是启动器自己实现的高斯模糊（分层卷积，CPU 预先算好再交给 GPU 放大），" +
-                            "所以不依赖 Android 12 的实时模糊，各版本表现一致。" +
-                            "「填充文件夹」这套 PCL 的做法在 Android 上换成了「选择背景图片」：" +
-                            "图片会被复制进应用目录的 `PCL/Background` 里，之后「刷新背景图片」会随机抽一张。",
+                    text = "\"Opacity\" and \"Background Blur\" use Zalith's settings of the same name (`launcherBackgroundOpacity` /" +
+                            "`backgroundBlur`), the same value is changed on both sides." +
+                            "The background blur is Gaussian blur implemented by the launcher itself (layered convolution, pre-calculated by the CPU and then amplified by the GPU)." +
+                            "So it doesn’t rely on Android 12’s real-time blur, and all versions behave consistently." +
+                            "The PCL method of \"filling folders\" is replaced by \"selecting background images\" on Android:" +
+                            "The image will be copied into `PCL/Background` in the application directory, and then \"Refresh Background Image\" will randomly select one.",
                     theme = PclHintTheme.Blue,
                 )
             }
@@ -966,15 +966,15 @@ fun PclSetupUiPage() {
                     horizontalArrangement = Arrangement.spacedBy(15.dp),
                 ) {
                     PclButton(
-                        text = "导入音乐",
+                        text = "Import music",
                         colorState = PclColorState.Highlight,
                         onClick = { musicPicker.launch("audio/*") },
                     )
                     PclButton(
-                        text = if (PclAppearance.musicPlaying) "暂停播放" else "开始播放",
+                        text = if (PclAppearance.musicPlaying) "Pause playback" else "Start playing",
                         onClick = { PclAppearance.toggleMusic(context) },
                     )
-                    PclButton(text = "下一首") { PclAppearance.next(context, auto = true) }
+                    PclButton(text = "Next song") { PclAppearance.next(context, auto = true) }
                     PclButton(
                         text = PclStrings.LangSetBackgroundMusicRefresh,
                         onClick = {
@@ -989,14 +989,14 @@ fun PclSetupUiPage() {
                     )
                 }
                 PclHint(
-                    text = "同背景图片：PCL 的做法是往 `PCL/Music` 文件夹里丢音乐，Android 上换成" +
-                            "「导入音乐」（可多选），导入后行为一致 —— 随机播放、音量、自动播放都可用。" +
-                            "当前状态：" + if (PclAppearance.musicPlaying) {
-                        "正在播放「${PclAppearance.musicTitle}」"
+                    text = "Same background picture: PCL’s method is to drop music into the `PCL/Music` folder, and replace it on Android" +
+                            "\"Import music\" (multiple selections available), the behavior will be the same after importing - random play, volume, and auto-play are all available." +
+                            "Current status:" + if (PclAppearance.musicPlaying) {
+                        "Now playing \"${PclAppearance.musicTitle}\""
                     } else if (PclAppearance.musicTitle.isNotBlank()) {
-                        "已暂停「${PclAppearance.musicTitle}」"
+                        "Suspended \"${PclAppearance.musicTitle}\""
                     } else {
-                        "未在播放"
+                        "Not playing"
                     },
                     theme = PclHintTheme.Blue,
                 )
@@ -1080,9 +1080,9 @@ fun PclSetupUiPage() {
                     }
                 }
                 PclHint(
-                    text = "「无 / 默认 / 文本」直接生效；「图片」会用到下面的「更改图片」选进来的那张图" +
-                            "（没选图时先退回 PCL 的描边 Logo）。PCL 的「标题栏居左」在手机上取决于屏幕宽度，" +
-                            "所以这里只在标题栏有位置时才看得出来。",
+                    text = "\"None/Default/Text\" will take effect directly; \"Picture\" will use the picture selected in the \"Change Picture\" below" +
+                            "(When no image is selected, return to the PCL stroke logo first). " +
+                            "So it is only visible here when the title bar has a position.",
                     theme = PclHintTheme.Blue,
                 )
             }
@@ -1148,14 +1148,14 @@ fun PclSetupUiPage() {
                 if (PclAppearance.homeType == PclHomeType.LOCAL) {
                     Spacer(Modifier.height(10.dp))
                     PclButton(
-                        text = "选择本地主页文件",
+                        text = "Select local home page file",
                         colorState = PclColorState.Highlight,
                         onClick = { homePicker.launch("*/*") },
                     )
                     if (PclAppearance.homeLocalFile != null) {
                         Spacer(Modifier.height(6.dp))
                         PclText(
-                            text = "当前：${PclAppearance.homeLocalFile?.substringAfterLast('/')}",
+                            text = "Current: ${PclAppearance.homeLocalFile?.substringAfterLast('/')}",
                             color = pclPalette.gray2,
                             fontSize = 12,
                         )
@@ -1168,9 +1168,9 @@ fun PclSetupUiPage() {
                     )
                 }
                 PclHint(
-                    text = "设定后，「主页」版块的右侧会换成这个自定义主页（左边的账户与版本面板不变），" +
-                            "顶部有一条「刷新主页」。「预设」要拉 PCL 官方的主页市场列表，" +
-                            "本移植版没有那份数据，所以先置灰。",
+                    text = "After setting, the right side of the \"Homepage\" section will be replaced by this customized homepage (the account and version panels on the left remain unchanged)." +
+                            "There is a \"Refresh Home Page\" at the top. " +
+                            "This ported version does not have that data, so it is grayed out first.",
                     theme = PclHintTheme.Blue,
                 )
             }
@@ -1209,15 +1209,15 @@ fun PclSetupUiPage() {
                 PclSkinHiddenCheck(PclHiddenKeys.OTHER_FEEDBACK, PclStrings.LangSetFuncHiddenMoreFeedback)
                 PclSkinHiddenCheck(PclHiddenKeys.OTHER_VOTE, PclStrings.LangSetFuncHiddenMoreVote)
                 PclHint(
-                    text = "勾上就把对应入口藏起来（顶部导航的那一排、以及设置/更多的子页面）。" +
-                            "「主页面」不允许隐藏，否则就没地方可去了。",
+                    text = "Check it to hide the corresponding entrance (the top navigation row, and the Settings/More subpages)." +
+                            "The \"main page\" is not allowed to be hidden, otherwise there will be nowhere to go.",
                     theme = PclHintTheme.Blue,
                 )
                 PclHint(
-                    text = "勾掉之后入口就从界面上消失了。想临时找回来：在右下角连点 " +
-                            "${PclSkinSettings.PEEK_TAP_COUNT} 次，被隐藏的入口会全部重新出现 " +
-                            "${PclSkinSettings.PEEK_DURATION_MS / 1000} 秒，趁这段时间回来取消勾选即可；" +
-                            "勾选状态不会因为这次临时显示被改动。",
+                    text = "After checking it off, the entrance disappears from the interface. " +
+                            "${PclSkinSettings.PEEK_TAP_COUNT} times, all hidden entrances will reappear" +
+                            "${PclSkinSettings.PEEK_DURATION_MS / 1000} seconds, take advantage of this time to come back and uncheck it;" +
+                            "The checked status will not be changed due to this temporary display.",
                     theme = PclHintTheme.Yellow,
                 )
             }
@@ -1228,18 +1228,18 @@ fun PclSetupUiPage() {
     // 清空背景音乐：真的把 `PCL/Music` 里的音频文件删掉（PCL 是删整个 Musics 目录）。
     if (showClearMusic) {
         PclConfirmDialog(
-            title = "清空背景音乐",
-            content = "确定要删除所有背景音乐吗？这些文件会从背景音乐文件夹里一并删掉，无法恢复。",
-            confirmText = "删除",
+            title = "Clear background music",
+            content = "Are you sure you want to delete all background music? ",
+            confirmText = "delete",
             danger = true,
             onConfirm = {
                 val deleted = PclAppearance.clearMusic(context)
                 PclAppearance.persist(context)
                 PclHintHost.push(
                     if (deleted > 0) {
-                        "已删除 $deleted 首背景音乐。"
+                        "$deleted background music deleted."
                     } else {
-                        "背景音乐文件夹里没有可删除的文件。"
+                        "There are no files in the background music folder that can be deleted."
                     },
                     if (deleted > 0) PclHintTheme.Green else PclHintTheme.Yellow,
                 )
@@ -1259,14 +1259,14 @@ fun PclSetupSystemPage() {
 
     PclContent {
         // ---- 界面风格（PCL2 / 原生）
-        PclCard( modifier = Modifier.fillMaxWidth(),title = "界面风格") {
+        PclCard( modifier = Modifier.fillMaxWidth(),title = "Interface style") {
             Column {
-                SettingCheck("使用 PCL2 风格界面作为启动器主界面", AllSettings.usePcl2Ui)
+                SettingCheck("Use PCL2 style interface as the launcher main interface", AllSettings.usePcl2Ui)
                 Spacer(Modifier.height(6.dp))
                 PclHint(
-                    text = "关闭后重启启动器，主界面会切换回 Zalith 原生界面；" +
-                            "之后可以在原生界面的「设置 → 启动器 → 切换到 PCL2 界面」随时回到这里。" +
-                            "（桌面只保留一个图标，按这个开关决定进哪个界面。）",
+                    text = "After closing and restarting the launcher, the main interface will switch back to the Zalith native interface;" +
+                            "You can return here at any time in the native interface \"Settings → Launcher → Switch to PCL2 interface\"." +
+                            "(Only one icon is kept on the desktop. Press this switch to decide which interface to enter.)",
                     theme = PclHintTheme.Blue,
                 )
             }
@@ -1278,14 +1278,14 @@ fun PclSetupSystemPage() {
         PclCard( modifier = Modifier.fillMaxWidth(),title = PclStrings.LangPageSetupSystemDownload) {
             Column {
                 SettingCombo(
-                    label = "游戏内容下载源",
+                    label = "Game content download source",
                     items = MirrorSourceType.entries.toList(),
                     selected = AllSettings.gameDownloadSource.state,
                     labelOf = { context.getString(it.textRes) },
                     onSelect = { AllSettings.gameDownloadSource.save(it) },
                 )
                 SettingCombo(
-                    label = "资源平台下载源",
+                    label = "Resource platform download source",
                     items = MirrorSourceType.entries.toList(),
                     selected = AllSettings.assetPlatformSource.state,
                     labelOf = { context.getString(it.textRes) },
@@ -1293,7 +1293,7 @@ fun PclSetupSystemPage() {
                 )
                 Spacer(Modifier.height(6.dp))
                 PclHint(
-                    text = "\u201c自动\u201d会按当前网络环境选择初始下载源，并在失败时自适应换源。",
+                    text = "\u201cAutomatically\u201d will select the initial download source according to the current network environment, and adaptively change the source when it fails.",
                     theme = PclHintTheme.Blue,
                 )
             }
@@ -1305,28 +1305,28 @@ fun PclSetupSystemPage() {
         PclCard( modifier = Modifier.fillMaxWidth(),title = PclStrings.LangPageSetupSystemDownloadModTitle) {
             Column {
                 SettingCombo(
-                    label = "搜索 Mod 的平台",
+                    label = "A platform to search for mods",
                     items = Platform.entries.toList(),
                     selected = AllSettings.searchModPlatform.state,
                     labelOf = { it.displayName },
                     onSelect = { AllSettings.searchModPlatform.save(it) },
                 )
                 SettingCombo(
-                    label = "搜索整合包的平台",
+                    label = "A platform to search for integration packages",
                     items = Platform.entries.toList(),
                     selected = AllSettings.searchModpackPlatform.state,
                     labelOf = { it.displayName },
                     onSelect = { AllSettings.searchModpackPlatform.save(it) },
                 )
                 SettingCombo(
-                    label = "搜索资源包的平台",
+                    label = "A platform to search for resource packages",
                     items = Platform.entries.toList(),
                     selected = AllSettings.searchResourcePackPlatform.state,
                     labelOf = { it.displayName },
                     onSelect = { AllSettings.searchResourcePackPlatform.save(it) },
                 )
                 SettingCombo(
-                    label = "搜索光影的平台",
+                    label = "Search platform for light and shadow",
                     items = Platform.entries.toList(),
                     selected = AllSettings.searchShadersPlatform.state,
                     labelOf = { it.displayName },
@@ -1338,12 +1338,12 @@ fun PclSetupSystemPage() {
         Spacer(Modifier.height(PclDimens.cardGap))
 
         // ---- 游戏内悬浮窗
-        PclCard( modifier = Modifier.fillMaxWidth(),title = "游戏内悬浮窗") {
+        PclCard( modifier = Modifier.fillMaxWidth(),title = "In-game floating window") {
             Column {
-                SettingCheck("显示实时帧率（FPS）", AllSettings.showFPS)
-                SettingCheck("显示内存占用", AllSettings.showMemory)
-                SettingCheck("显示菜单悬浮球", AllSettings.showMenuBall)
-                SetupRow("悬浮球不透明度（%）") {
+                SettingCheck("Display real-time frame rate (FPS)", AllSettings.showFPS)
+                SettingCheck("Display memory usage", AllSettings.showMemory)
+                SettingCheck("Show menu floating ball", AllSettings.showMenuBall)
+                SetupRow("Floating ball opacity (%)") {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         SettingSlider(AllSettings.menuBallOpacity, 20, 100, Modifier.weight(1f))
                         PclText(
@@ -1370,16 +1370,16 @@ fun PclSetupSystemPage() {
         ) {
             Column {
                 SettingCombo(
-                    label = "主界面操作菜单位置",
+                    label = "Main interface operation menu location",
                     items = ActionMenuSide.entries.toList(),
                     selected = AllSettings.launcherActionMenuSide.state,
-                    labelOf = { if (it == ActionMenuSide.START) "阅读方向起始侧" else "阅读方向末尾侧" },
+                    labelOf = { if (it == ActionMenuSide.START) "Reading direction starting side" else "Reading direction end side" },
                     onSelect = { AllSettings.launcherActionMenuSide.save(it) },
                 )
-                SettingCheck("打开启动器时自动展开任务菜单", AllSettings.launcherTaskMenuExpanded)
+                SettingCheck("Automatically expand task menu when opening launcher", AllSettings.launcherTaskMenuExpanded)
                 Spacer(Modifier.height(6.dp))
                 PclHint(
-                    text = "已禁用的原生库插件：${AllSettings.disableNativeLibPlugins.state.size} 个。",
+                    text = "Disabled native library plug-ins: ${AllSettings.disableNativeLibPlugins.state.size}.",
                     theme = PclHintTheme.Blue,
                 )
             }
@@ -1401,14 +1401,14 @@ private fun PclLauncherInfoCard() {
     val (usedMb, totalMb) = remember { memoryStats(context) }
 
     val info = listOf(
-        "已安装版本" to "${versions.size} 个",
-        "已登录账户" to "${accounts.size} 个",
-        "当前版本" to (current?.getVersionName() ?: "未选择"),
-        "设备内存" to "%.1f GB / %.1f GB".format(usedMb / 1024f, totalMb / 1024f),
-        "设备架构" to (System.getProperty("os.arch") ?: "未知"),
+        "Installed version" to "${versions.size}",
+        "Logged in account" to "${accounts.size}",
+        "Current version" to (current?.getVersionName() ?: "Not selected"),
+        "Device memory" to "%.1f GB / %.1f GB".format(usedMb / 1024f, totalMb / 1024f),
+        "Device architecture" to (System.getProperty("os.arch") ?: "unknown"),
     )
 
-    PclCard( modifier = Modifier.fillMaxWidth(),title = "启动器信息") {
+    PclCard( modifier = Modifier.fillMaxWidth(),title = "Launcher information") {
         Column {
             info.forEach { (label, value) ->
                 SetupRow(label) {
@@ -1417,7 +1417,7 @@ private fun PclLauncherInfoCard() {
             }
             Spacer(Modifier.height(8.dp))
             PclHint(
-                text = "以上信息读取自当前设备与已安装的游戏版本。",
+                text = "The above information is read from the current device and installed game version.",
                 theme = PclHintTheme.Blue,
             )
         }

@@ -346,7 +346,7 @@ class GameLauncher(
         appendInfo("Vulkan: ${describeVulkanSupport(activity)}")
         //标注一下「自动选择」最终落到了哪个渲染器：出问题时日志里能直接看出选的是谁
         val autoPick = version.getRenderer().isEmpty()
-        val rendererLabel = if (autoPick) "${renderer.getRendererName()} (自动选择)" else renderer.getRendererName()
+        val rendererLabel = if (autoPick) "${renderer.getRendererName()} (automatically selected)" else renderer.getRendererName()
         appendInfo("Renderer: $rendererLabel")
         //自动档把判定依据也打出来：GLES 版本 / Vulkan 能力 / 为什么选它
         if (autoPick) RendererCompat.lastAutoDecision?.let { appendInfo("Renderer Auto: $it") }
@@ -413,7 +413,7 @@ class GameLauncher(
 
         // 设备上真正可用的运行库：架构必须与本机一致，且能读到版本号
         val installed = runCatching { RuntimesManager.getRuntimes() }
-            .onFailure { Logger.warning(TAG, "读取 Java 运行库列表失败", it) }
+            .onFailure { Logger.warning(TAG, "Failed to read Java runtime list", it) }
             .getOrDefault(emptyList())
             .filter { it.javaVersion > 0 && it.isCompatible() }
 
@@ -425,12 +425,12 @@ class GameLauncher(
                 if (picked.javaVersion < requiredJavaVersion) {
                     Logger.warning(
                         TAG,
-                        "按手动选择使用 Java ${picked.javaVersion}（$selected）启动，" +
-                                "低于游戏要求的 Java $requiredJavaVersion —— 不做自动替换。"
+                        "Press manual selection to start using Java ${picked.javaVersion} ($selected)," +
+                                "Java $requiredJavaVersion below game requirements - no automatic replacement."
                     )
                     appendInfo(
-                        "Java: $selected（Java ${picked.javaVersion}，低于游戏要求的 Java $requiredJavaVersion，" +
-                                "按手动选择启动）"
+                        "Java: $selected (Java ${picked.javaVersion}, Java $requiredJavaVersion below the game requirements," +
+                                "Press manual selection to start)"
                     )
                     activity.runOnUiThread {
                         Toast.makeText(
@@ -457,11 +457,11 @@ class GameLauncher(
             if (best.name != selected) {
                 Logger.warning(
                     TAG,
-                    "本次启动使用 Java ${best.javaVersion}（${best.name}）：游戏要求 Java $requiredJavaVersion" +
+                    "This startup uses Java ${best.javaVersion} (${best.name}): The game requires Java $requiredJavaVersion" +
                             if (!manual) {
-                                "，「自动选择」按已安装运行库挑选。"
+                                ", \"Automatic selection\" selects according to the installed runtime library."
                             } else {
-                                "，所选的 $selected 在本机不可用（未安装或架构不符），本次临时改用该运行库（未改动你的设置）。"
+                                ", the selected $selected is unavailable on this device (not installed or architecture mismatch), so this runtime is used temporarily (your settings are unchanged)."
                             }
                 )
                 if (manual) {
@@ -481,8 +481,8 @@ class GameLauncher(
         val fallback = installed.maxByOrNull { it.javaVersion }
         Logger.warning(
             TAG,
-            "没有任何运行库满足 Java $requiredJavaVersion 的要求" +
-                    (fallback?.let { "，当前最高为 Java ${it.javaVersion}（${it.name}）" } ?: "，且没有可用的运行库")
+            "No runtime meets Java $requiredJavaVersion requirements" +
+                    (fallback?.let { ", the highest available is Java ${it.javaVersion} (${it.name})" } ?: ", and no runtime library is available")
         )
         activity.runOnUiThread {
             Toast.makeText(

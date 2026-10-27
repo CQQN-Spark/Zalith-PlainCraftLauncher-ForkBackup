@@ -62,8 +62,8 @@ object PclNamePrompt {
      */
     suspend fun ask(
         defaultName: String,
-        title: String = "设置版本名称",
-        label: String = "这个名字会成为新实例的版本名，装完之后在版本列表里就显示它。",
+        title: String = "Set version name",
+        label: String = "This name will become the version name of the new instance, and it will be displayed in the version list after installation.",
     ): String {
         // 上一条还没答完（极端情况）：按它自己的默认名放它过去，别把协程挂死
         pending?.let { old ->
@@ -105,16 +105,16 @@ fun PclNamePromptHost() {
     var text by remember(request) { mutableStateOf(request.defaultName) }
     PclMsgInputDialog(
         title = request.title,
-        lines = listOf(request.label, "留空则使用默认名，重名会自动加序号。"),
+        lines = listOf(request.label, "If left blank, the default name will be used. If the name is repeated, the serial number will be added automatically."),
         value = text,
         hint = request.defaultName,
         onValueChange = { text = it },
         buttons = { requestClose ->
-            PclMsgButton(text = "确定", colorState = PclColorState.Highlight) {
+            PclMsgButton(text = "Sure", colorState = PclColorState.Highlight) {
                 PclNamePrompt.answer(text)
                 requestClose()
             }
-            PclMsgButton(text = "使用默认名") {
+            PclMsgButton(text = "Use default name") {
                 PclNamePrompt.dismiss()
                 requestClose()
             }
@@ -135,14 +135,14 @@ fun PclNamePromptHost() {
  */
 internal suspend fun pclAskVersionName(
     rawDefault: String,
-    title: String = "设置版本名称",
-    label: String = "这个名字会成为新实例的版本名，装完之后在版本列表里就显示它。",
+    title: String = "Set version name",
+    label: String = "This name will become the version name of the new instance, and it will be displayed in the version list after installation.",
 ): String {
-    val fallback = pclUniqueVersionName(rawDefault.ifBlank { "整合包" })
+    val fallback = pclUniqueVersionName(rawDefault.ifBlank { "Integrated package" })
     val typed = PclNamePrompt.ask(defaultName = fallback, title = title, label = label)
     val finalName = pclUniqueVersionName(typed.ifBlank { fallback })
     if (typed.isNotBlank() && finalName != typed.trim()) {
-        PclHintHost.push("已改用「$finalName」（原名不可用或已被占用）。", PclHintTheme.Yellow)
+        PclHintHost.push("'$finalName' has been used instead (the original name is unavailable or is already taken).", PclHintTheme.Yellow)
     }
     return finalName
 }

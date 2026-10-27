@@ -196,7 +196,7 @@ object ForgeVersions {
         return try {
             val name = Regex("""(?<=\D)\d+(\.\d+)+""").find(html)?.value ?: return null
             //                      <i class="promo-latest  fa" aria-hidden="true"></i>     <i class="promo-recommended  fa" aria-hidden="true"></i>
-            val isRecommended = html.contains("promo-latest  fa" /* 最新推荐标签 */) || html.contains("promo-recommended  fa" /* 推荐标签 */)
+            val isRecommended = html.contains("promo-latest  fa"/* Latest recommended tags */) || html.contains("promo-recommended  fa" /* 推荐标签 */)
             val branch = Regex("""(?<=-$name-)[^-"]+(?=-[a-z]+\.[a-z]{3})""").find(html)?.value
             val timeStr = Regex("""(?<="download-time" title=")[^"]+""").find(html)?.value ?: return null
             

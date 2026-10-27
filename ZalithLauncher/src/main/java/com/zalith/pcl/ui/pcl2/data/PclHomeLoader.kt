@@ -79,7 +79,7 @@ object PclHomeLoader {
             val text = PclRemoteContent.randomBlocking(type) ?: PclHomePresets.randomLocal(type)
             // 内置文案已删：官网也没给出内容时，这张卡干脆不画（避免一张空卡片）
             if (text.isBlank()) return null
-            val title = if (entry.id == 1) "回声洞" else "你知道吗？"
+            val title = if (entry.id == 1) "echo cave" else "Did you know?"
             val xaml = "<local:MyCard Title=\"$title\">" +
                     "<TextBlock Margin=\"20,4,20,10\" FontSize=\"13.5\" Text=\"${escapeXml(text)}\" TextWrapping=\"Wrap\"/>" +
                     "</local:MyCard>"
@@ -121,7 +121,7 @@ object PclHomeLoader {
      */
     private fun downloadAndConvert(url: String): PclHomeEntry {
         val content = fetch(url, UA_PCL) ?: fetch(url, UA_BROWSER)
-            ?: return PclHomeEntry.Html(errorHtml(url, "下载失败（连接不上或被服务器拒绝）"))
+            ?: return PclHomeEntry.Html(errorHtml(url, "Download failed (cannot connect or was rejected by the server)"))
 
         // 网页（有 <html 标记）直接交给 WebView；其余按 PCL 主页 XAML 转换。
         val looksLikeWeb = Regex("<\\s*html|<!doctype\\s+html", RegexOption.IGNORE_CASE)
@@ -146,9 +146,9 @@ object PclHomeLoader {
     }.getOrNull()
 
     private fun errorHtml(url: String, message: String): String {
-        val xaml = "<local:MyCard Title=\"主页加载失败\">" +
+        val xaml = "<local:MyCard Title=\"Homepage failed to load\">" +
                 "<TextBlock Margin=\"20,4,20,4\" FontSize=\"13.5\" " +
-                "Text=\"无法加载这个主页：${escapeXml(message)}\" TextWrapping=\"Wrap\"/>" +
+                "Text=\"Unable to load this home page: ${escapeXml(message)}\" TextWrapping=\"Wrap\"/>" +
                 "<TextBlock Margin=\"20,2,20,10\" FontSize=\"12\" Foreground=\"{DynamicResource ColorBrush5}\" " +
                 "Text=\"${escapeXml(url)}\" TextWrapping=\"Wrap\"/>" +
                 "</local:MyCard>"

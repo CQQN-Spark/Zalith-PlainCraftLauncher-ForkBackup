@@ -36,7 +36,7 @@ private const val MAX_NAME_LENGTH = 100
  */
 internal fun pclSanitizeVersionName(raw: String): String {
     val cleaned = raw.replace(ILLEGAL_SEGMENT_CHARS, "_").trim().trimEnd('.', ' ')
-    if (cleaned.isBlank()) return "整合包"
+    if (cleaned.isBlank()) return "Integrated package"
     return if (cleaned.length > MAX_NAME_LENGTH) cleaned.take(MAX_NAME_LENGTH).trimEnd() else cleaned
 }
 

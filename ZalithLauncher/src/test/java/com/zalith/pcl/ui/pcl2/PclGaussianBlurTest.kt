@@ -23,11 +23,11 @@ class PclGaussianBlurTest {
             val kernel = PclGaussianBlur.gaussianKernel(sigma)
             // 定点权重的总和必须精确等于 1.0（用 65536 表示）
             assertEquals("sigma=$sigma", 65536, kernel.sum())
-            assertTrue("sigma=$sigma 有负权重", kernel.all { it >= 0 })
-            assertEquals("sigma=$sigma 不是对称核", kernel.toList(), kernel.reversed())
+            assertTrue("sigma=$sigma has negative weight", kernel.all { it >= 0 })
+            assertEquals("sigma=$sigma is not a symmetric kernel", kernel.toList(), kernel.reversed())
             // 中心权重最大
             val center = kernel.size / 2
-            assertEquals("sigma=$sigma 中心不是最大值", kernel.max(), kernel[center])
+            assertEquals("sigma=$sigma center is not the maximum value", kernel.max(), kernel[center])
         }
     }
 
@@ -39,7 +39,7 @@ class PclGaussianBlurTest {
         val pixels = IntArray(width * height) { color }
         PclGaussianBlur.convolve(pixels, width, height, PclGaussianBlur.gaussianKernel(4f))
         pixels.forEachIndexed { index, p ->
-            assertEquals("像素 #$index 变了", color, p)
+            assertEquals("Pixel #$index changed", color, p)
         }
     }
 
@@ -63,12 +63,12 @@ class PclGaussianBlurTest {
         val down = redAt(center, center + 1)
         val far = redAt(center + 8, center)
 
-        assertTrue("中心应该比邻像素亮（mid=$mid, left=$left）", mid > left)
-        assertTrue("邻像素应该被染亮（left=$left）", left > 0)
-        assertEquals("左右应该对称", left, right)
-        assertEquals("上下应该对称", up, down)
-        assertTrue("能量应该随距离衰减（left=$left, far=$far）", left > far)
-        assertEquals("远离冲激的地方应当仍是黑色", 0, redAt(center + 19, center))
+        assertTrue("The center should be brighter than adjacent pixels (mid=$mid, left=$left)", mid > left)
+        assertTrue("Neighboring pixels should be tinted (left=$left)", left > 0)
+        assertEquals("Left and right should be symmetrical", left, right)
+        assertEquals("It should be symmetrical up and down", up, down)
+        assertTrue("Energy should decay with distance (left=$left, far=$far)", left > far)
+        assertEquals("Areas away from the impulse should still be black", 0, redAt(center + 19, center))
     }
 
     @Test

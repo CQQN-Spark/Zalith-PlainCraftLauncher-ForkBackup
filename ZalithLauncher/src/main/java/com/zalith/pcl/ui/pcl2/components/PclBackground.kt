@@ -341,7 +341,7 @@ fun PclBackgroundImageLayer(
     val blur = AllSettings.backgroundBlur.state
 
     // 位图不随档位一起清空：换图 / 调档期间继续显示上一张，直到新的算好再替换。
-    // （先置 null 的话，拖动滑杆时背景会一黑一闪 —— 那比"晚半帧才变"难看得多。）
+    // （先置 null 的话，拖动滑杆时背景会一黑一闪 —— 那比"It changes half a frame later"难看得多。）
     var bitmap by remember { mutableStateOf<ImageBitmap?>(null) }
 
     LaunchedEffect(path, blur) {
@@ -365,7 +365,7 @@ fun PclBackgroundImageLayer(
     val bmp = bitmap ?: return
 
     val alpha = (opacityPercent / 100f).coerceIn(0.05f, 1f)
-    // 白色提亮层（毛玻璃的"雾"），与原生 BackgroundGlass 同一套公式
+    // 白色提亮层（毛玻璃的"fog"），与原生 BackgroundGlass 同一套公式
     val frostAlpha = if (blur > 0) whiteOverlayAlpha(blur) else 0f
 
     Box(

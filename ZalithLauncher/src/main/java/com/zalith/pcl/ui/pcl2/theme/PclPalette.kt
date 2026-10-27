@@ -275,18 +275,18 @@ object PclPalettes {
      * 通过 [PclColorMath.generate] 还原为完整色板。
      */
     val builtInThemes: List<PclThemeEntry> = listOf(
-        PclThemeEntry("蔚蓝", 210, 85, 0),
-        PclThemeEntry("浅蓝", 205, 70, 12),
-        PclThemeEntry("深蓝", 214, 90, -10),
-        PclThemeEntry("青空", 195, 80, 0),
-        PclThemeEntry("紫罗兰", 275, 70, 0),
-        PclThemeEntry("薄荷", 165, 65, 0),
-        PclThemeEntry("祖母绿", 150, 70, -6),
-        PclThemeEntry("暖橙", 28, 85, 0),
-        PclThemeEntry("琥珀", 45, 85, -4),
-        PclThemeEntry("落日", 12, 80, 0),
-        PclThemeEntry("樱粉", 335, 75, 4),
-        PclThemeEntry("石板灰", 210, 8, 0),
+        PclThemeEntry("blue", 210, 85, 0),
+        PclThemeEntry("light blue", 205, 70, 12),
+        PclThemeEntry("dark blue", 214, 90, -10),
+        PclThemeEntry("blue sky", 195, 80, 0),
+        PclThemeEntry("violet", 275, 70, 0),
+        PclThemeEntry("Mint", 165, 65, 0),
+        PclThemeEntry("emerald", 150, 70, -6),
+        PclThemeEntry("warm orange", 28, 85, 0),
+        PclThemeEntry("amber", 45, 85, -4),
+        PclThemeEntry("sunset", 12, 80, 0),
+        PclThemeEntry("Sakura powder", 335, 75, 4),
+        PclThemeEntry("slate gray", 210, 8, 0),
     )
 }
 

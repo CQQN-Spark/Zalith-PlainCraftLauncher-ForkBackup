@@ -178,13 +178,13 @@ object PclDimens {
     /**
      * 标题栏两个窗口按钮（`BtnTitleClose` / `BtnTitleMin`）：
      * 均 `Width/Height="28"`、`VerticalAlignment="Center"`；
-     * 关闭 `Margin="0,0,12,0"`、最小化 `Margin="0,0,44,0"` → 两者间距 4。
+     * 关闭 `Margin="0,0,12,0"`, minimize `Margin="0,0,44,0"` → 两者间距 4。
      */
     val titleButtonSize: Dp = 28.dp
     val titleButtonMarginEnd: Dp = 12.dp
     val titleButtonGap: Dp = 4.dp
 
-    /** 子页面返回按钮 `BtnTitleInner Margin="12,0,0,0"`，标题 `Margin="47,1,60,0"`。 */
+    /** 子页面返回按钮 `BtnTitleInner Margin="12,0,0,0"`, title `Margin="47,1,60,0"`。 */
     val titleInnerBackStart: Dp = 12.dp
     val titleInnerTitleStart: Dp = 47.dp
 
@@ -237,7 +237,7 @@ object PclDimens {
      */
     val leftItemFontSize: Int = 14
 
-    /** 左栏条目 `Height="36"`、起始留白 `Margin="0,12,0,0"`。 */
+    /** 左栏条目 `Height="36"`, starting blank `Margin="0,12,0,0"`。 */
     val sideItemHeight: Dp = 36.dp
     val sideListTop: Dp = 12.dp
 
@@ -307,11 +307,11 @@ object PclDimens {
     val radioBoxBorder: Dp = 1.1.dp
     val radioBoxDot: Dp = 9.dp
 
-    /** `MyTextBox`：`RowDefinition MinHeight="28"`、`CornerRadius=3`、提示文字 `Margin="7,0,0,0"`。 */
+    /** `MyTextBox`：`RowDefinition MinHeight="28"`, `CornerRadius=3`, prompt text `Margin="7,0,0,0"`。 */
     val textBoxMinHeight: Dp = 28.dp
     val textBoxHintStart: Dp = 7.dp
 
-    /** `MyComboBox`：内容 `Margin="8.5,0,21.5,0"`，箭头 `Path Width="15"`、`StrokeThickness=1.5`。 */
+    /** `MyComboBox`：内容 `Margin="8.5,0,21.5,0"`, Arrow `Path Width="15"`、`StrokeThickness=1.5`。 */
     val comboContentStart: Dp = 8.5.dp
     val comboContentEnd: Dp = 21.5.dp
     val comboArrowWidth: Dp = 15.dp
@@ -391,7 +391,7 @@ object PclDimens {
     /** 分隔线到正文的间距（行定义里那个 `Height="13"` 的行）。 */
     val msgLineGap: Dp = 13.dp
 
-    /** 正文：`FontSize=15`；TextBlock `Padding="1"` 叠加在容器 `Padding="7,0,15,0"` 之上。 */
+    /** 正文：`FontSize=15`；TextBlock `Padding="1"` Overlay on container `Padding="7,0,15,0"` 之上。 */
     val msgBodyFontSize: Int = 15
     val msgBodyLineHeight: Int = 18
     val msgBodyStart: Dp = 8.dp
@@ -421,7 +421,7 @@ object PclDimens {
      *
      * 出处：`Controls/MyMsg/MyMsgText.xaml:32-34`（`MyMsgInput` / `MyMsgSelect` 第 34/31 行、
      * `Pages/PageLaunch/MyMsgLogin.xaml:32-36` 写法完全一致）——
-     * 每个按钮都同时写着 `TextPadding="7"` 与 `Padding="5,0"`。
+     * 每个按钮都同时写着 `TextPadding="7"` and `Padding="5,0"`。
      *
      * `MyButton.xaml.vb:28-33` 把 `TextPadding` 绑到 `LabText.Padding`（文字四周各 7），
      * `:52-59` 把 `Padding` 绑到内层 `PanFore.Padding`（左右各 5）。

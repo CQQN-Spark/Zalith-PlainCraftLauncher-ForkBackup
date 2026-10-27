@@ -328,7 +328,7 @@ object SolidSevenZWriter {
             emptyStreamIndices.forEach { emptyStreamBits.set(it) }
             writeBitsProperty(out, N_EMPTY_STREAM, emptyStreamBits, numFiles)
 
-            // kEmptyFile：仅对空流条目，标记"空文件"（区别于目录）
+            // kEmptyFile：仅对空流条目，标记"empty file"（区别于目录）
             if (emptyStreamIndices.any { entries[it].emptyFile }) {
                 val emptyFileBits = BitSet()
                 emptyStreamIndices.forEachIndexed { j, i -> if (entries[i].emptyFile) emptyFileBits.set(j) }

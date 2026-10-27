@@ -131,7 +131,7 @@ internal fun openLink(context: android.content.Context?, url: String) {
     runCatching {
         activity.openLinkInternal(url)
     }.onFailure {
-        PclHintHost.push("无法打开链接：$url", PclHintTheme.Red)
+        PclHintHost.push("Unable to open link: $url", PclHintTheme.Red)
     }
 }
 
@@ -144,13 +144,13 @@ internal fun openLink(context: android.content.Context?, url: String) {
 fun PclOtherHelpPage() {
     var keyword by remember { mutableStateOf("") }
     val entries = listOf(
-        "如何安装 Minecraft？" to "在「下载 → 原版游戏」中选择游戏版本与加载器，点击「开始下载」。",
-        "如何安装 Forge / Fabric？" to "在「下载 → 原版游戏」的安装页里展开对应加载器卡片，选择一个版本后再开始下载。",
-        "如何修改游戏内存？" to "「设置 → 启动 → 内存分配」可选择自动或拖动滑杆自定义；这里写入的是 Zalith 的真实设置。",
-        "如何更换渲染器？" to "「设置 → 启动 → 渲染器」中选择设备上已安装的渲染器插件。",
-        "如何安装 Mod？" to "「下载 → Mod」搜索后下载，或「版本管理 → Mod 管理」查看与启停已安装的 Mod。",
-        "联机功能怎么用？" to "在「联机」页创建房间并复制邀请码，好友凭邀请码加入；也可在「设置 → 联机」自定义节点。",
-        "启动失败怎么办？" to "首页右侧会显示实时启动日志；也可以在「版本管理 → 设置」里关闭完整性检查后重试。",
+        "How to install Minecraft?" to "Select the game version and loader in \"Download → Original Game\" and click \"Start Download\".",
+        "How to install Forge/Fabric?" to "Expand the corresponding loader card on the installation page of \"Download → Original Game\", select a version and then start downloading.",
+        "How to modify game memory?" to "\"Settings → Startup → Memory Allocation\" can choose automatic or drag the slider to customize; what is written here is the actual setting of Zalith.",
+        "How to change renderer?" to "Select the renderer plug-in installed on the device in \"Settings → Startup → Renderer\".",
+        "How to install mods?" to "\"Download → Mod\" search and download, or \"Version Management → Mod Management\" to view and start and stop installed Mods.",
+        "How to use the online function?" to "Create a room on the \"Connectivity\" page and copy the invitation code, and friends can join with the invitation code; you can also customize the node in \"Settings → Connection\".",
+        "What should I do if the startup fails?" to "The real-time startup log will be displayed on the right side of the homepage; you can also turn off the integrity check in \"Version Management → Settings\" and try again.",
     ).filter { keyword.isEmpty() || it.first.contains(keyword) || it.second.contains(keyword) }
 
     PclContent {
@@ -171,7 +171,7 @@ fun PclOtherHelpPage() {
         if (entries.isEmpty()) {
             PclEmptyState(
                 title = PclStrings.LangPageOtherHelpSearch,
-                content = "没有找到与「$keyword」相关的帮助内容。",
+                content = "No help content related to \"$keyword\" was found.",
                 modifier = Modifier.align(Alignment.CenterHorizontally),
             )
         }
@@ -187,7 +187,7 @@ fun PclOtherHelpPage() {
  * 「关于 / 特别鸣谢」里的一行：圆形头像 + 标题 / 副标题 + 右侧按钮。
  *
  * 版式取自 PCL2 `PageOtherAbout.xaml` 的 `Grid`：
- *   `ColumnDefinition Width="40"`  —— 头像列（图片 34dp，左右各 `Margin="3"` 后正好 40）
+ *   `ColumnDefinition Width="40"`——Avatar column (picture 34dp, left and right `Margin="3"` 后正好 40）
  *   `ColumnDefinition`（星号）      —— `MyListItem`：Title 13 号、Info 12 号灰字
  *   `ColumnDefinition Width="150"` —— 右侧 35dp 高的 `MyButton`
  * 每行 `RowDefinition Height="45"`。
@@ -270,8 +270,8 @@ fun PclOtherAboutPage() {
                 PclAboutRow(
                     icon = painterResource(R.drawable.img_avatar_zuanxu),
                     title = "zuanxu",
-                    info = "Zalith-Plain Craft Launcher 的作者",
-                    buttonText = "打开主页",
+                    info = "Author of Zalith-Plain Craft Launcher",
+                    buttonText = "Open home page",
                     highlighted = true,
                 ) { openLink(context, URL_PROJECT) }
 
@@ -279,30 +279,30 @@ fun PclOtherAboutPage() {
                 // 这里按用户要求改成「打开主页」→ 龙腾猫跃本人的 GitHub。
                 PclAboutRow(
                     icon = painterResource(R.drawable.img_avatar_ltcat),
-                    title = "龙腾猫跃",
-                    info = "Plain Craft Launcher 2 的作者！",
-                    buttonText = "打开主页",
+                    title = "Dragon Soaring Cat Jumping",
+                    info = "From the author of Plain Craft Launcher 2!",
+                    buttonText = "Open home page",
                 ) { openLink(context, URL_LTCATT) }
 
                 PclAboutRow(
                     icon = painterResource(R.drawable.img_avatar_movtery),
-                    title = "墨北Mov",
-                    info = "Zalith Launcher 2 的作者！",
-                    buttonText = "打开主页",
+                    title = "MobeiMov",
+                    info = "Author of Zalith Launcher 2!",
+                    buttonText = "Open home page",
                 ) { openLink(context, URL_MOVTERY) }
 
                 PclAboutRow(
                     icon = painterResource(R.drawable.img_launcher),
                     title = "Zalith Launcher 2",
-                    info = "Zalith-Plain Craft Launcher 的运行内核 · 版本 ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE}) · ${BuildConfig.BUILD_TYPE}",
-                    buttonText = "开源代码",
+                    info = "Running kernel of Zalith-Plain Craft Launcher · Version ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE}) · ${BuildConfig.BUILD_TYPE}",
+                    buttonText = "Open source code",
                 ) { openLink(context, "https://github.com/ZalithLauncher/ZalithLauncher2") }
 
                 PclAboutRow(
                     icon = painterResource(R.drawable.ic_launcher_logo),
                     title = "Zalith-Plain Craft Launcher",
-                    info = "本启动器：基于 Zalith Launcher 2 与 PCL2 界面打造的 Minecraft Java 版启动器",
-                    buttonText = if (checking) "检查中…" else "检查更新",
+                    info = "This launcher: Minecraft Java version launcher based on Zalith Launcher 2 and PCL2 interface",
+                    buttonText = if (checking) "Checking…" else "Check for updates",
                 ) {
                     // 检查更新必须**当场给出可见结果**：以前只往左下角推一条提示条，
                     // 而「已是最新」「网络失败」这类结果一闪就没了，用户点完的感受就是
@@ -316,10 +316,10 @@ fun PclOtherAboutPage() {
                                     onChecked = { data ->
                                         notice = when {
                                             data == null ->
-                                                "获取更新失败，请检查网络后重试。\n\n" +
-                                                    "（如果你在中国大陆，GitHub 的接口经常连不上，换个时间段再试通常就好了。）"
+                                                "Failed to obtain updates, please check the network and try again. " +
+                                                    "(If you are in mainland China and the GitHub interface is often unable to connect, it is usually fine to try again at another time.)"
                                             BuildConfig.VERSION_CODE >= data.code ->
-                                                "当前已是最新版本 ${BuildConfig.VERSION_NAME}（${BuildConfig.VERSION_CODE}）。"
+                                                "It is currently the latest version ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})."
                                             // 有新版本：operation 已由 ViewModel 设好，交给 PclUpgradeHost 弹框
                                             else -> null
                                         }
@@ -327,12 +327,12 @@ fun PclOtherAboutPage() {
                                 )
                             }
                             if (finished == null) {
-                                notice = "检查更新超时了，请检查网络后重试。"
+                                notice = "Checking for updates has timed out, please check the network and try again."
                             }
                         } catch (_: TooFrequentOperationException) {
-                            notice = "检查太频繁了，请等几秒再试。"
+                            notice = "Checking too frequently, please wait a few seconds and try again."
                         } catch (_: Exception) {
-                            notice = "获取更新失败，请检查网络后重试。"
+                            notice = "Failed to obtain updates, please check the network and try again."
                         } finally {
                             checking = false
                         }
@@ -342,8 +342,8 @@ fun PclOtherAboutPage() {
                 PclAboutRow(
                     icon = painterResource(R.drawable.img_launcher_pcl2),
                     title = "Plain Craft Launcher 2",
-                    info = "Zalith-Plain Craft Launcher 界面的移植原型：版式、配色与文案均取自 PCL2",
-                    buttonText = "开源代码",
+                    info = "Ported prototype of Zalith-Plain Craft Launcher interface: layout, color matching and copywriting are all taken from PCL2",
+                    buttonText = "Open source code",
                 ) { openLink(context, URL_PCL2) }
             }
         }
@@ -356,57 +356,57 @@ fun PclOtherAboutPage() {
                 PclAboutRow(
                     icon = painterResource(R.drawable.img_avatar_bangbang93),
                     title = "bangbang93",
-                    info = "提供 BMCLAPI 镜像源和 Forge 安装工具",
-                    buttonText = "赞助镜像源",
+                    info = "Provide BMCLAPI image source and Forge installation tool",
+                    buttonText = "Sponsored Mirror Source",
                 ) { openLink(context, URL_BANGBANG93_SPONSOR) }
 
                 PclAboutRow(
                     icon = painterResource(R.drawable.img_platform_mcmod),
-                    title = "MC 百科",
-                    info = "提供了 Mod 名称的中文翻译和更多相关信息！",
-                    buttonText = "打开百科",
+                    title = "MC Encyclopedia",
+                    info = "Chinese translation of Mod name and more related information provided!",
+                    buttonText = "Open encyclopedia",
                 ) { openLink(context, URL_MCMOD) }
 
                 PclAboutRow(
                     icon = painterResource(R.drawable.img_avatar_mcim),
                     title = "z0z0r4",
-                    info = "提供了 MCIM 社区资源镜像源和帮助库图床！",
-                    buttonText = "MCIM 主页",
+                    info = "MCIM community resource mirror source and help library provided!",
+                    buttonText = "MCIM Home Page",
                 ) { openLink(context, URL_MCIM) }
 
                 PclAboutRow(
                     icon = painterResource(R.drawable.ic_public),
                     title = "EasyTier",
-                    info = "提供了联机模块！",
-                    buttonText = "GitHub 页面",
+                    info = "Online module provided!",
+                    buttonText = "GitHub page",
                 ) { openLink(context, URL_EASYTIER_GITHUB) }
 
                 PclAboutRow(
                     icon = painterResource(R.drawable.img_launcher_fcl),
                     title = "Fold Craft Launcher",
-                    info = "Android 端界面与交互框架的重要参考",
-                    buttonText = "GitHub 页面",
+                    info = "An important reference for Android interface and interaction framework",
+                    buttonText = "GitHub page",
                 ) { openLink(context, URL_FCL) }
 
                 PclAboutRow(
                     icon = painterResource(R.drawable.img_launcher_hmcl),
                     title = "Hello Minecraft! Launcher",
-                    info = "启动流程与版本管理的重要参考",
-                    buttonText = "GitHub 页面",
+                    info = "Important reference for startup process and version management",
+                    buttonText = "GitHub page",
                 ) { openLink(context, URL_HMCL) }
 
                 PclAboutRow(
                     icon = painterResource(R.drawable.img_launcher_pojav),
                     title = "PojavLauncher",
-                    info = "在 Android 上运行 Minecraft Java 版的技术先驱",
-                    buttonText = "GitHub 页面",
+                    info = "Technology pioneers running Minecraft Java Edition on Android",
+                    buttonText = "GitHub page",
                 ) { openLink(context, URL_POJAV) }
 
                 PclAboutRow(
                     icon = painterResource(R.drawable.img_platform_weblate),
                     title = "Weblate",
-                    info = "为本启动器提供在线的多语言翻译协作",
-                    buttonText = "参与翻译",
+                    info = "Provide online multi-language translation collaboration for this launcher",
+                    buttonText = "Participate in translation",
                 ) { openLink(context, URL_WEBLATE) }
             }
         }
@@ -421,14 +421,14 @@ fun PclOtherAboutPage() {
         ) {
             Column {
                 PclText(
-                    text = "Plain Craft Launcher 2 以 GNU General Public License v3.0 发布，" +
-                        "Zalith Launcher 2 亦以 GPL-3.0 发布，本界面移植同样遵循该许可。",
+                    text = "Plain Craft Launcher 2 is released under the GNU General Public License v3.0," +
+                        "Zalith Launcher 2 is also released under GPL-3.0, and this interface port also follows this license.",
                     modifier = Modifier.fillMaxWidth(),
                 )
                 Spacer(Modifier.height(12.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(15.dp)) {
-                    PclButton(text = "许可原文", onClick = { openLink(context, "$URL_PROJECT/blob/main/LICENSE") })
-                    PclButton(text = "项目仓库", onClick = { openLink(context, URL_PROJECT) })
+                    PclButton(text = "License text", onClick = { openLink(context, "$URL_PROJECT/blob/main/LICENSE") })
+                    PclButton(text = "Project warehouse", onClick = { openLink(context, URL_PROJECT) })
                 }
             }
         }
@@ -440,7 +440,7 @@ fun PclOtherAboutPage() {
     // 放在 `PclContent` 之后：Dialog 是独立窗口，不参与页面滚动布局。
     notice?.let { text ->
         PclNoticeDialog(
-            title = "检查更新",
+            title = "Check for updates",
             content = text,
             onDismiss = { notice = null },
         )
@@ -490,14 +490,14 @@ fun PclOtherTestPage() {
     val folderPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
         if (uri == null) return@rememberLauncherForActivityResult
         when (val path = treeUriToPath(uri)) {
-            null -> PclHintHost.push("无法识别所选文件夹的路径，请换一个位置重试。", PclHintTheme.Red)
+            null -> PclHintHost.push("The path to the selected folder cannot be recognized, please try again in another location.", PclHintTheme.Red)
             else -> folder = path
         }
     }
 
     PclContent {
         // ---------------------------------------------------------------- 百宝箱
-        PclCard(modifier = Modifier.fillMaxWidth(), title = "百宝箱") {
+        PclCard(modifier = Modifier.fillMaxWidth(), title = "treasure chest") {
             Column {
                 // 横排一行；窄屏时允许横向滑动，避免挤成一团
                 Row(
@@ -506,31 +506,31 @@ fun PclOtherTestPage() {
                         .horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
-                    PclButton(text = "今日人品", onClick = { notice = todayFortune() })
-                    PclButton(text = "清理存储", onClick = {
+                    PclButton(text = "Today's character", onClick = { notice = todayFortune() })
+                    PclButton(text = "Clean up storage", onClick = {
                         scope.launch {
                             val scan = withContext(Dispatchers.IO) { scanStorage(context) }
                             if (scan.totalBytes <= 0L) {
-                                notice = "清理存储" to "启动器的缓存目录已经是空的，没有可清理的内容。"
+                                notice = "Clean up storage" to "The launcher's cache directory is already empty and has no content to clean."
                             } else {
                                 storage = scan
                             }
                         }
                     })
-                    PclButton(text = "清理游戏垃圾", onClick = {
+                    PclButton(text = "Clean up game junk", onClick = {
                         scope.launch {
                             val scan = withContext(Dispatchers.IO) {
                                 scanRubbish(File(GamePathManager.currentPath.value))
                             }
                             if (scan.files.isEmpty()) {
-                                notice = "清理游戏垃圾" to "这个游戏目录已经很干净了，没有可清理的垃圾文件。"
+                                notice = "Clean up game junk" to "This game directory is already very clean, with no junk files to clean."
                             } else {
                                 rubbish = scan
                             }
                         }
                     })
                     PclButton(
-                        text = "千万别点",
+                        text = "Don't order it",
                         colorState = PclColorState.Red,
                         onClick = { prankStage = 1 },
                     )
@@ -540,7 +540,7 @@ fun PclOtherTestPage() {
         Spacer(Modifier.height(PclDimens.cardGap))
 
         // ---------------------------------------------------------------- 回声洞
-        PclCard(modifier = Modifier.fillMaxWidth(), title = "回声洞") {
+        PclCard(modifier = Modifier.fillMaxWidth(), title = "echo cave") {
             // 整块可点：点一次从官网联网换一条（拿不到就保持现状）
             Box(
                 modifier = Modifier
@@ -557,16 +557,16 @@ fun PclOtherTestPage() {
         Spacer(Modifier.height(PclDimens.cardGap))
 
         // ---------------------------------------------------------------- 下载自定义文件
-        PclCard(modifier = Modifier.fillMaxWidth(), title = "下载自定义文件") {
+        PclCard(modifier = Modifier.fillMaxWidth(), title = "Download custom files") {
             Column {
                 PclHint(
-                    text = "使用 PCL 的高速多线程下载引擎下载任意文件。请注意，部分网站" +
-                            "（例如百度网盘）可能会报错（403）已禁止，无法正常下载。",
+                    text = "Download arbitrary files using PCL's high-speed multi-threaded download engine. " +
+                            "(For example, Baidu Netdisk) may report an error (403) Forbidden and cannot download normally.",
                     theme = PclHintTheme.Blue,
                 )
                 Spacer(Modifier.height(12.dp))
 
-                PclFormRow("下载地址") {
+                PclFormRow("Download address") {
                     PclTextBox(
                         value = url,
                         modifier = Modifier.fillMaxWidth(),
@@ -574,7 +574,7 @@ fun PclOtherTestPage() {
                         onValueChange = { url = it },
                     )
                 }
-                PclFormRow("保存到") {
+                PclFormRow("save to") {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         PclTextBox(
                             value = folder,
@@ -582,14 +582,14 @@ fun PclOtherTestPage() {
                             onValueChange = { folder = it },
                         )
                         Spacer(Modifier.width(8.dp))
-                        PclButton(text = "选择", onClick = { folderPicker.launch(null) })
+                        PclButton(text = "choose", onClick = { folderPicker.launch(null) })
                     }
                 }
-                PclFormRow("文件名") {
+                PclFormRow("file name") {
                     PclTextBox(
                         value = fileName,
                         modifier = Modifier.fillMaxWidth(),
-                        hint = "留空则按下载地址自动推断",
+                        hint = "If left blank, the download address will be automatically inferred.",
                         onValueChange = { fileName = it },
                     )
                 }
@@ -600,12 +600,12 @@ fun PclOtherTestPage() {
                     horizontalArrangement = Arrangement.Center,
                 ) {
                     PclButton(
-                        text = "开始下载",
+                        text = "Start downloading",
                         colorState = PclColorState.Highlight,
                         onClick = {
                             val request = buildCustomDownload(url = url, folder = folder, fileName = fileName)
                             if (request == null) {
-                                PclHintHost.push("请先填写下载地址与文件名。", PclHintTheme.Red)
+                                PclHintHost.push("Please fill in the download address and file name first.", PclHintTheme.Red)
                             } else {
                                 startCustomDownload(request)
                             }
@@ -613,13 +613,13 @@ fun PclOtherTestPage() {
                     )
                     Spacer(Modifier.width(10.dp))
                     PclButton(
-                        text = "打开文件夹",
+                        text = "open folder",
                         onClick = {
                             runCatching {
                                 File(folder).takeIf { !it.exists() }?.mkdirs()
                                 FileManagerLauncher.launch(context, rootPath = folder)
                             }.onFailure {
-                                PclHintHost.push("无法打开文件夹：${it.message ?: it.javaClass.simpleName}", PclHintTheme.Red)
+                                PclHintHost.push("Unable to open folder: ${it.message ?: it.javaClass.simpleName}", PclHintTheme.Red)
                             }
                         },
                     )
@@ -635,12 +635,12 @@ fun PclOtherTestPage() {
 
     rubbish?.let { scan ->
         PclConfirmDialog(
-            title = "清理游戏垃圾",
+            title = "Clean up game junk",
             content = buildString {
-                append("将在「${GamePathManager.currentPath.value}」中删除 ")
-                append("${scan.files.size} 个文件，共 ${formatBytes(scan.totalBytes)}。\n\n")
-                append("会清掉的：崩溃报告、轮转日志（保留 latest.log）、hs_err / replay 崩溃转储。\n")
-                append("Mod、存档、资源包等**不受影响**。")
+                append("Will be deleted in \"${GamePathManager.currentPath.value}\"")
+                append("${scan.files.size} files, totaling ${formatBytes(scan.totalBytes)}. ")
+                append("Will be cleared: crash report, rotation log (keep latest.log), hs_err / replay crash dump. ")
+                append("Mods, archives, resource packs, etc. are **not affected**.")
             },
             danger = true,
             onConfirm = {
@@ -649,7 +649,7 @@ fun PclOtherTestPage() {
                 // 该做的事直接做完。
                 scope.launch {
                     val (count, bytes) = withContext(Dispatchers.IO) { deleteRubbish(scan.files) }
-                    PclHintHost.push("已清理 $count 个文件，释放 ${formatBytes(bytes)}。", PclHintTheme.Green)
+                    PclHintHost.push("Cleaned $count files, freeing ${formatBytes(bytes)}.", PclHintTheme.Green)
                 }
             },
             onDismiss = { rubbish = null },
@@ -658,18 +658,18 @@ fun PclOtherTestPage() {
 
     storage?.let { scan ->
         PclConfirmDialog(
-            title = "清理存储",
+            title = "Clean up storage",
             content = buildString {
-                append("将清空启动器的缓存目录，共 ${formatBytes(scan.totalBytes)}（${scan.targets.size} 项）。\n\n")
-                append("清掉的是：下载与安装留下的临时目录、图片与图标缓存、外部缓存目录。\n")
-                append("游戏、存档、Mod、账号与设置都**不受影响**。")
+                append("The cache directory of the launcher will be cleared, totaling ${formatBytes(scan.totalBytes)} (${scan.targets.size} items). ")
+                append("What will be cleared are: temporary directories left behind by downloads and installations, image and icon caches, and external cache directories. ")
+                append("Games, saves, mods, accounts and settings are **not affected**.")
             },
             danger = true,
             onConfirm = {
                 // 同 `rubbish`：不能在这里切中间态，直接干活。
                 scope.launch {
                     val (count, bytes) = withContext(Dispatchers.IO) { deleteStorage(scan.targets) }
-                    PclHintHost.push("已清理 $count 项，释放 ${formatBytes(bytes)}。", PclHintTheme.Green)
+                    PclHintHost.push("Cleaned $count items, freeing ${formatBytes(bytes)}.", PclHintTheme.Green)
                 }
             },
             onDismiss = { storage = null },
@@ -680,9 +680,9 @@ fun PclOtherTestPage() {
         // PCL2 那个彩蛋的已知结构：弹出的对话框里并排三枚全部写着「确定」的按钮，
         // 随便按哪一枚都会**整扇窗口**开始整活（四种效果随机抽一个，见 `PclPrank`）。
         PclThreeOkDialog(
-            title = "千万别点",
-            content = "都说了千万别点，你怎么还是点了呢？\n\n" +
-                    "下面这三个按钮一模一样，随便挑一个按吧。",
+            title = "Don't order it",
+            content = "I told you not to order it, so why did you order it anyway? " +
+                    "The three buttons below are exactly the same, just pick any one and press it.",
             onChosen = {
                 // 先把弹窗关掉，再放彩蛋 —— 窗口飘起来的时候不该还挂着一个对话框
                 prankStage = 0
@@ -812,15 +812,15 @@ private fun todayFortune(): Pair<String, String> {
     val seed = day.hashCode().toLong()
     val luck = (kotlin.math.abs(seed) % 101L).toInt()
     val comment = when {
-        luck >= 95 -> "鸿运当头！今天开新存档吧，世界会善待你的。"
-        luck >= 80 -> "相当不错的一天，适合去挖矿或者建个大工程。"
-        luck >= 60 -> "运势平稳偏好，日常游玩不会有太大意外。"
-        luck >= 40 -> "普普通通的一天，注意别把房子建在岩浆边上。"
-        luck >= 20 -> "运势一般偏低，出发前记得备份存档。"
-        luck >= 5 -> "今天还是别去末地了，在家整理箱子吧。"
-        else -> "宜：睡觉。忌：开新档、进下界、徒手跳崖。"
+        luck >= 95 -> "Good luck! "
+        luck >= 80 -> "A pretty good day to go mining or build a big project."
+        luck >= 60 -> "The fortune is stable and there will be no big surprises in daily play."
+        luck >= 40 -> "On an ordinary day, be careful not to build your house next to magma."
+        luck >= 20 -> "Luck is generally on the low side, so remember to back up your save before departure."
+        luck >= 5 -> "It’s better not to go to the end today and pack the boxes at home."
+        else -> "Suitable for: sleeping. "
     }
-    return "今日人品" to "今日人品：$luck\n\n$comment"
+    return "Today's character" to "Today’s personality: $luck\n\n$comment"
 }
 
 /** 把下载表单整理成一个下载请求；信息不全时返回 null。 */
@@ -848,7 +848,7 @@ private fun startCustomDownload(request: CustomDownload) {
             dispatcher = Dispatchers.IO,
             task = { task ->
                 task.updateProgress(-1f)
-                task.updateMessage(androidText("下载 ${request.target.name}"))
+                task.updateMessage(androidText("Download ${request.target.name}"))
                 // 这个接口不预先知道大小（`expectedSize` 缺省），进度只能是「不确定」，
                 // 但消息里可以如实报出已落盘的累计字节数。
                 var downloaded = 0L
@@ -860,19 +860,19 @@ private fun startCustomDownload(request: CustomDownload) {
                 ) { delta ->
                     downloaded += delta
                     task.updateMessage(
-                        androidText("下载 ${request.target.name}（${formatBytes(downloaded)}）")
+                        androidText("Download ${request.target.name} (${formatBytes(downloaded)})")
                     )
                 }
-                task.updateMessage(androidText("已下载 ${request.target.name}（${formatBytes(downloaded)}）"))
+                task.updateMessage(androidText("Downloaded ${request.target.name} (${formatBytes(downloaded)})"))
                 task.updateProgress(1f)
             },
         )
         TaskSystem.submitTask(task, onEnded = {
-            PclHintHost.push("下载结束：${request.target.absolutePath}", PclHintTheme.Green)
+            PclHintHost.push("Download ends: ${request.target.absolutePath}", PclHintTheme.Green)
         })
-        PclHintHost.push("已提交下载任务，进度见「下载管理」。", PclHintTheme.Blue)
+        PclHintHost.push("The download task has been submitted. Please see \"Download Management\" for the progress.", PclHintTheme.Blue)
     }.onFailure {
-        PclHintHost.push("无法开始下载：${it.message ?: it.javaClass.simpleName}", PclHintTheme.Red)
+        PclHintHost.push("Unable to start download: ${it.message ?: it.javaClass.simpleName}", PclHintTheme.Red)
     }
 }
 
@@ -908,18 +908,18 @@ fun PclOtherFeedbackPage() {
     val p = pclPalette
     val context = LocalContext.current
     val channels = listOf(
-        Triple("GitHub Issues", "提交 Bug 报告与功能建议（本启动器仓库）", "$URL_PROJECT/issues"),
-        Triple("渲染器插件", "获取可安装的渲染器插件（FCL 插件格式）", URL_GITHUB_RENDERER_PLUGINS),
-        Triple("驱动插件", "获取 Turnip 等 Vulkan 驱动插件", URL_GITHUB_DRIVER_PLUGINS),
-        Triple("原生库插件", "获取额外的原生库插件", URL_GITHUB_NATIVE_LIB_PLUGINS),
+        Triple("GitHub Issues", "Submit bug reports and feature suggestions (this launcher repository)", "$URL_PROJECT/issues"),
+        Triple("renderer plugin", "Get installable renderer plug-ins (FCL plug-in format)", URL_GITHUB_RENDERER_PLUGINS),
+        Triple("Driver plug-in", "Get Vulkan driver plug-ins such as Turnip", URL_GITHUB_DRIVER_PLUGINS),
+        Triple("Native library plug-in", "Get additional native library plugins", URL_GITHUB_NATIVE_LIB_PLUGINS),
     )
     PclContent {
         PclHint(
-            text = "反馈前建议先查看启动日志（首页右侧，或「设置 → 启动 → 高级选项」中的日志设置）。",
+            text = "Before giving feedback, it is recommended to check the startup log (on the right side of the homepage, or the log settings in \"Settings → Startup → Advanced Options\").",
             theme = PclHintTheme.Blue,
         )
         Spacer(Modifier.height(15.dp))
-        PclCard( modifier = Modifier.fillMaxWidth(),title = "反馈与资源渠道") {
+        PclCard( modifier = Modifier.fillMaxWidth(),title = "Feedback and resource channels") {
             Column {
                 channels.forEach { (name, info, url) ->
                     PclListItem(
@@ -932,7 +932,7 @@ fun PclOtherFeedbackPage() {
                         buttons = listOf(
                             com.zalith.pcl.ui.pcl2.components.PclListItemButton(
                                 logo = PclIcons.arrowRight,
-                                tooltip = "打开",
+                                tooltip = "Open",
                             ) { openLink(context, url) },
                         ),
                         onClick = { openLink(context, url) },
@@ -954,16 +954,16 @@ fun PclOtherVotePage() {
     val p = pclPalette
     val context = LocalContext.current
     val entries = listOf(
-        Triple("项目仓库", "查看进展、提交 Issue 与 Pull Request", URL_PROJECT),
-        Triple("贡献者列表", "查看为本启动器做出贡献的开发者", "$URL_PROJECT/graphs/contributors"),
+        Triple("Project warehouse", "View progress, submit Issues and Pull Requests", URL_PROJECT),
+        Triple("Contributor list", "View developers who contributed to this launcher", "$URL_PROJECT/graphs/contributors"),
     )
     PclContent {
         PclHint(
-            text = "本启动器没有内置的「新功能投票」系统，功能建议请通过 GitHub Issues 提交。",
+            text = "This launcher does not have a built-in \"new feature voting\" system. Please submit feature suggestions through GitHub Issues.",
             theme = PclHintTheme.Yellow,
         )
         Spacer(Modifier.height(15.dp))
-        PclCard( modifier = Modifier.fillMaxWidth(),title = "社区") {
+        PclCard( modifier = Modifier.fillMaxWidth(),title = "Community") {
             Column {
                 entries.forEach { (name, info, url) ->
                     PclListItem(
@@ -976,7 +976,7 @@ fun PclOtherVotePage() {
                         buttons = listOf(
                             com.zalith.pcl.ui.pcl2.components.PclListItemButton(
                                 logo = PclIcons.arrowRight,
-                                tooltip = "打开",
+                                tooltip = "Open",
                             ) { openLink(context, url) },
                         ),
                         onClick = { openLink(context, url) },

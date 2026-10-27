@@ -171,7 +171,7 @@ object RendererCompat {
         if (Renderers.getRenderers().isEmpty()) return null
         // 用户关掉了「自动适配渲染器」：只保留默认（列表里第一个）渲染器，不替他挑
         if (!AllSettings.autoRendererCompat.getValue()) {
-            lastAutoDecision = "已关闭自动适配 → 使用默认渲染器"
+            lastAutoDecision = "Autofit turned off → use default renderer"
             return null
         }
         val current = runCatching { Renderers.getCurrentRenderer() }.getOrNull()
@@ -187,9 +187,9 @@ object RendererCompat {
 
         val gles = deviceGlesVersion(activity)
         val caps = probeVulkanCapabilities(version)
-        val vulkanText = caps?.versionString ?: "无"
+        val vulkanText = caps?.versionString ?: "none"
         val mods = scanDesktopGlMods(version.getGameDir())
-        val modList = mods.joinToString(" / ").ifEmpty { "无" }
+        val modList = mods.joinToString(" / ").ifEmpty { "none" }
 
         // zink 能不能撑住这台设备的 Vulkan：版本 ≥ 1.2，且该 MC 版本要求的 Vulkan 依赖齐全
         val zinkViable = caps != null &&
@@ -205,13 +205,13 @@ object RendererCompat {
 
         val reason = buildString {
             append("GLES ${gles.first}.${gles.second}，Vulkan $vulkanText，")
-            append("桌面GL模组 [$modList]，zink 可用=$zinkViable")
+            append("Desktop GL module [$modList], zink available = $zinkViable")
         }
 
         val picked = candidates.firstOrNull { supportsMcVersion(it, mcVersion) }
         if (picked == null) {
-            lastAutoDecision = "$reason → 没有可用的内置渲染器，保持 ${current?.getRendererName() ?: "默认"}"
-            Logger.warning(TAG, "自动选择渲染器：$lastAutoDecision")
+            lastAutoDecision = "$reason → No built-in renderer available, keep ${current?.getRendererName() ?:"default"}"
+            Logger.warning(TAG, "Automatically select renderer: $lastAutoDecision")
             return null
         }
 
@@ -219,14 +219,14 @@ object RendererCompat {
         if (mods.isNotEmpty() && !zinkViable) {
             Logger.warning(
                 TAG,
-                "检测到需要桌面 OpenGL 3.3+ 的模组（$modList），但本机 Vulkan（$vulkanText）不满足 zink 的要求" +
-                        "（需要 Vulkan 1.2 及以上与完整扩展），已使用 ${picked.getRendererName()}；" +
-                        "这类模组在该渲染器上可能无法工作或卡在加载界面。"
+                "Mods requiring desktop OpenGL 3.3+ detected ($modList), but native Vulkan ($vulkanText) does not meet zink requirements" +
+                        "(Requires Vulkan 1.2 and above with full extensions), used ${picked.getRendererName()};" +
+                        "Such mods may not work on this renderer or may get stuck on the loading screen."
             )
         }
 
         lastAutoDecision = "$reason → ${picked.getRendererName()}"
-        Logger.info(TAG, "自动选择渲染器：$lastAutoDecision")
+        Logger.info(TAG, "Automatically select renderer: $lastAutoDecision")
 
         if (current != null && current.getUniqueIdentifier() == picked.getUniqueIdentifier()) return null
 
@@ -246,8 +246,8 @@ object RendererCompat {
         if (isGL4ESFamily(current) && current !== NGGL4ESRenderer) {
             Logger.warning(
                 TAG,
-                "检测到需要桌面 OpenGL 3.3+ 的模组（$modList），当前渲染器 ${current.getRendererName()} " +
-                        "属于 GL4ES 翻译层、无法支撑，游戏很可能卡在加载界面。请在「设置 → 启动 → 渲染器」中改用 Krypton Wrapper。"
+                "Modules ($modList) requiring desktop OpenGL 3.3+ detected, current renderer ${current.getRendererName()}" +
+                        "It belongs to the GL4ES translation layer and cannot be supported. The game is likely to get stuck on the loading interface. "
             )
         }
     }
@@ -290,7 +290,7 @@ object RendererCompat {
                 VulkanChecker.checkCapabilities(driverPath = null, nativeDir = null, cacheDir = null)
             }
         }.onFailure {
-            Logger.warning(TAG, "枚举 Vulkan 能力失败，按「不可用」处理", it)
+            Logger.warning(TAG, "Failed to enumerate Vulkan capabilities, treated as \"unavailable\"", it)
         }.getOrNull()
 
         vulkanCapabilitiesCache[cacheKey] = caps

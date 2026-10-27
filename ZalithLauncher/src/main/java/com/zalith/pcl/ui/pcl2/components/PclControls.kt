@@ -1522,9 +1522,9 @@ fun PclRadioBox(
  * `MyExtraTextButton` —— 悬浮胶囊按钮（「开始下载」「版本独立设置」）。
  *
  * 几何取自 `MyExtraTextButton.xaml`：
- *   外层 `Height="52"`、`Margin="20"`；内层 `PanScale Margin="0,10,0,0"` → 实体胶囊高 42；
+ *   外层 `Height="52"`、`Margin="20"`;Inner layer `PanScale Margin="0,10,0,0"` → 实体胶囊高 42；
  *   圆角 = 外层高度 × 0.4 = 20.8；
- *   内容 `StackPanel Margin="20,0"`，图标 `Path Margin="2,12,0,12"`（→ 高 18）、
+ *   内容 `StackPanel Margin="20,0"`, icon `Path Margin="2,12,0,12"`（→ 高 18）、
  *   文字 `FontSize=16`、`Margin="12,0,0,0.8"`、颜色 ColorBrush8；底色 ColorBrush3。
  */
 @Composable
@@ -1765,7 +1765,7 @@ private val PCL_SEARCH_TEXT_START = 32.dp
 fun PclSearchBox(
     value: String,
     modifier: Modifier = Modifier,
-    hint: String = "搜索",
+    hint: String = "search",
     onSearch: (() -> Unit)? = null,
     onValueChange: (String) -> Unit,
 ) {
@@ -2112,7 +2112,7 @@ internal fun PclComboBoxItemRow(
                 theme = PclIconTheme.Black,
                 size = 24.dp,
                 logoScale = 0.75f,
-                contentDescription = "删除",
+                contentDescription = "delete",
                 enabled = enabled,
                 onClick = trailing,
             )

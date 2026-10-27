@@ -82,7 +82,7 @@ private fun InviteCodeInputDialog(
         val scaffoldingText = stringResource(R.string.terracotta_status_waiting_guest_prompt_scaffolding)
         PclInputDialogValidate(
             title = stringResource(R.string.terracotta_status_waiting_guest_prompt_title),
-            label = "请填写房主提供的邀请码。",
+            label = "Please fill in the invitation code provided by the host.",
             hint = "U/XXXX-XXXX-XXXX-XXXX",
             describe = { value ->
                 if (value.isEmpty()) null
@@ -95,8 +95,8 @@ private fun InviteCodeInputDialog(
             },
             validate = { value ->
                 when {
-                    value.isEmptyOrBlank() -> "请先填写邀请码。"
-                    Terracotta.parseRoomCode(value) == null -> "邀请码格式不正确，检查一下有没有少字符。"
+                    value.isEmptyOrBlank() -> "Please fill in the invitation code first."
+                    Terracotta.parseRoomCode(value) == null -> "The format of the invitation code is incorrect. Check to see if there are any missing characters."
                     else -> null
                 }
             },

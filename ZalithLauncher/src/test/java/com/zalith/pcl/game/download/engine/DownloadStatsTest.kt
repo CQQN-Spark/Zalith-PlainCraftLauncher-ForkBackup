@@ -28,7 +28,7 @@ import org.junit.Test
 
 /**
  * 计数守恒回归：此前 markFileFinished/registerFile 对 volatile 字段做非原子自增，
- * 64 并发完成时会丢更新（2000 全部成功只计到 1992，触发"完成数守恒告警"）。
+ * 64 并发完成时会丢更新（2000 全部成功只计到 1992，触发"Completion number conservation alarm"）。
  */
 class DownloadStatsTest {
 

@@ -229,7 +229,7 @@ private fun PclSpeedRight() {
         if (installTasks.isEmpty() && modpackEntries.isEmpty() && soloDownloadTasks.isEmpty()) {
             PclCard(modifier = Modifier.fillMaxWidth()) {
                 PclText(
-                    text = "当前没有正在进行的下载或安装任务。",
+                    text = "There are currently no download or installation tasks in progress.",
                     color = pclPalette.gray2,
                 )
             }
@@ -239,7 +239,7 @@ private fun PclSpeedRight() {
         // 游戏安装：一个安装器 = 一张卡片，「安装的各阶段」= 卡片里的分任务
         if (installTasks.isNotEmpty()) {
             PclSpeedTaskCard(
-                title = runtime.installTitle.ifBlank { "安装游戏" },
+                title = runtime.installTitle.ifBlank { "Install the game" },
                 tasks = installTasks,
                 onCancel = { runtime.cancelInstall() },
             )
@@ -263,8 +263,8 @@ private fun PclSpeedRight() {
         // 其他走全局任务系统的下载（模组 / 资源包 / 光影包等）
         soloDownloadTasks.forEach { task ->
             PclSpeedTaskCard(
-                title = "下载任务",
-                tasks = listOf(TitledTask(title = androidText("下载任务"), task = task)),
+                title = "Download task",
+                tasks = listOf(TitledTask(title = androidText("Download task"), task = task)),
                 onCancel = { TaskSystem.cancelTask(task) },
             )
         }
@@ -305,7 +305,7 @@ private fun PclSpeedTaskCard(
                             WaitingDots()
                         }
                         PclText(
-                            text = "等待前一个整合包安装完成…",
+                            text = "Waiting for the previous modpack to be installed...",
                             modifier = Modifier.weight(1f).padding(top = 3.dp),
                             color = pclPalette.gray2,
                         )

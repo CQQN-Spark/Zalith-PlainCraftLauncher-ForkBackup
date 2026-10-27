@@ -421,7 +421,7 @@ class VMActivity : BaseAppCompatActivity(), SurfaceTextureListener, SurfaceHolde
                     withLauncher { getLogFile().absolutePath }
                 }.getOrNull()
                 LoggerBridge.append(
-                    "▷ 游戏进程结束：退出码 $exitCode，信号 $isSignal，本次运行 ${ranSeconds} 秒"
+                    "▷ Game process ends: exit code $exitCode, signal $isSignal, this time running ${ranSeconds} seconds"
                 )
 
                 /**

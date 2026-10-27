@@ -39,7 +39,7 @@ class JvmCrashException(val code: Int) : RuntimeException(buildMessage(code))
 private fun buildMessage(code: Int): String {
     val title = "During installation, the JVM exited with exception code $code."
     val tail = readProcessLogTail() ?: return title
-    return "$title\n\n——— JVM 日志末尾（$LOG_TAIL_LINES 行）———\n$tail"
+    return "$title\n\n ——— End of JVM log ($LOG_TAIL_LINES line) ——— \n$tail"
 }
 
 /**

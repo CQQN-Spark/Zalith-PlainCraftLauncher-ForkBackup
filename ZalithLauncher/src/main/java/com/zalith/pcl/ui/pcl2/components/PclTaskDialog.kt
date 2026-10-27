@@ -65,13 +65,13 @@ fun PclDownloadTaskDialog(
             contentPadding = androidx.compose.foundation.layout.PaddingValues(20.dp),
         ) {
             Text(
-                text = "下载管理",
+                text = "Download management",
                 style = PclTextStyle.cardTitle(p).copy(fontSize = 15.sp, lineHeight = PclTextStyle.lineHeight(15),),
                 modifier = Modifier.align(Alignment.CenterHorizontally),
             )
             if (tasks.isEmpty() && installTasks.isEmpty()) {
                 Text(
-                    text = "当前没有正在进行的下载或安装任务。",
+                    text = "There are currently no download or installation tasks in progress.",
                     style = PclTextStyle.base(p),
                     modifier = Modifier.padding(top = 15.dp),
                 )
@@ -99,7 +99,7 @@ fun PclDownloadTaskDialog(
             ) {
                 if (tasks.isNotEmpty() || installTasks.isNotEmpty()) {
                     PclButton(
-                        text = "全部取消",
+                        text = "Cancel all",
                         onClick = {
                             if (installTasks.isNotEmpty()) onCancelInstall()
                             TaskSystem.stopAll()
@@ -108,7 +108,7 @@ fun PclDownloadTaskDialog(
                     Spacer(Modifier.width(10.dp))
                 }
                 PclButton(
-                    text = "关闭",
+                    text = "closure",
                     colorState = PclColorState.Highlight,
                     onClick = requestClose,
                 )
@@ -141,7 +141,7 @@ private fun PclTitledTaskRow(titled: TitledTask, onCancel: () -> Unit) {
                 Spacer(Modifier.width(8.dp))
             }
             if (stage != TaskStage.COMPLETED) {
-                PclTextButton(text = "取消", onClick = onCancel)
+                PclTextButton(text = "Cancel", onClick = onCancel)
             }
         }
         val detail = message?.toAndroidString(context)
@@ -167,7 +167,7 @@ private fun PclTaskRow(task: Task) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = message?.toAndroidString(context)?.takeIf { it.isNotBlank() }
-                    ?: if (stage == TaskStage.COMPLETED) "已完成" else "准备中…",
+                    ?: if (stage == TaskStage.COMPLETED) "Completed" else "In preparation…",
                 style = PclTextStyle.listTitle(p),
                 maxLines = 1,
                 modifier = Modifier.weight(1f),
@@ -178,7 +178,7 @@ private fun PclTaskRow(task: Task) {
                 Spacer(Modifier.width(8.dp))
             }
             if (stage != TaskStage.COMPLETED) {
-                PclTextButton(text = "取消", onClick = { TaskSystem.cancelTask(task) })
+                PclTextButton(text = "Cancel", onClick = { TaskSystem.cancelTask(task) })
             }
         }
         if (progress >= 0f) {

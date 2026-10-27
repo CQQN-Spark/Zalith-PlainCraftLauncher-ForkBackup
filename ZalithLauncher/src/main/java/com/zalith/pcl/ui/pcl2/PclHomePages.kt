@@ -237,14 +237,14 @@ private fun ColumnScope.PclHomeLaunching(runtime: PclRuntime) {
     val allDone = total > 0 && finishedCount == total
     val current = tasks.firstOrNull { it.task.stage.value != TaskStage.COMPLETED }
     val stageName = current?.title?.toAndroidString(context)
-        ?: if (allDone) "等待游戏窗口出现" else PclStrings.LangLaunchLeftInit
+        ?: if (allDone) "Wait for the game window to appear" else PclStrings.LangLaunchLeftInit
     val rawProgress = if (total == 0) 0f else finishedCount.toFloat() / total
     val progress by animateFloatAsState(
         targetValue = rawProgress.coerceIn(0f, 1f),
         animationSpec = tween(300, easing = PclMotion.easeOutFluent),
         label = "pclLaunchProgress",
     )
-    val method = if (account?.isMicrosoftAccount() == true) "正版验证" else "离线验证"
+    val method = if (account?.isMicrosoftAccount() == true) "Genuine verification" else "Offline verification"
     // 每次开始启动随机一条小提示（PCL 的 LabLaunchingHint 从提示库里挑）；优先联网抓官网审核文案。
     val tip = rememberRemoteText("hint")
 
@@ -343,7 +343,7 @@ private fun ColumnScope.PclHomeLaunching(runtime: PclRuntime) {
 
         // 底部「取消」（PCL 的 BtnCancel：白底细边框）
         PclButton(
-            text = "取消",
+            text = "Cancel",
             modifier = Modifier.fillMaxWidth().height(35.dp),
             onClick = { runtime.cancelLaunch() },
         )
@@ -418,7 +418,7 @@ private fun PclLaunchTaskRow(titled: TitledTask, context: android.content.Contex
         }
         if (stage == TaskStage.COMPLETED) {
             Text(
-                text = "已完成",
+                text = "Completed",
                 style = PclTextStyle.listInfo(p).copy(color = p.color3),
                 modifier = Modifier.padding(top = 2.dp),
             )
@@ -474,7 +474,7 @@ private fun ColumnScope.PclHomeInput(nav: PclNavController, runtime: PclRuntime)
     }
 
     // ---- PanType：登录方式胶囊（PageLaunchLeft.xaml:43-57）
-    //      外层 Margin="20,22,20,0"，各 MyRadioButton 各 Margin="4,0"，居中排列。
+    //      外层 Margin="20,22,20,0", each MyRadioButton each Margin="4,0"，居中排列。
     //
     // 第三方登录不画胶囊：那一块的面板自己有「XXX 登录」标题（PCL 的 `PageLoginAuth`
     // 也是这样），再挂一粒写着「外置登录」的胶囊只是重复。
@@ -629,7 +629,7 @@ private fun ColumnScope.PclHomeInput(nav: PclNavController, runtime: PclRuntime)
 
 /** 启动按钮下方的版本提示（PCL 的 `LabVersion`）。 */
 private fun versionHint(version: Version?): String {
-    if (version == null) return "尚未安装任何游戏版本"
+    if (version == null) return "No game version installed yet"
     val info = version.getVersionInfo()?.getInfoString()
     return if (info.isNullOrBlank()) version.getVersionName() else "$info（${version.getVersionName()}）"
 }
@@ -657,18 +657,18 @@ private fun startMicrosoftLogin(runtime: PclRuntime, context: android.content.Co
     // 没配置就直说，别让用户对着「登录进行中…」等一个注定 400 的请求。
     if (BuildKeys.OAUTH_CLIENT_ID.isBlank()) {
         PclHintHost.push(
-            "未配置正版登录 Client ID，无法登录正版账户（离线登录不受影响）。",
+            "If the genuine login Client ID is not configured, you cannot log in to the genuine account (offline login is not affected).",
             PclHintTheme.Red,
         )
         return
     }
     if (isMicrosoftLogging()) {
-        PclHintHost.push("正版登录正在进行中，请在启动器内的验证页面完成登录。", PclHintTheme.Yellow)
+        PclHintHost.push("Genuine login is in progress, please complete the login on the verification page in the launcher.", PclHintTheme.Yellow)
         return
     }
     microsoftLogin(
         context = runtime.activity,
-        toWeb = { url -> runtime.openWebPage(url, "Microsoft 账户登录") },
+        toWeb = { url -> runtime.openWebPage(url, "Microsoft account login") },
         backToMain = { runtime.closeWebPage() },
         checkIfInWebScreen = { runtime.webPage != null },
         updateOperation = { },
@@ -676,9 +676,9 @@ private fun startMicrosoftLogin(runtime: PclRuntime, context: android.content.Co
             PclHintHost.push(text.toAndroidString(context), PclHintTheme.Blue)
         },
         submitError = { th ->
-            runtime.submitErrorText("登录失败", th.message.toAndroidString(context))
+            runtime.submitErrorText("Login failed", th.message.toAndroidString(context))
         },
-        onSuccess = { PclHintHost.push("正版账户登录成功。", PclHintTheme.Green) },
+        onSuccess = { PclHintHost.push("Login to genuine account successfully.", PclHintTheme.Green) },
     )
 }
 
@@ -941,8 +941,8 @@ private fun PclMicrosoftAccountPanel(
                     val temp = File(context.cacheDir, "pcl_ms_skin.png")
                     context.contentResolver.openInputStream(uri)?.use { input ->
                         temp.outputStream().use { input.copyTo(it) }
-                    } ?: return@runCatching "读取不了所选图片"
-                    if (!validateSkinFile(temp)) return@runCatching "文件不是有效的皮肤"
+                    } ?: return@runCatching "The selected image cannot be read"
+                    if (!validateSkinFile(temp)) return@runCatching "File is not a valid skin"
                     val skinFile = current.getSkinFile()
                     skinFile.parentFile?.mkdirs()
                     temp.copyTo(skinFile, overwrite = true)
@@ -952,9 +952,9 @@ private fun PclMicrosoftAccountPanel(
             if (error == null) {
                 skinToken++
                 AccountsManager.refreshWardrobe()
-                PclHintHost.push("皮肤已更换。", PclHintTheme.Green)
+                PclHintHost.push("The skin has been replaced.", PclHintTheme.Green)
             } else {
-                PclHintHost.push("换皮肤失败：$error", PclHintTheme.Red)
+                PclHintHost.push("Failed to change skin: $error", PclHintTheme.Red)
             }
         }
     }
@@ -1005,7 +1005,7 @@ private fun PclMicrosoftAccountPanel(
                         size = 24.dp,
                         logoSize = 14.dp,
                         logoScale = 1.08f,
-                        contentDescription = "皮肤与披风",
+                        contentDescription = "Skins and Cloaks",
                         onClick = { skinMenu = true },
                     )
                     PclIconButton(
@@ -1013,7 +1013,7 @@ private fun PclMicrosoftAccountPanel(
                         size = 24.dp,
                         logoSize = 14.dp,
                         logoScale = 1.1f,
-                        contentDescription = "修改信息",
+                        contentDescription = "Modify information",
                         onClick = { editMenu = true },
                     )
                     PclIconButton(
@@ -1021,7 +1021,7 @@ private fun PclMicrosoftAccountPanel(
                         size = 24.dp,
                         logoSize = 14.dp,
                         logoScale = 1.15f,
-                        contentDescription = "切换账号",
+                        contentDescription = "Switch account",
                         onClick = onSwitch,
                     )
                 }
@@ -1033,16 +1033,16 @@ private fun PclMicrosoftAccountPanel(
                     modifier = Modifier.background(p.white),
                 ) {
                     DropdownMenuItem(
-                        text = { Text("修改皮肤", style = PclTextStyle.base(p)) },
+                        text = { Text("Modify skin", style = PclTextStyle.base(p)) },
                         onClick = { skinMenu = false; skinPicker.launch("image/png") },
                     )
                     DropdownMenuItem(
-                        text = { Text("刷新皮肤", style = PclTextStyle.base(p)) },
+                        text = { Text("refresh skin", style = PclTextStyle.base(p)) },
                         onClick = {
                             skinMenu = false
                             skinToken++
                             AccountsManager.refreshWardrobe()
-                            PclHintHost.push("已刷新皮肤。", PclHintTheme.Blue)
+                            PclHintHost.push("The skin has been refreshed.", PclHintTheme.Blue)
                         },
                     )
                 }
@@ -1054,14 +1054,14 @@ private fun PclMicrosoftAccountPanel(
                     modifier = Modifier.background(p.white),
                 ) {
                     DropdownMenuItem(
-                        text = { Text("修改密码", style = PclTextStyle.base(p)) },
+                        text = { Text("Change password", style = PclTextStyle.base(p)) },
                         onClick = {
                             editMenu = false
                             runtime.activity.openLinkInternal(URL_MS_PASSWORD)
                         },
                     )
                     DropdownMenuItem(
-                        text = { Text("修改玩家名", style = PclTextStyle.base(p)) },
+                        text = { Text("Modify player name", style = PclTextStyle.base(p)) },
                         onClick = {
                             editMenu = false
                             runtime.activity.openLinkInternal(URL_MS_PROFILE)
@@ -1243,7 +1243,7 @@ private fun PclLoginTypeCapsule(name: String) {
             )
             Spacer(Modifier.width(15.dp))
             PclText(
-                text = name.ifBlank { "第三方登录" },
+                text = name.ifBlank { "Third party login" },
                 color = p.color3,
                 fontSize = 14,
             )
@@ -1284,8 +1284,8 @@ private fun PclAuthLoginPanel(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             PclHint(
-                text = "该版本还没有填认证服务器。\n" +
-                        "「版本设置 → 服务器 → 认证服务器」填好之后再回来登录。",
+                text = "This version has not yet filled in the authentication server. " +
+                        "After completing \"Version Settings → Server → Authentication Server\", come back and log in.",
                 theme = PclHintTheme.Blue,
             )
         }
@@ -1349,7 +1349,7 @@ private fun PclAuthLoginPanel(
 
         // ---- 邮箱（PCL 的可编辑 ComboBox：手动输入 + 右侧下拉选历史账号）
         Row(verticalAlignment = Alignment.CenterVertically) {
-            PclText(text = "邮箱", modifier = Modifier.width(36.dp))
+            PclText(text = "Mail", modifier = Modifier.width(36.dp))
             Spacer(Modifier.width(8.dp))
             Box(modifier = Modifier.weight(1f)) {
                 PclTextBox(
@@ -1366,7 +1366,7 @@ private fun PclAuthLoginPanel(
                     ) {
                         Icon(
                             imageVector = PclIcons.comboArrow,
-                            contentDescription = "选择已登录的账号",
+                            contentDescription = "Select logged in account",
                             tint = p.color3,
                             modifier = Modifier.size(9.dp, 6.dp),
                         )
@@ -1378,7 +1378,7 @@ private fun PclAuthLoginPanel(
 
         // ---- 密码
         Row(verticalAlignment = Alignment.CenterVertically) {
-            PclText(text = "密码", modifier = Modifier.width(36.dp))
+            PclText(text = "password", modifier = Modifier.width(36.dp))
             Spacer(Modifier.width(8.dp))
             PclTextBox(
                 value = password,
@@ -1395,14 +1395,14 @@ private fun PclAuthLoginPanel(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             PclCheckBox(
-                text = "记住密码",
+                text = "Remember password",
                 checked = remember,
                 onCheckedChange = { remember = it },
             )
             Spacer(Modifier.weight(1f))
             if (registerUrl.isNotBlank()) {
-                PclTextButton(text = "注册账号") {
-                    runtime.openWebPage(registerUrl, "$serverName 注册账号")
+                PclTextButton(text = "Register an account") {
+                    runtime.openWebPage(registerUrl, "$serverName Register account")
                 }
             }
         }
@@ -1411,7 +1411,7 @@ private fun PclAuthLoginPanel(
 
     if (showHistory) {
         PclSelectDialog(
-            title = "选择账号",
+            title = "Select account",
             options = history.map { it to it },
             current = email,
             onSelect = {
@@ -1465,8 +1465,8 @@ private fun PclAuthAccountPanel(
                     val temp = File(context.cacheDir, "pcl_auth_skin.png")
                     context.contentResolver.openInputStream(uri)?.use { input ->
                         temp.outputStream().use { input.copyTo(it) }
-                    } ?: return@runCatching "读取不了所选图片"
-                    if (!validateSkinFile(temp)) return@runCatching "文件不是有效的皮肤"
+                    } ?: return@runCatching "The selected image cannot be read"
+                    if (!validateSkinFile(temp)) return@runCatching "File is not a valid skin"
                     val skinFile = current.getSkinFile()
                     skinFile.parentFile?.mkdirs()
                     temp.copyTo(skinFile, overwrite = true)
@@ -1476,9 +1476,9 @@ private fun PclAuthAccountPanel(
             if (error == null) {
                 skinToken++
                 AccountsManager.refreshWardrobe()
-                PclHintHost.push("皮肤已更换。", PclHintTheme.Green)
+                PclHintHost.push("The skin has been replaced.", PclHintTheme.Green)
             } else {
-                PclHintHost.push("换皮肤失败：$error", PclHintTheme.Red)
+                PclHintHost.push("Failed to change skin: $error", PclHintTheme.Red)
             }
         }
     }
@@ -1531,7 +1531,7 @@ private fun PclAuthAccountPanel(
                         size = 24.dp,
                         logoSize = 14.dp,
                         logoScale = 1.08f,
-                        contentDescription = "皮肤与披风",
+                        contentDescription = "Skins and Cloaks",
                         onClick = { skinMenu = true },
                     )
                     PclIconButton(
@@ -1539,7 +1539,7 @@ private fun PclAuthAccountPanel(
                         size = 24.dp,
                         logoSize = 14.dp,
                         logoScale = 1.1f,
-                        contentDescription = "服务器网站",
+                        contentDescription = "Server website",
                         onClick = { editMenu = true },
                     )
                     PclIconButton(
@@ -1547,7 +1547,7 @@ private fun PclAuthAccountPanel(
                         size = 24.dp,
                         logoSize = 14.dp,
                         logoScale = 1.15f,
-                        contentDescription = "切换账号",
+                        contentDescription = "Switch account",
                         onClick = onSwitch,
                     )
                 }
@@ -1558,11 +1558,11 @@ private fun PclAuthAccountPanel(
                     modifier = Modifier.background(p.white),
                 ) {
                     DropdownMenuItem(
-                        text = { Text("修改皮肤", style = PclTextStyle.base(p)) },
+                        text = { Text("Modify skin", style = PclTextStyle.base(p)) },
                         onClick = { skinMenu = false; skinPicker.launch("image/png") },
                     )
                     DropdownMenuItem(
-                        text = { Text("刷新皮肤", style = PclTextStyle.base(p)) },
+                        text = { Text("refresh skin", style = PclTextStyle.base(p)) },
                         onClick = {
                             skinMenu = false
                             scope.launch {
@@ -1571,7 +1571,7 @@ private fun PclAuthAccountPanel(
                                 }
                                 skinToken++
                                 AccountsManager.refreshWardrobe()
-                                PclHintHost.push("已刷新皮肤。", PclHintTheme.Blue)
+                                PclHintHost.push("The skin has been refreshed.", PclHintTheme.Blue)
                             }
                         },
                     )
@@ -1584,21 +1584,21 @@ private fun PclAuthAccountPanel(
                     modifier = Modifier.background(p.white),
                 ) {
                     DropdownMenuItem(
-                        text = { Text("$serverName 网站", style = PclTextStyle.base(p)) },
+                        text = { Text("$serverName website", style = PclTextStyle.base(p)) },
                         onClick = {
                             editMenu = false
                             runtime.openWebPage(
                                 registerUrl.ifBlank { baseUrl },
-                                "$serverName 网站",
+                                "$serverName website",
                             )
                         },
                     )
                     if (registerUrl.isNotBlank()) {
                         DropdownMenuItem(
-                            text = { Text("注册新账号", style = PclTextStyle.base(p)) },
+                            text = { Text("Register a new account", style = PclTextStyle.base(p)) },
                             onClick = {
                                 editMenu = false
-                                runtime.openWebPage(registerUrl, "$serverName 注册账号")
+                                runtime.openWebPage(registerUrl, "$serverName Register account")
                             },
                         )
                     }
@@ -1657,8 +1657,8 @@ private fun PclOfflineLoginPanel(
                     val temp = File(skinContext.cacheDir, "pcl_offline_skin.png")
                     skinContext.contentResolver.openInputStream(uri)?.use { input ->
                         temp.outputStream().use { input.copyTo(it) }
-                    } ?: return@runCatching "读取不了所选图片"
-                    if (!validateSkinFile(temp)) return@runCatching "文件不是有效的皮肤"
+                    } ?: return@runCatching "The selected image cannot be read"
+                    if (!validateSkinFile(temp)) return@runCatching "File is not a valid skin"
                     val skinFile = target.getSkinFile()
                     skinFile.parentFile?.mkdirs()
                     temp.copyTo(skinFile, overwrite = true)
@@ -1668,9 +1668,9 @@ private fun PclOfflineLoginPanel(
             if (result == null) {
                 skinToken++
                 AccountsManager.refreshWardrobe()
-                PclHintHost.push("皮肤已更换。", PclHintTheme.Green)
+                PclHintHost.push("The skin has been replaced.", PclHintTheme.Green)
             } else {
-                PclHintHost.push("换皮肤失败：$result", PclHintTheme.Red)
+                PclHintHost.push("Failed to change skin: $result", PclHintTheme.Red)
             }
         }
     }
@@ -1694,7 +1694,7 @@ private fun PclOfflineLoginPanel(
                 // （`PageLaunchLeft.xaml.vb` 的 `SkinLegacyLoad`，`LaunchSkinType` 里的自定义
                 // 皮肤就是一份 `CustomSkin.png`）。所以这里不再拦人。
                 typed.isEmpty() ->
-                    PclHintHost.push("请先输入玩家名，再点头像换皮肤。", PclHintTheme.Blue)
+                    PclHintHost.push("Please enter the player name first, then click the avatar to change the skin.", PclHintTheme.Blue)
                 !typed.matches(Regex("^[0-9A-Za-z_]+$")) ->
                     PclHintHost.push(PclStrings.LangPageLoginLegacySpecialCharacters, PclHintTheme.Red)
                 else -> runtime.createLocalAccount(typed) {
@@ -1751,7 +1751,7 @@ fun PclHomeRight(nav: PclNavController) {
     val context = LocalContext.current
     val runtime = LocalPclRuntime.current
     var reloadToken by remember { mutableStateOf(0) }
-    // 主页里 `EventType="弹出窗口"` 的标题 / 内容（PclConfirmDialog 展示）。
+    // 主页里 `EventType="pop up"` 的标题 / 内容（PclConfirmDialog 展示）。
     var homeDialog by remember { mutableStateOf<Pair<String, String>?>(null) }
 
     // 「你知道吗？/ 回声洞」是 PCL 的内置预设（`PageLaunchRight.xaml.vb` 里 Case 0/1 的
@@ -1786,8 +1786,8 @@ fun PclHomeRight(nav: PclNavController) {
     // 给一个明确的加载态，而不是先闪一下默认主页再跳回来。
     if (!resolved) {
         PclContent {
-            PclCard(modifier = Modifier.fillMaxWidth(), title = "自定义主页") {
-                PclText(text = "正在加载自定义主页…", color = pclPalette.gray2)
+            PclCard(modifier = Modifier.fillMaxWidth(), title = "Customize homepage") {
+                PclText(text = "Loading custom homepage...", color = pclPalette.gray2)
             }
             com.zalith.pcl.ui.pcl2.components.PclBottomSpacer()
         }
@@ -1801,31 +1801,31 @@ fun PclHomeRight(nav: PclNavController) {
             onEvent = { type, data ->
                 // 主页里的内部按钮（PCL 的 EventType）：能在手机上做的就做，做不了的给明确提示。
                 when {
-                    type.contains("刷新") -> reloadToken++
-                    // 教程：`EventType="弹出窗口"`，EventData 格式是「标题|内容」。
-                    type.contains("弹出窗口") -> {
+                    type.contains("refresh") -> reloadToken++
+                    // 教程：`EventType="pop up"`，EventData 格式是「标题|内容」。
+                    type.contains("pop up") -> {
                         val parts = data.split("|", limit = 2)
-                        homeDialog = parts[0].ifBlank { "提示" } to (parts.getOrNull(1) ?: "")
+                        homeDialog = parts[0].ifBlank { "hint" } to (parts.getOrNull(1) ?: "")
                     }
-                    // 教程：`EventType="复制文本"`，把 EventData 放进剪贴板。
-                    type.contains("复制文本") -> {
+                    // 教程：`EventType="copy text"`，把 EventData 放进剪贴板。
+                    type.contains("copy text") -> {
                         runCatching {
                             val cm = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE)
                                     as android.content.ClipboardManager
-                            cm.setPrimaryClip(android.content.ClipData.newPlainText("PCL 主页", data))
+                            cm.setPrimaryClip(android.content.ClipData.newPlainText("PCL Home Page", data))
                         }.onSuccess {
-                            PclHintHost.push("已复制到剪贴板。", PclHintTheme.Green)
+                            PclHintHost.push("Copied to clipboard.", PclHintTheme.Green)
                         }.onFailure {
-                            PclHintHost.push("复制失败。", PclHintTheme.Red)
+                            PclHintHost.push("Copy failed.", PclHintTheme.Red)
                         }
                     }
-                    type.contains("启动游戏") -> {
+                    type.contains("Start the game") -> {
                         // EventData 是版本名（如 "26.4-snapshot-5"）。找到它、切为当前版本、直接启动。
                         val target = runtime.versions.value
                             .firstOrNull { it.getVersionName() == data }
                         if (target == null) {
                             PclHintHost.push(
-                                "没有找到版本「$data」，请先在「下载」页安装该版本。",
+                                "The version \"$data\" was not found. Please install the version on the \"Download\" page first.",
                                 PclHintTheme.Red,
                             )
                         } else {
@@ -1835,7 +1835,7 @@ fun PclHomeRight(nav: PclNavController) {
                             runtime.tryLaunch()
                         }
                     }
-                    type.contains("下载") && data.startsWith("http", true) ->
+                    type.contains("download") && data.startsWith("http", true) ->
                         runCatching {
                             context.startActivity(
                                 android.content.Intent(
@@ -1844,9 +1844,9 @@ fun PclHomeRight(nav: PclNavController) {
                                 )
                             )
                         }.onFailure {
-                            PclHintHost.push("无法打开下载链接。", PclHintTheme.Red)
+                            PclHintHost.push("Unable to open download link.", PclHintTheme.Red)
                         }
-                    type.contains("打开网页") && data.startsWith("http", true) ->
+                    type.contains("Open web page") && data.startsWith("http", true) ->
                         runCatching {
                             context.startActivity(
                                 android.content.Intent(
@@ -1856,7 +1856,7 @@ fun PclHomeRight(nav: PclNavController) {
                             )
                         }
                     type.isNotBlank() ->
-                        PclHintHost.push("主页动作「$type」暂不支持。", PclHintTheme.Blue)
+                        PclHintHost.push("Home page action \"$type\" is not supported yet.", PclHintTheme.Blue)
                 }
             },
         )
@@ -1889,7 +1889,7 @@ fun PclHomeRight(nav: PclNavController) {
         var hintClosed by remember { mutableStateOf(false) }
         if (!hintClosed) {
             PclHint(
-                text = "Minecraft 已安装的版本会显示在左侧；未登录时可以先用「离线账户」启动。",
+                text = "The installed version of Minecraft will be displayed on the left; you can start it with an \"offline account\" if you are not logged in.",
                 theme = PclHintTheme.Blue,
                 onClose = { hintClosed = true },
             )
@@ -1901,7 +1901,7 @@ fun PclHomeRight(nav: PclNavController) {
         val homeHint = rememberRemoteText("hint")
         if (homeHint.isNotBlank()) {
             PclCard(modifier = Modifier.fillMaxWidth(),
-                title = "你知道吗？",
+                title = "Did you know?",
                 contentPadding = PaddingValues(start = 25.dp, top = 40.dp, end = 23.dp, bottom = 15.dp),
             ) {
                 PclText(text = homeHint)
@@ -1921,16 +1921,16 @@ fun PclHomeRight(nav: PclNavController) {
                 ) {
                     PclText(
                         text = when {
-                            isLaunching -> "启动中…（下方为 JVM 实时日志）"
-                            shownLines.isEmpty() -> "暂无日志，启动一次游戏后这里会显示日志内容。"
-                            else -> "上次启动日志（${shownLines.size} 行）"
+                            isLaunching -> "Starting...(JVM real-time log below)"
+                            shownLines.isEmpty() -> "There is no log yet. The log content will be displayed here after starting the game."
+                            else -> "Last boot log (${shownLines.size} line)"
                         },
                         color = p.gray3,
                         fontSize = 12,
                         modifier = Modifier.weight(1f),
                     )
                     PclTextButton(
-                        text = "清空",
+                        text = "Clear",
                         onClick = {
                             runtime.clearLog()
                             // 只清 buffer 是不够的：liveLog 一空，shownLines 立刻回退到
@@ -1987,7 +1987,7 @@ private fun PclLocalPresetHome(
         if (text.isNotBlank()) {
             PclCard(
                 modifier = Modifier.fillMaxWidth(),
-                title = if (isEcho) "回声洞" else "你知道吗？",
+                title = if (isEcho) "echo cave" else "Did you know?",
                 contentPadding = PaddingValues(start = 25.dp, top = 40.dp, end = 23.dp, bottom = 15.dp),
             ) {
                 PclText(

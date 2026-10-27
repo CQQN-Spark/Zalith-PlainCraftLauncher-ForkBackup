@@ -88,9 +88,9 @@ fun PclExternalImportHost(runtime: PclRuntime) {
                     else -> {
                         // `auto` 入口拿到的是通配类型，认不出来就明确告诉用户，
                         // 别再「跳个界面就没动静」
-                        val name = displayNameOf(context, req.uri) ?: "这个文件"
+                        val name = displayNameOf(context, req.uri) ?: "this file"
                         PclHintHost.push(
-                            "「$name」不是启动器能识别的类型（支持 .json 键位布局与 .zip/.mrpack 整合包）。",
+                            "\"$name\" is not a type recognized by the launcher (supports .json key layout and .zip/.mrpack integration package).",
                             PclHintTheme.Yellow
                         )
                         // 类型常量留个引用，避免 when 分支被 lint 当成死代码
@@ -102,7 +102,7 @@ fun PclExternalImportHost(runtime: PclRuntime) {
 
     importer?.let { imp ->
         PclTitledTaskDialog(
-            title = "正在导入整合包",
+            title = "Importing integration package",
             tasks = imp.taskFlow,
             // 与资源页那张弹窗同规矩：取消必须真的停掉任务流，而不是只把弹窗藏起来。
             onCancel = {
@@ -116,7 +116,7 @@ fun PclExternalImportHost(runtime: PclRuntime) {
 
     controlError?.let { message ->
         PclNoticeDialog(
-            title = "键位布局导入失败",
+            title = "Key layout import failed",
             content = message,
             onDismiss = { controlError = null },
         )
@@ -173,16 +173,16 @@ private fun startModpackImport(
             // 分享进来的整合包同样先问版本名（默认 = 整合包自己的名字），
             // 与版本页那条链共用 `pclAskVersionName` 的默认值/避让规则。
             waitForVersionName = { packName ->
-                pclAskVersionName(packName, title = "设置版本名称")
+                pclAskVersionName(packName, title = "Set version name")
             },
             waitForConfirmMobileData = { true },
         )
     }.onFailure {
-        runtime.submitErrorText("整合包导入失败", modpackImportErrorText(it))
+        runtime.submitErrorText("Integration package import failed", modpackImportErrorText(it))
     }.getOrNull() ?: return null
 
-    val importId = runtime.trackModpackImport("从分享导入整合包", importer = newImporter)
-    PclHintHost.push("开始导入分享过来的整合包。", PclHintTheme.Blue)
+    val importId = runtime.trackModpackImport("Import integration package from share", importer = newImporter)
+    PclHintHost.push("Start importing the shared integration package.", PclHintTheme.Blue)
 
     runtime.backgroundScope.launch {
         // `ModpackImporter` 共用写死的 `cache/temp_modpack`，两个整合包同时装必然互相踩，
@@ -193,10 +193,10 @@ private fun startModpackImport(
             if (!runtime.isModpackImportTracked(importId)) return@withLock
             newImporter.startImport(
                 isRunning = {
-                    PclHintHost.push("已经有一个整合包在导入了，请等它完成。", PclHintTheme.Yellow)
+                    PclHintHost.push("There is already a integration package being imported, please wait for it to complete.", PclHintTheme.Yellow)
                 },
                 onFinished = { name ->
-                    PclHintHost.push("整合包「$name」安装完成。", PclHintTheme.Green)
+                    PclHintHost.push("The integration package \"$name\" is installed.", PclHintTheme.Green)
                     runtime.clearModpackImport(importId)
                     runtime.refreshVersions()
                 },
@@ -214,7 +214,7 @@ private fun startModpackImport(
                         if (pclDiscardIncompleteVersion(newImporter.resolvedVersionNameOrNull())) {
                             runtime.refreshVersions()
                         }
-                        runtime.submitErrorText("整合包导入失败", modpackImportErrorText(th))
+                        runtime.submitErrorText("Integration package import failed", modpackImportErrorText(th))
                     }
                 },
             )
@@ -228,32 +228,32 @@ private fun startModpackImport(
 /** 导入一个键位（控制布局）JSON，返回失败原因（`null` 表示成功）。 */
 private suspend fun importControlLayout(context: Context, uri: Uri): String? {
     // 先给个即时反馈：导入到落盘之间有一小段耗时，什么都不显示会被当成「点了没反应」
-    PclHintHost.push("正在导入键位布局…", PclHintTheme.Blue)
+    PclHintHost.push("Importing key layout...", PclHintTheme.Blue)
     val error = withContext(Dispatchers.IO) {
         runCatching {
             val stream = openDocumentStream(context, uri)
-                ?: return@runCatching "读不到这个键位文件，可能是文件管理器没给读取权限。"
+                ?: return@runCatching "If you cannot read this key file, it may be that the file manager does not give you read permission."
             var failure: String? = null
             stream.use {
                 ControlManager.importControl(
                     inputStream = it,
                     // `ControlManager` 已经把原因翻成中文并按情况分类了，直接用
                     onSerializationError = { e ->
-                        failure = e.message ?: "这个文件不是启动器能识别的键位布局。"
+                        failure = e.message ?: "This file is not a key layout recognized by the launcher."
                     },
-                    catchedError = { e -> failure = "键位导入失败：${e.message}" },
+                    catchedError = { e -> failure = "Key import failed: ${e.message}" },
                 )
             }
             // 列表要重新扫一遍，版本设置里的「控制布局」下拉才会出现新导入的那份
             ControlManager.refresh()
             failure
-        }.getOrElse { "键位导入失败：${it.message}" }
+        }.getOrElse { "Key import failed: ${it.message}" }
     }
     return if (error == null) {
-        PclHintHost.push("键位布局已导入，在「控制布局」里就能选到它。", PclHintTheme.Green)
+        PclHintHost.push("The key layout has been imported and can be selected in \"Control Layout\".", PclHintTheme.Green)
         null
     } else {
-        Logger.warning("PclExternalImport", "键位布局导入失败：$uri / $error")
+        Logger.warning("PclExternalImport", "Key layout import failed: $uri / $error")
         error
     }
 }

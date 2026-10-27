@@ -125,11 +125,11 @@ fun Context.writeLocalFile(
     // ——「导出整合包失败」就是这么来的（导出页用的是 CreateDocument）。
     //
     // 文档 URI 指向的就是要写的那张文件（系统已经把文件建好了），不需要再 createDocument，
-    // 直接覆盖写。先试 "wt"（写 + 截断），个别 provider 不认再退回 "w"。
+    // 直接覆盖写。先试 "wt"(write + truncate), individual providers will not recognize it and then return it."w"。
     if (!DocumentsContract.isTreeUri(outputUri)) {
         val stream = runCatching { contentResolver.openOutputStream(outputUri, "wt") }.getOrNull()
             ?: runCatching { contentResolver.openOutputStream(outputUri, "w") }.getOrNull()
-            ?: throw IOException("无法写入目标文件，请换一个保存位置重试：$outputUri")
+            ?: throw IOException("Unable to write to the target file, please change the save location and try again: $outputUri")
         stream.use { FileUtils.copyFile(inputFile, it) }
         return
     }

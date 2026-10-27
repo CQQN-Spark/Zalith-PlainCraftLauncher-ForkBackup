@@ -136,7 +136,7 @@ class GameHandler(
                         set(graphicsOption, graphicsApi.option)
                         if (leftoverVulkan) {
                             appendInfo(
-                                "options.txt 中的图形后端为 $leftover，已按「自动选择（OpenGL）」改回 ${graphicsApi.option}"
+                                "The graphics backend in options.txt is $leftover and has been changed back to ${graphicsApi.option} by pressing \"Auto-Select (OpenGL)\""
                             )
                         }
                     }

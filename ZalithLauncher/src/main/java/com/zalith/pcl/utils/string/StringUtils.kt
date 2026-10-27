@@ -184,7 +184,7 @@ fun String?.containsChinese(): Boolean {
         return false
     }
 
-    val pattern = Pattern.compile("[一-龥|！，。（）《》“”？：；【】]")
+    val pattern = Pattern.compile("[一-饥|! ")
     val matcher = pattern.matcher(this)
     return matcher.find()
 }

@@ -259,14 +259,14 @@ private fun ExtraSlider(
 
 /** 控制设置里 8 种虚拟鼠标指针（顺序与原生一致）。 */
 private val pointerShapes = listOf(
-    CursorShape.Arrow to "虚拟鼠标指针（默认）",
-    CursorShape.Hand to "虚拟鼠标指针（手形）",
-    CursorShape.IBeam to "虚拟鼠标指针（输入光标）",
-    CursorShape.CrossHair to "虚拟鼠标指针（十字）",
-    CursorShape.ResizeNS to "虚拟鼠标指针（上下）",
-    CursorShape.ResizeEW to "虚拟鼠标指针（左右）",
-    CursorShape.ResizeAll to "虚拟鼠标指针（移动）",
-    CursorShape.NotAllowed to "虚拟鼠标指针（禁止）",
+    CursorShape.Arrow to "Virtual mouse pointer (default)",
+    CursorShape.Hand to "Virtual mouse pointer (hand shape)",
+    CursorShape.IBeam to "Virtual mouse pointer (input cursor)",
+    CursorShape.CrossHair to "Virtual mouse pointer (cross)",
+    CursorShape.ResizeNS to "Virtual mouse pointer (up and down)",
+    CursorShape.ResizeEW to "Virtual mouse pointer (left and right)",
+    CursorShape.ResizeAll to "Virtual mouse pointer (movement)",
+    CursorShape.NotAllowed to "Virtual mouse pointer (disabled)",
 )
 
 /**
@@ -315,22 +315,22 @@ fun PclSetupControlPage() {
 
     PclContent {
         // ---- 实体鼠标
-        PclCard(modifier = Modifier.fillMaxWidth(), title = "实体鼠标") {
+        PclCard(modifier = Modifier.fillMaxWidth(), title = "physical mouse") {
             Column {
                 ExtraCheck(
-                    text = "实体鼠标控制",
+                    text = "Physical mouse control",
                     unit = AllSettings.physicalMouseMode,
-                    summary = "连接实体鼠标时，是否禁用虚拟鼠标指针，直接使用系统鼠标指针进行操控。",
+                    summary = "When connecting a physical mouse, whether to disable the virtual mouse pointer and directly use the system mouse pointer for control.",
                 )
                 Spacer(Modifier.height(8.dp))
-                ExtraRow("呼出输入法按键") {
+                ExtraRow("Call out input method keys") {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         val code = AllSettings.physicalKeyImeCode.state
                         PclButton(
                             text = when {
-                                capturing -> "请按下要绑定的按键…"
-                                code == null -> "点击绑定按键"
-                                else -> "已绑定按键：${keyCodeName(code)}"
+                                capturing -> "Please press the key you want to bind..."
+                                code == null -> "Click the bind button"
+                                else -> "Bound keys: ${keyCodeName(code)}"
                             },
                             colorState = if (capturing) PclColorState.Highlight else PclColorState.Normal,
                             onClick = { capturing = !capturing },
@@ -338,7 +338,7 @@ fun PclSetupControlPage() {
                         if (code != null && !capturing) {
                             Spacer(Modifier.width(8.dp))
                             PclButton(
-                                text = "清除",
+                                text = "Clear",
                                 colorState = PclColorState.Red,
                                 onClick = { AllSettings.physicalKeyImeCode.save(null) },
                             )
@@ -347,9 +347,9 @@ fun PclSetupControlPage() {
                 }
                 Spacer(Modifier.height(6.dp))
                 PclHint(
-                    text = "绑定后，游戏内按下该按键即可呼出输入法。" +
-                            "若设备把实体鼠标右键识别为“返回”、中键识别为“回到桌面”，" +
-                            "可进入系统设置 > 开发者选项开启“禁用权限监控”，大概率能解决。",
+                    text = "After binding, pressing this button in the game can call up the input method." +
+                            "If the device recognizes the right button of the physical mouse as \"Return\" and the middle button as \"Return to Desktop\"," +
+                            "You can go to System Settings > Developer Options to turn on \"Disable Permission Monitoring\", which will most likely solve the problem.",
                     theme = PclHintTheme.Blue,
                 )
             }
@@ -358,18 +358,18 @@ fun PclSetupControlPage() {
         Spacer(Modifier.height(PclDimens.cardGap))
 
         // ---- 虚拟鼠标指针
-        PclCard(modifier = Modifier.fillMaxWidth(), title = "虚拟鼠标指针") {
+        PclCard(modifier = Modifier.fillMaxWidth(), title = "virtual mouse pointer") {
             Column {
                 ExtraSlider(
-                    label = "虚拟鼠标大小（Dp）",
+                    label = "Virtual mouse size (Dp)",
                     unit = AllSettings.mouseSize,
                     min = 5,
                     max = 50,
                 )
                 Spacer(Modifier.height(4.dp))
                 PclHint(
-                    text = "点击任意一项可以把它替换成自己的图片；「设置热点」用来指定图片上" +
-                            "真正代表指针位置的那一点；「重置」恢复成启动器自带的图片。",
+                    text = "Click on any item to replace it with your own picture; \"Set Hotspot\" is used to specify the image" +
+                            "The point that truly represents the pointer position; \"Reset\" returns it to the image that comes with the launcher.",
                     theme = PclHintTheme.Blue,
                 )
                 Spacer(Modifier.height(8.dp))
@@ -382,44 +382,44 @@ fun PclSetupControlPage() {
         Spacer(Modifier.height(PclDimens.cardGap))
 
         // ---- 虚拟鼠标
-        PclCard(modifier = Modifier.fillMaxWidth(), title = "虚拟鼠标") {
+        PclCard(modifier = Modifier.fillMaxWidth(), title = "virtual mouse") {
             Column {
                 ExtraCheck(
-                    text = "隐藏虚拟鼠标",
+                    text = "Hide virtual mouse",
                     unit = AllSettings.hideMouse,
-                    summary = "一些场景下您可能希望隐藏虚拟鼠标；该设置不会影响实体鼠标控制、滑动控制。",
+                    summary = "In some scenarios you may want to hide the virtual mouse; this setting will not affect physical mouse control or sliding control.",
                 )
                 ExtraCheck(
-                    text = "触控板式操作",
+                    text = "Touchpad operation",
                     unit = AllSettings.enableMouseClick,
-                    summary = "点击屏幕视为鼠标左键，长按视为长按左键操作；" +
-                            "该设置不会影响实体鼠标控制、点击控制。",
+                    summary = "Clicking on the screen is regarded as the left mouse button, and long pressing is regarded as a long press of the left button;" +
+                            "This setting will not affect physical mouse control and click control.",
                 )
                 Spacer(Modifier.height(6.dp))
                 ExtraCombo(
-                    label = "虚拟鼠标控制模式",
+                    label = "Virtual mouse control mode",
                     items = MouseControlMode.entries.toList(),
                     selected = AllSettings.mouseControlMode.state,
                     labelOf = { context.getString(it.nameRes) },
                     onSelect = { AllSettings.mouseControlMode.save(it) },
                 )
-                ExtraSummary("选择虚拟鼠标的操作方式：滑动屏幕移动光标，或点击屏幕指定位置。")
+                ExtraSummary("Choose how the virtual mouse operates: slide the screen to move the cursor, or click on the screen to specify a location.")
                 ExtraSlider(
-                    label = "虚拟鼠标灵敏度",
+                    label = "Virtual mouse sensitivity",
                     unit = AllSettings.cursorSensitivity,
                     min = 25,
                     max = 300,
                     suffix = "%",
                 )
                 ExtraSlider(
-                    label = "抓获鼠标滑动灵敏度",
+                    label = "Capture mouse sliding sensitivity",
                     unit = AllSettings.mouseCaptureSensitivity,
                     min = 25,
                     max = 300,
                     suffix = "%",
                 )
                 ExtraSlider(
-                    label = "虚拟鼠标长按触发的延迟",
+                    label = "Delay triggered by virtual mouse long press",
                     unit = AllSettings.mouseLongPressDelay,
                     min = 100,
                     max = 1000,
@@ -431,32 +431,32 @@ fun PclSetupControlPage() {
         Spacer(Modifier.height(PclDimens.cardGap))
 
         // ---- 手势
-        PclCard(modifier = Modifier.fillMaxWidth(), title = "手势") {
+        PclCard(modifier = Modifier.fillMaxWidth(), title = "gesture") {
             Column {
                 ExtraCheck(
-                    text = "手势控制",
+                    text = "gesture control",
                     unit = AllSettings.gestureControl,
-                    summary = "支持通过点击、长按以及双指滑动滚动等手势在游戏中进行交互，类似基岩版。",
+                    summary = "Supports interaction in the game through gestures such as clicks, long presses, and two-finger slide scrolling, similar to Bedrock Edition.",
                 )
                 Spacer(Modifier.height(6.dp))
                 ExtraCombo(
-                    label = "点击触发的操作类型",
+                    label = "Action type triggered by click",
                     items = GestureActionType.entries.toList(),
                     selected = AllSettings.gestureTapMouseAction.state,
                     labelOf = { context.getString(it.nameRes) },
                     onSelect = { AllSettings.gestureTapMouseAction.save(it) },
                 )
-                ExtraSummary("选择在轻触屏幕时应触发的鼠标按键操作。")
+                ExtraSummary("Select the mouse button action that should be triggered when the screen is tapped.")
                 ExtraCombo(
-                    label = "长按触发的操作类型",
+                    label = "Operation type triggered by long press",
                     items = GestureActionType.entries.toList(),
                     selected = AllSettings.gestureLongPressMouseAction.state,
                     labelOf = { context.getString(it.nameRes) },
                     onSelect = { AllSettings.gestureLongPressMouseAction.save(it) },
                 )
-                ExtraSummary("选择在长按屏幕时应触发的鼠标按键操作。")
+                ExtraSummary("Select the mouse button action that should be triggered when long pressing the screen.")
                 ExtraSlider(
-                    label = "手势长按触发的延迟",
+                    label = "Delay triggered by gesture long press",
                     unit = AllSettings.gestureLongPressDelay,
                     min = 100,
                     max = 1000,
@@ -468,22 +468,22 @@ fun PclSetupControlPage() {
         Spacer(Modifier.height(PclDimens.cardGap))
 
         // ---- 陀螺仪
-        PclCard(modifier = Modifier.fillMaxWidth(), title = "陀螺仪") {
+        PclCard(modifier = Modifier.fillMaxWidth(), title = "gyroscope") {
             Column {
                 ExtraCheck(
-                    text = "陀螺仪控制",
+                    text = "Gyro control",
                     unit = AllSettings.gyroscopeControl,
-                    summary = "在游戏中通过转动设备来控制视角。",
+                    summary = "Control the perspective in the game by turning your device.",
                     enabled = gyroscopeReady,
                 )
                 if (!gyroscopeReady) {
                     Spacer(Modifier.height(6.dp))
-                    PclHint(text = "未在当前设备上检测到陀螺仪，本项设置不会生效。", theme = PclHintTheme.Red)
+                    PclHint(text = "If the gyroscope is not detected on the current device, this setting will not take effect.", theme = PclHintTheme.Red)
                 }
                 val on = gyroscopeReady && AllSettings.gyroscopeControl.state
                 Spacer(Modifier.height(6.dp))
                 ExtraSlider(
-                    label = "陀螺仪控制灵敏度",
+                    label = "Gyro control sensitivity",
                     unit = AllSettings.gyroscopeSensitivity,
                     min = 25,
                     max = 300,
@@ -491,35 +491,35 @@ fun PclSetupControlPage() {
                     enabled = on,
                 )
                 ExtraSlider(
-                    label = "陀螺仪采样率",
+                    label = "Gyroscope sampling rate",
                     unit = AllSettings.gyroscopeSampleRate,
                     min = 5,
                     max = 50,
                     enabled = on,
                 )
                 ExtraCheck(
-                    text = "陀螺仪数值平滑",
+                    text = "Gyroscope numerical smoothing",
                     unit = AllSettings.gyroscopeSmoothing,
-                    summary = "平滑陀螺仪监测到的数值，减少抖动，但会增加延迟。",
+                    summary = "Smoothing the values ​​detected by the gyroscope reduces jitter but increases latency.",
                     enabled = on,
                 )
                 ExtraSlider(
-                    label = "平滑处理窗口大小",
+                    label = "Smoothing window size",
                     unit = AllSettings.gyroscopeSmoothingWindow,
                     min = 2,
                     max = 10,
                     enabled = on && AllSettings.gyroscopeSmoothing.state,
                 )
                 ExtraCheck(
-                    text = "反转 X 轴",
+                    text = "Invert X-axis",
                     unit = AllSettings.gyroscopeInvertX,
-                    summary = "启用后，左右转动设备会反向控制视角。",
+                    summary = "When enabled, turning the device left or right will control the viewing angle in reverse.",
                     enabled = on,
                 )
                 ExtraCheck(
-                    text = "反转 Y 轴",
+                    text = "Invert Y axis",
                     unit = AllSettings.gyroscopeInvertY,
-                    summary = "启用后，上下转动设备会反向控制视角。",
+                    summary = "When enabled, turning the device up or down will control the viewing angle in reverse.",
                     enabled = on,
                 )
             }
@@ -553,13 +553,13 @@ private fun PclPointerRow(title: String, shape: CursorShape) {
             runCatching {
                 withContext(Dispatchers.IO) { context.copyLocalFile(uri, file) }
                 if (!withContext(Dispatchers.IO) { file.isImageFile() }) {
-                    error("所选文件不是可识别的图片。")
+                    error("The selected file is not a recognized image.")
                 }
             }.onSuccess {
                 refresh++
             }.onFailure { th ->
                 withContext(Dispatchers.IO) { file.delete() }
-                PclHintHost.push("替换指针图片失败：${th.message ?: "未知错误"}", PclHintTheme.Red)
+                PclHintHost.push("Failed to replace pointer image: ${th.message ?:"未知错误"}", PclHintTheme.Red)
             }
         }
     }
@@ -567,7 +567,7 @@ private fun PclPointerRow(title: String, shape: CursorShape) {
     PclListItem(
         title = title,
         modifier = Modifier.fillMaxWidth(),
-        info = if (exists) "已使用自定义图片" else "启动器自带图片",
+        info = if (exists) "Custom image used" else "Launcher comes with pictures",
         logoContent = {
             Box(modifier = Modifier.align(Alignment.Center)) {
                 MousePointer(
@@ -585,14 +585,14 @@ private fun PclPointerRow(title: String, shape: CursorShape) {
             add(
                 PclListItemButton(
                     logo = PclIcons.replaceImage,
-                    tooltip = "更换图片",
+                    tooltip = "Change picture",
                     onClick = { picker.launch(Unit) },
                 )
             )
             add(
                 PclListItemButton(
                     logo = PclIcons.hotspot,
-                    tooltip = "设置热点",
+                    tooltip = "Set up hotspot",
                     onClick = { op = PointerOp.Hotspot },
                 )
             )
@@ -600,7 +600,7 @@ private fun PclPointerRow(title: String, shape: CursorShape) {
                 add(
                     PclListItemButton(
                         logo = PclIcons.restartAlt,
-                        tooltip = "重置为自带图片",
+                        tooltip = "Reset to own image",
                         onClick = { op = PointerOp.PreReset },
                     )
                 )
@@ -613,8 +613,8 @@ private fun PclPointerRow(title: String, shape: CursorShape) {
         PointerOp.None -> {}
 
         PointerOp.PreReset -> PclConfirmDialog(
-            title = "重置",
-            content = "您确定要重置虚拟鼠标指针的图片吗？",
+            title = "reset",
+            content = "Are you sure you want to reset the virtual mouse pointer image?",
             // ⚠️ 不能照抄原生的写法。
             //
             // 原生 `MousePointerOperation` 是「确定 → 切成中间态 Reset → 由 Reset 分支
@@ -661,12 +661,12 @@ private fun hotspotUnitOf(shape: CursorShape) = when (shape) {
 private fun keyCodeName(code: Int): String {
     val raw = android.view.KeyEvent.keyCodeToString(code).removePrefix("KEYCODE_")
     return when (raw) {
-        "VOLUME_UP" -> "音量键（上）"
-        "VOLUME_DOWN" -> "音量键（下）"
-        "MENU" -> "菜单键"
-        "BACK" -> "返回键"
-        "SPACE" -> "空格"
-        "ENTER" -> "回车"
+        "VOLUME_UP" -> "Volume keys (upper)"
+        "VOLUME_DOWN" -> "Volume keys (lower)"
+        "MENU" -> "Menu key"
+        "BACK" -> "return key"
+        "SPACE" -> "space"
+        "ENTER" -> "Enter"
         "TAB" -> "Tab"
         else -> raw.replace('_', ' ')
     }
@@ -715,12 +715,12 @@ fun PclSetupGamepadPage() {
 
     PclContent {
         // ---- 手柄控制
-        PclCard(modifier = Modifier.fillMaxWidth(), title = "手柄控制") {
+        PclCard(modifier = Modifier.fillMaxWidth(), title = "joystick control") {
             Column {
                 ExtraCheck(
-                    text = "启用手柄控制",
+                    text = "Enable gamepad controls",
                     unit = AllSettings.gamepadControl,
-                    summary = "若您的其他外设被误识别为手柄，请关闭此选项。",
+                    summary = "If your other peripherals are mistakenly recognized as controllers, please turn off this option.",
                 )
             }
         }
@@ -728,10 +728,10 @@ fun PclSetupGamepadPage() {
         Spacer(Modifier.height(PclDimens.cardGap))
 
         // ---- 输入模式
-        PclCard(modifier = Modifier.fillMaxWidth(), title = "输入模式") {
+        PclCard(modifier = Modifier.fillMaxWidth(), title = "input mode") {
             Column {
                 ExtraCombo(
-                    label = "手柄输入模式",
+                    label = "Gamepad input mode",
                     items = GamepadInputMode.entries.toList(),
                     selected = AllSettings.gamepadInputMode.state,
                     labelOf = { context.getString(it.titleRes) },
@@ -739,9 +739,9 @@ fun PclSetupGamepadPage() {
                 )
                 ExtraSummary(context.getString(AllSettings.gamepadInputMode.state.summaryRes))
                 PclHint(
-                    text = "切换输入模式后需要重新启动游戏才会生效。" +
-                            "映射模式适用于不支持手柄的游戏；SDL 直通把原始手柄输入直接交给游戏" +
-                            "（Minecraft 26.3+ 原生手柄），此时按键映射不再生效。",
+                    text = "After switching the input mode, you need to restart the game for it to take effect." +
+                            "Mapping mode is suitable for games that do not support controllers; SDL passthrough delivers raw controller input directly to the game" +
+                            "(Minecraft 26.3+ native controller), the key mapping will no longer take effect at this time.",
                     theme = PclHintTheme.Blue,
                 )
             }
@@ -750,10 +750,10 @@ fun PclSetupGamepadPage() {
         Spacer(Modifier.height(PclDimens.cardGap))
 
         // ---- 摇杆
-        PclCard(modifier = Modifier.fillMaxWidth(), title = "摇杆") {
+        PclCard(modifier = Modifier.fillMaxWidth(), title = "joystick") {
             Column {
                 ExtraCombo(
-                    label = "摇杆操作模式",
+                    label = "Joystick operation mode",
                     items = JoystickMode.entries.toList(),
                     selected = AllSettings.joystickControlMode.state,
                     labelOf = { context.getString(it.titleRes) },
@@ -761,21 +761,21 @@ fun PclSetupGamepadPage() {
                 )
                 ExtraSummary(context.getString(AllSettings.joystickControlMode.state.summaryRes))
                 ExtraSlider(
-                    label = "手柄死区缩放",
+                    label = "Controller dead zone scaling",
                     unit = AllSettings.gamepadDeadZoneScale,
                     min = 50,
                     max = 200,
                     suffix = "%",
                 )
                 ExtraSlider(
-                    label = "摇杆指针灵敏度",
+                    label = "Joystick pointer sensitivity",
                     unit = AllSettings.gamepadCursorSensitivity,
                     min = 25,
                     max = 300,
                     suffix = "%",
                 )
                 ExtraSlider(
-                    label = "摇杆视角灵敏度",
+                    label = "Joystick viewing angle sensitivity",
                     unit = AllSettings.gamepadCameraSensitivity,
                     min = 25,
                     max = 300,
@@ -787,10 +787,10 @@ fun PclSetupGamepadPage() {
         Spacer(Modifier.height(PclDimens.cardGap))
 
         // ---- 按键映射
-        PclCard(modifier = Modifier.fillMaxWidth(), title = "按键映射") {
+        PclCard(modifier = Modifier.fillMaxWidth(), title = "Key mapping") {
             Column {
                 ExtraCombo(
-                    label = "手柄映射配置",
+                    label = "Controller mapping configuration",
                     items = configs,
                     selected = current.takeIf { it in configs },
                     labelOf = { it },
@@ -802,26 +802,26 @@ fun PclSetupGamepadPage() {
                     },
                 )
                 if (configs.isEmpty()) {
-                    ExtraSummary("还没有创建任何映射配置，请先新建一份。")
+                    ExtraSummary("No mapping configuration has been created yet, please create a new one first.")
                 }
-                ExtraRow("管理配置") {
+                ExtraRow("Management configuration") {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         PclButton(
-                            text = "新建配置",
+                            text = "New configuration",
                             enabled = remapEnabled,
                             onClick = { newConfigDialog = true },
                         )
                         PclButton(
-                            text = "删除当前配置",
+                            text = "Delete current configuration",
                             enabled = remapEnabled && current in configs,
                             colorState = PclColorState.Red,
                             onClick = { deleteConfigTarget = current },
                         )
                     }
                 }
-                ExtraRow("按键映射") {
+                ExtraRow("Key mapping") {
                     PclButton(
-                        text = "重置手柄按键映射",
+                        text = "Reset controller key mapping",
                         enabled = remapEnabled,
                         colorState = PclColorState.Red,
                         onClick = { confirmReset = true },
@@ -829,9 +829,9 @@ fun PclSetupGamepadPage() {
                 }
                 Spacer(Modifier.height(6.dp))
                 PclHint(
-                    text = "按键映射可帮助更好地适配您的手柄：启动器会请您依次按下手柄的关键按键，" +
-                            "把不同品牌手柄的键值对齐成同一套。若先前设置不正确，" +
-                            "可重置后重新启动游戏再绑定一次。",
+                    text = "Button mapping can help better adapt to your controller: the launcher will ask you to press the key buttons of the controller in sequence." +
+                            "Align the key values ​​of different brands of controllers into the same set. " +
+                            "You can reset and restart the game and bind again.",
                     theme = PclHintTheme.Blue,
                 )
             }
@@ -844,12 +844,12 @@ fun PclSetupGamepadPage() {
         // 然后一个手柄按键一行，点开 `GamepadBindingKeyboard` 挑要触发的键盘/鼠标操作。
         // 手柄按键 → 键盘按键的映射表存在 `GamepadMappingList` 里（`targetsInGame` / `targetsInMenu`，
         // 落盘在 keyMappingListMMKV），和原生读写的完全是同一份数据。
-        PclCard(modifier = Modifier.fillMaxWidth(), title = "按键绑定") {
+        PclCard(modifier = Modifier.fillMaxWidth(), title = "Keybindings") {
             Column {
-                ExtraRow("作用范围") {
+                ExtraRow("Scope") {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         PclPillButton(
-                            text = "游戏内",
+                            text = "In game",
                             checked = editKeyInGame,
                             // `highlight = true` 不能省：`PclPillButton` 默认那套配色
                             // （白字 + 透明底）对应 `MyRadioButton.ColorType=White`，是给顶部**蓝色标题栏**
@@ -861,7 +861,7 @@ fun PclSetupGamepadPage() {
                             onClick = { editKeyInGame = true },
                         )
                         PclPillButton(
-                            text = "菜单内",
+                            text = "within menu",
                             checked = editKeyInGame.not(),
                             highlight = true,
                             enabled = remapEnabled,
@@ -870,8 +870,8 @@ fun PclSetupGamepadPage() {
                     }
                 }
                 ExtraSummary(
-                    "点一行即可指定这个手柄按键要触发哪些键盘 / 鼠标操作；" +
-                            "行尾的重置按钮把这一项恢复成默认按键。"
+                    "Click a row to specify which keyboard/mouse operations this controller button should trigger;" +
+                            "The reset button at the end of the line returns this item to its default keystrokes."
                 )
                 Spacer(Modifier.height(4.dp))
 
@@ -894,7 +894,7 @@ fun PclSetupGamepadPage() {
 
                     PclListItem(
                         title = item.pclKeyDisplayName,
-                        info = if (names.isEmpty()) "未绑定任何键值" else "已绑定：$names",
+                        info = if (names.isEmpty()) "No key value is bound" else "Bound: $names",
                         logoContent = {
                             Image(
                                 modifier = Modifier.fillMaxSize(),
@@ -908,7 +908,7 @@ fun PclSetupGamepadPage() {
                         buttons = listOf(
                             PclListItemButton(
                                 logo = PclIcons.reset,
-                                tooltip = "重置",
+                                tooltip = "reset",
                                 // 与左栏「初始化本页设置」的刷新按钮同一个 LogoScale（PCL 源码里 0.9）。
                                 logoScale = 0.9f,
                                 onClick = {
@@ -929,12 +929,12 @@ fun PclSetupGamepadPage() {
 
     if (newConfigDialog) {
         PclInputDialog(
-            title = "创建手柄映射配置",
-            label = "配置名称",
+            title = "Create a controller mapping configuration",
+            label = "Configuration name",
             onConfirm = { name ->
                 gamepadViewModel.createNewConfig(
                     name = name,
-                    onContainsConfig = { PclHintHost.push("已有同名称的配置。", PclHintTheme.Red) },
+                    onContainsConfig = { PclHintHost.push("A configuration with the same name already exists.", PclHintTheme.Red) },
                     onFinished = { configToken++ },
                 )
             },
@@ -944,8 +944,8 @@ fun PclSetupGamepadPage() {
 
     deleteConfigTarget?.let { name ->
         PclConfirmDialog(
-            title = "删除配置",
-            content = "您确定要删除配置「$name」吗？",
+            title = "Delete configuration",
+            content = "Are you sure you want to delete the configuration \"$name\"?",
             danger = true,
             onConfirm = {
                 gamepadViewModel.deleteConfig(name) { configToken++ }
@@ -957,13 +957,13 @@ fun PclSetupGamepadPage() {
 
     if (confirmReset) {
         PclConfirmDialog(
-            title = "重置手柄按键映射",
-            content = "已绑定的手柄按键映射会被全部清除，之后重新进入游戏时" +
-                    "启动器会再引导您绑定一次。是否继续？",
+            title = "Reset controller key mapping",
+            content = "All bound controller key mappings will be cleared when you re-enter the game." +
+                    "The launcher will guide you to bind again. ",
             danger = true,
             onConfirm = {
                 remapperMMKV().clearAll()
-                PclHintHost.push("已重置所有手柄按键映射。", PclHintTheme.Blue)
+                PclHintHost.push("All controller key mappings have been reset.", PclHintTheme.Blue)
                 confirmReset = false
             },
             onDismiss = { confirmReset = false },
@@ -1007,22 +1007,22 @@ fun PclSetupGamepadPage() {
  */
 private val GamepadMap.pclKeyDisplayName: String
     get() = when (this) {
-        GamepadMap.ButtonA -> "A 键"
-        GamepadMap.ButtonB -> "B 键"
-        GamepadMap.ButtonX -> "X 键"
-        GamepadMap.ButtonY -> "Y 键"
-        GamepadMap.ButtonStart -> "Start（菜单）键"
-        GamepadMap.ButtonSelect -> "Select（视图）键"
-        GamepadMap.ButtonLB -> "LB 左肩键"
-        GamepadMap.ButtonRB -> "RB 右肩键"
-        GamepadMap.ButtonLT -> "LT 左扳机"
-        GamepadMap.ButtonRT -> "RT 右扳机"
-        GamepadMap.DPadUp -> "方向键 上"
-        GamepadMap.DPadLeft -> "方向键 左"
-        GamepadMap.DPadDown -> "方向键 下"
-        GamepadMap.DPadRight -> "方向键 右"
-        GamepadMap.StickLeftClick -> "左摇杆 按下"
-        GamepadMap.StickRightClick -> "右摇杆 按下"
+        GamepadMap.ButtonA -> "A key"
+        GamepadMap.ButtonB -> "B key"
+        GamepadMap.ButtonX -> "X key"
+        GamepadMap.ButtonY -> "Y key"
+        GamepadMap.ButtonStart -> "Start (menu) key"
+        GamepadMap.ButtonSelect -> "Select (view) key"
+        GamepadMap.ButtonLB -> "LB left shoulder button"
+        GamepadMap.ButtonRB -> "RB right shoulder button"
+        GamepadMap.ButtonLT -> "LT left trigger"
+        GamepadMap.ButtonRT -> "RT right trigger"
+        GamepadMap.DPadUp -> "Arrow keys up"
+        GamepadMap.DPadLeft -> "Arrow key left"
+        GamepadMap.DPadDown -> "Arrow keys down"
+        GamepadMap.DPadRight -> "Arrow key right"
+        GamepadMap.StickLeftClick -> "Left joystick press"
+        GamepadMap.StickRightClick -> "Right joystick press"
     }
 
 /* ============================================================================
@@ -1056,18 +1056,18 @@ fun PclSetupJavaPage() {
         if (uri == null) return@rememberLauncherForActivityResult
         val name = context.getFileName(uri)
         if (name.isNullOrBlank()) {
-            PclHintHost.push("无法读取所选文件的文件名。", PclHintTheme.Red)
+            PclHintHost.push("The filename of the selected file cannot be read.", PclHintTheme.Red)
             return@rememberLauncherForActivityResult
         }
         scope.launch {
             runCatching { name.checkExtensionOrThrow(listOf("xz")) }.onFailure {
-                PclHintHost.push("请选择 .xz 格式的 Java 运行库。", PclHintTheme.Red)
+                PclHintHost.push("Please select the Java runtime in .xz format.", PclHintTheme.Red)
                 return@launch
             }
             withContext(Dispatchers.IO) {
                 runCatching {
                     val stream = context.contentResolver.openInputStream(uri)
-                        ?: error("无法读取所选文件。")
+                        ?: error("The selected file cannot be read.")
                     RuntimesManager.installRuntime(
                         nativeLibDir = PathManager.DIR_NATIVE_LIB,
                         inputStream = stream,
@@ -1076,11 +1076,11 @@ fun PclSetupJavaPage() {
                 }.onSuccess {
                     withContext(Dispatchers.Main) {
                         token++
-                        PclHintHost.push("运行库「$name」导入完成。", PclHintTheme.Blue)
+                        PclHintHost.push("The import of runtime library \"$name\" is completed.", PclHintTheme.Blue)
                     }
                 }.onFailure { th ->
                     withContext(Dispatchers.Main) {
-                        PclHintHost.push("导入失败：${th.message ?: "未知错误"}", PclHintTheme.Red)
+                        PclHintHost.push("Import failed: ${th.message ?:"未知错误"}", PclHintTheme.Red)
                     }
                 }
             }
@@ -1095,22 +1095,22 @@ fun PclSetupJavaPage() {
 
     PclContent {
         // ---- Java 选择策略
-        PclCard(modifier = Modifier.fillMaxWidth(), title = "Java 选择") {
+        PclCard(modifier = Modifier.fillMaxWidth(), title = "Java selection") {
             Column {
                 ExtraCheck(
-                    text = "自动选择合适的 Java 环境",
+                    text = "Automatically select the appropriate Java environment",
                     unit = AllSettings.autoPickJavaRuntime,
-                    summary = "开启后启动游戏时会按游戏所需的 Java 版本自动挑选；" +
-                            "关闭后使用下方列表中选中的运行库。",
+                    summary = "When you start the game after turning it on, the Java version required by the game will be automatically selected;" +
+                            "After closing, use the runtime selected in the list below.",
                 )
                 Spacer(Modifier.height(6.dp))
                 PclHint(
                     text = if (autoPick) {
-                        "已开启自动选择，下方运行库列表仅供查看；取消勾选后可手动指定。"
+                        "Automatic selection has been turned on, and the runtime library list below is for viewing only; you can manually specify it after unchecking it."
                     } else {
-                        "当前选中：" +
+                        "Currently selected:" +
                                 (runtimes.firstOrNull { it.name == selected }?.name
-                                        ?: "未指定（按自动选择处理）")
+                                        ?: "Not specified (processed by automatic selection)")
                     },
                     theme = PclHintTheme.Blue,
                 )
@@ -1120,16 +1120,16 @@ fun PclSetupJavaPage() {
         Spacer(Modifier.height(PclDimens.cardGap))
 
         // ---- 运行库列表
-        PclCard(modifier = Modifier.fillMaxWidth(), title = "Java 运行库") {
+        PclCard(modifier = Modifier.fillMaxWidth(), title = "Java runtime") {
             Column {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     PclButton(
-                        text = "刷新",
+                        text = "refresh",
                         logo = PclIcons.refresh,
                         onClick = { token++ },
                     )
                     PclButton(
-                        text = "导入运行库（.xz）",
+                        text = "Import runtime library (.xz)",
                         logo = PclIcons.addBox,
                         // 用 `*/*`：.xz 的 MIME 各机型给得不一样（application/x-xz /
                         // application/octet-stream 都有），限死类型会直接看不到文件。
@@ -1139,11 +1139,11 @@ fun PclSetupJavaPage() {
                 Spacer(Modifier.height(8.dp))
 
                 when {
-                    loading -> PclText(text = "正在扫描运行库…", color = summaryColor, fontSize = 12)
+                    loading -> PclText(text = "Scanning runtime library...", color = summaryColor, fontSize = 12)
 
                     runtimes.isEmpty() -> PclText(
-                        text = "没有找到任何 Java 运行库。可以导入 .xz 格式的运行库，" +
-                                "或先安装一个游戏版本让启动器自动下载。",
+                        text = "No Java runtime found. " +
+                                "Or install a game version first and let the launcher download it automatically.",
                         color = summaryColor,
                         fontSize = 12,
                     )
@@ -1169,8 +1169,8 @@ fun PclSetupJavaPage() {
 
                 Spacer(Modifier.height(8.dp))
                 PclHint(
-                    text = "「启动器自带」的运行库由 Zalith 自动下载，删除后下次启动游戏会重新下载；" +
-                            "自己导入的运行库可以放心删除。",
+                    text = "The runtime library \"comes with the launcher\" is automatically downloaded by Zalith. After deletion, it will be downloaded again the next time you start the game;" +
+                            "The runtime library you imported can be safely deleted.",
                     theme = PclHintTheme.Blue,
                 )
             }
@@ -1182,8 +1182,8 @@ fun PclSetupJavaPage() {
 
     deleteTarget?.let { runtime ->
         PclConfirmDialog(
-            title = "删除运行库",
-            content = "确定要删除「${runtime.name}」吗？",
+            title = "Delete runtime library",
+            content = "Are you sure you want to delete \"${runtime.name}\"?",
             danger = true,
             onConfirm = {
                 val name = runtime.name
@@ -1192,7 +1192,7 @@ fun PclSetupJavaPage() {
                     runCatching { withContext(Dispatchers.IO) { RuntimesManager.removeRuntime(name) } }
                         .onSuccess { token++ }
                         .onFailure { th ->
-                            PclHintHost.push("删除失败：${th.message ?: "未知错误"}", PclHintTheme.Red)
+                            PclHintHost.push("Deletion failed: ${th.message ?:"未知错误"}", PclHintTheme.Red)
                         }
                 }
             },
@@ -1225,12 +1225,12 @@ private fun PclJavaRow(
         buttons = listOf(
             PclListItemButton(
                 logo = PclIcons.openFolder,
-                tooltip = "打开所在目录",
+                tooltip = "Open the directory",
                 onClick = onOpenFolder,
             ),
             PclListItemButton(
                 logo = PclIcons.delete,
-                tooltip = "删除这个运行库",
+                tooltip = "Delete this runtime library",
                 onClick = onDelete,
             ),
         ),
@@ -1241,14 +1241,14 @@ private fun PclJavaRow(
 /** 运行库的一行描述，对应原生 `JavaRuntimeItem` 里的那几个标签。 */
 private fun runtimeInfo(runtime: Runtime): String = buildString {
     if (runtime.versionString == null) {
-        append("版本信息损坏，启动时不会使用")
+        append("The version information is corrupted and will not be used at startup")
     } else {
         append(runtime.versionString)
         runtime.arch?.let { append(" · ").append(it) }
         if (runtime.javaVersion != 0) append(" · Java ").append(runtime.javaVersion)
-        if (!runtime.isCompatible()) append(" · 与本机架构不匹配")
+        if (!runtime.isCompatible()) append("· Does not match native architecture")
     }
-    if (runtime.isProvidedByLauncher) append(" · 启动器自带")
+    if (runtime.isProvidedByLauncher) append("· Comes with launcher")
 }
 
 /* ============================================================================
@@ -1292,20 +1292,20 @@ fun PclSetupControlManagePage() {
         if (uris.isEmpty()) {
             // 【别再静默 return】选择器没给回 uri（用户点了取消 / 某些文件管理器返回空）
             // 和「导入失败」在界面上长得一模一样，必须能区分开
-            PclControlImportLog.set("没有拿到文件：文件选择器没有返回可读取的地址。")
+            PclControlImportLog.set("Not getting file: The file selector did not return a readable address.")
             return@rememberLauncherForActivityResult
         }
-        PclControlImportLog.set("已选中 ${uris.size} 个文件，正在导入…")
+        PclControlImportLog.set("${uris.size} files selected, importing...")
         importScope.launch {
             var imported = 0
             val failures = mutableListOf<String>()
             withContext(Dispatchers.IO) {
                 uris.forEach { uri ->
                     // 提示里带上文件名：一次选好几个文件时，不然根本不知道是哪个出的问题
-                    val displayName = context.getFileName(uri) ?: "所选文件"
+                    val displayName = context.getFileName(uri) ?: "selected file"
                     runCatching {
                         val stream = openDocumentStream(context, uri)
-                            ?: error("读不到这个文件，可能是文件管理器没给读取权限。")
+                            ?: error("If you cannot read this file, it may be that the file manager does not give you read permission.")
                         var parseError: String? = null
                         stream.use {
                             ControlManager.importControl(
@@ -1313,10 +1313,10 @@ fun PclSetupControlManagePage() {
                                 // `ControlManager` 的消息里已经写明「文件已保存，但读不出来：…」，
                                 // 直接透传，别再套一层
                                 onSerializationError = { e ->
-                                    parseError = e.message ?: "文件已保存，但读不出来。"
+                                    parseError = e.message ?: "The file has been saved but cannot be read."
                                 },
                                 catchedError = { e ->
-                                    parseError = "写盘失败：${e.message}"
+                                    parseError = "Failed to write disk: ${e.message}"
                                 },
                             )
                         }
@@ -1325,7 +1325,7 @@ fun PclSetupControlManagePage() {
                     }.onFailure {
                         val reason = it.message ?: it.javaClass.simpleName
                         failures += "「$displayName」$reason"
-                        Logger.warning(LOG_TAG, "控制布局导入失败：$displayName / $uri", it)
+                        Logger.warning(LOG_TAG, "Control layout import failed: $displayName/$uri", it)
                     }
                 }
                 // 列表要重新扫一遍：`dataList` 是 ControlManager 里的 StateFlow，
@@ -1336,16 +1336,16 @@ fun PclSetupControlManagePage() {
             delay(150)
             val names = ControlManager.dataList.value.map { it.file.name }
             val listInfo =
-                if (names.isEmpty()) "列表仍为空"
-                else "列表现有 ${names.size} 份：${names.joinToString("、")}"
+                if (names.isEmpty()) "List is still empty"
+                else "The list currently has ${names.size} copies: ${names.joinToString("、")}"
             if (imported > 0) {
-                PclControlImportLog.set("已导入 $imported 个 —— $listInfo")
+                PclControlImportLog.set("$imported imported - $listInfo")
                 PclHintHost.push(
-                    if (imported == 1) "控制布局已导入。" else "已导入 $imported 个控制布局。",
+                    if (imported == 1) "Control layout has been imported." else "$imported control layouts have been imported.",
                     PclHintTheme.Green,
                 )
             } else {
-                val reason = failures.firstOrNull() ?: "无法读取所选文件。"
+                val reason = failures.firstOrNull() ?: "The selected file cannot be read."
                 // 一个都没能正常用上 —— 原因必须让人看见，不能三秒后自己消失
                 PclControlImportLog.set("$reason —— $listInfo")
                 importError = reason
@@ -1354,16 +1354,16 @@ fun PclSetupControlManagePage() {
     }
 
     PclContent {
-        PclCard(modifier = Modifier.fillMaxWidth(), title = "控制布局") {
+        PclCard(modifier = Modifier.fillMaxWidth(), title = "Control layout") {
             Column {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     PclButton(
-                        text = "刷新",
+                        text = "refresh",
                         logo = PclIcons.refresh,
                         onClick = { ControlManager.refresh() },
                     )
                     PclButton(
-                        text = "导入布局（.json）",
+                        text = "Import layout (.json)",
                         logo = PclIcons.addBox,
                         onClick = {
                             // 【只给一个 `*/*`】以前传的是
@@ -1373,14 +1373,14 @@ fun PclSetupControlManagePage() {
                             // 给通配就一定选得到任何文件，后缀对不对交给导入流程自己判断。
                             runCatching { importPicker.launch(arrayOf("*/*")) }
                                 .onFailure {
-                                    val why = "打不开文件选择器：${it.message}"
+                                    val why = "Unable to open file selector: ${it.message}"
                                     PclControlImportLog.set(why)
                                     PclHintHost.push(why, PclHintTheme.Red)
                                 }
                         },
                     )
                     PclButton(
-                        text = "新建空白布局",
+                        text = "Create a new blank layout",
                         logo = PclIcons.selectCreateFolder,
                         onClick = { createDialog = true },
                     )
@@ -1389,10 +1389,10 @@ fun PclSetupControlManagePage() {
 
                 when {
                     isRefreshing && dataList.isEmpty() ->
-                        PclText(text = "正在读取控制布局…", color = summaryColor, fontSize = 12)
+                        PclText(text = "Reading control layout...", color = summaryColor, fontSize = 12)
 
                     dataList.isEmpty() ->
-                        PclText(text = "没有可用的控制布局。", color = summaryColor, fontSize = 12)
+                        PclText(text = "No control layout available.", color = summaryColor, fontSize = 12)
 
                     else -> dataList.forEach { data ->
                         PclControlRow(
@@ -1402,7 +1402,7 @@ fun PclSetupControlManagePage() {
                             onEdit = { startEditorActivity(context, data.file) },
                             onDuplicate = {
                                 ControlManager.duplicateControl(data) { th ->
-                                    PclHintHost.push("复制失败：${th.message ?: "未知错误"}", PclHintTheme.Red)
+                                    PclHintHost.push("Copy failed: ${th.message ?:"未知错误"}", PclHintTheme.Red)
                                 }
                             },
                             onDelete = { deleteTarget = data },
@@ -1415,16 +1415,16 @@ fun PclSetupControlManagePage() {
                     PclHint(
                         text = message,
                         // 失败留下的是黄条，成功是绿条 —— 扫一眼就知道上一次到底怎么了
-                        theme = if (message.startsWith("已导入")) PclHintTheme.Green
+                        theme = if (message.startsWith("Imported")) PclHintTheme.Green
                         else PclHintTheme.Yellow,
                     )
                 }
 
                 Spacer(Modifier.height(8.dp))
                 PclHint(
-                    text = "布局文件保存在：${PathManager.DIR_CONTROL_LAYOUTS.absolutePath}\n" +
-                            "点一行即可把它设为当前布局；「编辑布局」会打开可视化编辑器，" +
-                            "调整按键的位置与大小。",
+                    text = "The layout file is saved in: ${PathManager.DIR_CONTROL_LAYOUTS.absolutePath}\n" +
+                            "Click a row to set it as the current layout; \"Edit Layout\" will open the visual editor." +
+                            "Adjust the position and size of buttons.",
                     theme = PclHintTheme.Blue,
                 )
             }
@@ -1436,11 +1436,11 @@ fun PclSetupControlManagePage() {
 
     if (createDialog) {
         PclInputDialog(
-            title = "新建控制布局",
-            label = "布局名称",
+            title = "New control layout",
+            label = "layout name",
             onConfirm = { name ->
                 ControlManager.createEmptyControl(name) { th ->
-                    PclHintHost.push("新建失败：${th.message ?: "未知错误"}", PclHintTheme.Red)
+                    PclHintHost.push("New failed: ${th.message ?:"未知错误"}", PclHintTheme.Red)
                 }
             },
             onDismiss = { createDialog = false },
@@ -1450,8 +1450,8 @@ fun PclSetupControlManagePage() {
     deleteTarget?.let { data ->
         val title = if (data.isSupport) data.controlLayout.info.name.default else data.file.name
         PclConfirmDialog(
-            title = "删除控制布局",
-            content = "确定要删除「$title」吗？",
+            title = "Delete control layout",
+            content = "Are you sure you want to delete \"$title\"?",
             danger = true,
             onConfirm = {
                 ControlManager.deleteControl(data)
@@ -1463,7 +1463,7 @@ fun PclSetupControlManagePage() {
 
     importError?.let { message ->
         PclNoticeDialog(
-            title = "控制布局导入未完成",
+            title = "Control layout import not completed",
             content = message,
             onDismiss = { importError = null },
         )
@@ -1486,13 +1486,13 @@ private fun PclControlRow(
             // 这类行有两种来源：布局版本比本启动器新，或者文件本身损坏。
             // 以前损坏的文件会被 refresh 直接丢掉（用户只看到「导入完了但列表没变化」），
             // 现在保留成一行，至少能删。
-            append("不支持或无法读取，只能删除")
+            append("Not supported or cannot be read, can only be deleted")
         } else {
             val author = data.controlLayout.info.author.default
-            if (author.isNotEmpty()) append("作者：").append(author)
+            if (author.isNotEmpty()) append("author:").append(author)
             if (data.controlLayout.info.versionName.isNotEmpty()) {
                 if (isNotEmpty()) append(" · ")
-                append("版本：").append(data.controlLayout.info.versionName)
+                append("Version:").append(data.controlLayout.info.versionName)
             }
             if (isEmpty()) append(data.file.name)
         }
@@ -1512,14 +1512,14 @@ private fun PclControlRow(
                 add(
                     PclListItemButton(
                         logo = PclIcons.loginMsEdit,
-                        tooltip = "编辑布局",
+                        tooltip = "Edit layout",
                         onClick = onEdit,
                     )
                 )
                 add(
                     PclListItemButton(
                         logo = PclIcons.fileCopy,
-                        tooltip = "复制一份",
+                        tooltip = "Make a copy",
                         onClick = onDuplicate,
                     )
                 )
@@ -1527,7 +1527,7 @@ private fun PclControlRow(
             add(
                 PclListItemButton(
                     logo = PclIcons.delete,
-                    tooltip = "删除这份布局",
+                    tooltip = "Delete this layout",
                     onClick = onDelete,
                 )
             )

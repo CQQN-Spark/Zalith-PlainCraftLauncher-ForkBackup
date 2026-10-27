@@ -98,7 +98,7 @@ object Renderers {
                 val renderer = renderers[0]
                 //空串就是设置里的「自动选择」，不是「写了但找不到」，别用 warning 吓人
                 if (uniqueIdentifier.isEmpty()) {
-                    Logger.info(TAG, "渲染器为「自动选择」，本次使用 ${renderer.getRendererName()}")
+                    Logger.info(TAG, "The renderer is \"automatic selection\", this time ${renderer.getRendererName()} is used")
                 } else {
                     Logger.warning(TAG, "Incompatible renderer $uniqueIdentifier will be replaced with ${renderer.getUniqueIdentifier()} (${renderer.getRendererName()})")
                 }

@@ -129,10 +129,10 @@ internal fun PclInstanceSavesPage(version: Version) {
     val context = LocalContext.current
     PclInstanceFilePage(
         dir = dir,
-        searchHint = "搜索存档名称",
-        emptyTitle = "还没有存档",
-        emptyContent = "存档会在游戏里新建世界后出现在这里。\n你也可以把从别处下载的存档解压进这个文件夹。",
-        downloadText = "下载新存档",
+        searchHint = "Search archive name",
+        emptyTitle = "Not archived yet",
+        emptyContent = "The archive will appear here after creating a new world in the game. ",
+        downloadText = "Download new archive",
         // 下载页左栏：0 原版游戏 / 1 Mod / 2 整合包 / 3 存档 / 4 资源包 / 5 光影包
         downloadIndex = 3,
         accept = { it.isDirectory },
@@ -150,7 +150,7 @@ internal fun PclInstanceSavesPage(version: Version) {
                 onDelete = onDelete,
             )
         },
-        deleteTitle = "删除存档",
+        deleteTitle = "Delete archive",
     )
 }
 
@@ -160,13 +160,13 @@ internal fun PclInstanceScreenshotPage(version: Version) {
     val dir = remember(version) { VersionFolders.SCREENSHOTS.getDir(version.getGameDir()) }
     PclInstanceFilePage(
         dir = dir,
-        searchHint = "搜索截图名称",
-        emptyTitle = "还没有截图",
-        emptyContent = "在游戏里按 F2 截的图会出现在这里。",
+        searchHint = "Search screenshot name",
+        emptyTitle = "No screenshot yet",
+        emptyContent = "Pictures taken by pressing F2 in the game will appear here.",
         accept = { it.isFile && it.extension.lowercase() in PCL_IMAGE_EXTENSIONS },
         titleOf = { it.nameWithoutExtension },
         iconOf = { file -> pclDecodeThumb(file) },
-        deleteTitle = "删除截图",
+        deleteTitle = "Delete screenshot",
     )
 }
 
@@ -176,15 +176,15 @@ internal fun PclInstanceResourcepackPage(version: Version) {
     val dir = remember(version) { VersionFolders.RESOURCE_PACK.getDir(version.getGameDir()) }
     PclInstanceFilePage(
         dir = dir,
-        searchHint = "搜索资源包名称",
-        emptyTitle = "还没有安装资源包",
-        emptyContent = "资源包可以是 zip 文件，也可以是解压后的文件夹。",
-        downloadText = "下载新资源包",
+        searchHint = "Search resource pack name",
+        emptyTitle = "The resource pack has not been installed yet",
+        emptyContent = "The resource package can be a zip file or an unzipped folder.",
+        downloadText = "Download new resource pack",
         downloadIndex = 4,
         // 光影包目录里常见的 .zip / 文件夹同样适用
         accept = { !it.name.startsWith(".") },
         titleOf = { it.name.removeSuffix(".zip") },
-        deleteTitle = "删除资源包",
+        deleteTitle = "Delete resource pack",
     )
 }
 
@@ -194,14 +194,14 @@ internal fun PclInstanceShaderPage(version: Version) {
     val dir = remember(version) { VersionFolders.SHADERS.getDir(version.getGameDir()) }
     PclInstanceFilePage(
         dir = dir,
-        searchHint = "搜索光影包名称",
-        emptyTitle = "还没有安装光影包",
-        emptyContent = "光影包需要 Iris 或 OptiFine 才能生效，装好后在游戏里选择。",
-        downloadText = "下载新光影包",
+        searchHint = "Search light and shadow package name",
+        emptyTitle = "The light and shadow package has not been installed yet",
+        emptyContent = "The light and shadow package requires Iris or OptiFine to take effect. After installing it, select it in the game.",
+        downloadText = "Download the new lighting pack",
         downloadIndex = 5,
         accept = { !it.name.startsWith(".") },
         titleOf = { it.name.removeSuffix(".zip") },
-        deleteTitle = "删除光影包",
+        deleteTitle = "Delete light and shadow package",
     )
 }
 
@@ -230,24 +230,24 @@ internal fun PclInstanceSchematicPage(version: Version) {
 
     PclInstanceFilePage(
         dir = dir,
-        searchHint = "搜索原理图名称",
-        emptyTitle = "还没有投影原理图",
-        emptyContent = "投影原理图一般由 Litematica、WorldEdit 等 Mod 保存到 schematics 文件夹。",
+        searchHint = "Search schematic name",
+        emptyTitle = "No projection schematic yet",
+        emptyContent = "Projection schematics are generally saved to the schematics folder by Mods such as Litematica and WorldEdit.",
         accept = { it.isFile && it.extension.lowercase() in PCL_SCHEMATIC_EXTENSIONS },
         titleOf = { it.nameWithoutExtension },
-        deleteTitle = "删除原理图",
+        deleteTitle = "Delete schematic",
         emptyStateOverride = if (projectionMod == false) {
             {
                 PclEmptyState(
-                    title = "您尚未安装投影 Mod",
-                    content = "这个实例里没有检测到 Litematica、WorldEdit、Schematica 或 Axiom。\n" +
-                            "投影原理图由它们保存到 schematics 文件夹 —— 先装一个投影 Mod 再回来。",
+                    title = "You haven't installed the Projection Mod yet",
+                    content = "Litematica, WorldEdit, Schematica or Axiom are not detected in this instance. " +
+                            "Projection schematics are saved to the schematics folder by them - install a Projection Mod first and then come back.",
                     modifier = Modifier.padding(40.dp),
-                    buttonText = "下载 Mod",
+                    buttonText = "Download Mod",
                     onButtonClick = { nav.go(PclSection.Download, 1) },
                     contentPadding = PaddingValues(start = 10.dp, top = 10.dp, end = 10.dp, bottom = 0.dp),
                     buttonsTopPadding = 20.dp,
-                    moreButtons = listOf(PclEmptyButton("打开文件夹") { openFolder(context, dir) }),
+                    moreButtons = listOf(PclEmptyButton("open folder") { openFolder(context, dir) }),
                 )
             }
         } else {
@@ -399,7 +399,7 @@ private fun PclSaveEntry(
         Spacer(Modifier.width(6.dp))
         PclIconButton(
             logo = PclIcons.delete,
-            contentDescription = "删除存档",
+            contentDescription = "Delete archive",
             size = 25.dp,
         ) { onDelete() }
     }
@@ -436,7 +436,7 @@ private fun PclInstanceFilePage(
     emptyStateOverride: (@Composable () -> Unit)? = null,
     downloadText: String? = null,
     downloadIndex: Int? = null,
-    deleteTitle: String = "删除文件",
+    deleteTitle: String = "Delete files",
 ) {
     val p = pclPalette
     val context = LocalContext.current
@@ -488,7 +488,7 @@ private fun PclInstanceFilePage(
                     modifier = Modifier.padding(horizontal = 40.dp),
                     contentPadding = PaddingValues(0.dp),
                 ) {
-                    PclLoadingCard(text = "正在读取文件列表")
+                    PclLoadingCard(text = "Reading file list")
                 }
             } else if (emptyStateOverride != null) {
                 emptyStateOverride()
@@ -498,7 +498,7 @@ private fun PclInstanceFilePage(
                     content = emptyContent,
                     modifier = Modifier.padding(40.dp),
                     // 有下载入口时把「下载新的」放主按钮位，否则主按钮就是「打开文件夹」
-                    buttonText = downloadText ?: "打开文件夹",
+                    buttonText = downloadText ?: "open folder",
                     onButtonClick = {
                         if (downloadIndex != null && downloadText != null) {
                             nav.go(PclSection.Download, downloadIndex)
@@ -509,7 +509,7 @@ private fun PclInstanceFilePage(
                     contentPadding = PaddingValues(start = 10.dp, top = 10.dp, end = 10.dp, bottom = 0.dp),
                     buttonsTopPadding = 20.dp,
                     moreButtons = if (downloadIndex != null && downloadText != null) {
-                        listOf(PclEmptyButton("打开文件夹") { openFolder(context, dir) })
+                        listOf(PclEmptyButton("open folder") { openFolder(context, dir) })
                     } else {
                         emptyList()
                     },
@@ -535,8 +535,8 @@ private fun PclInstanceFilePage(
             contentPadding = PaddingValues(15.dp, 15.dp, 0.dp, 15.dp),
         ) {
             Row(horizontalArrangement = Arrangement.spacedBy(15.dp)) {
-                PclManageButton("打开文件夹", highlight = true) { openFolder(context, dir) }
-                PclManageButton("刷新") { token++ }
+                PclManageButton("open folder", highlight = true) { openFolder(context, dir) }
+                PclManageButton("refresh") { token++ }
                 if (downloadIndex != null && downloadText != null) {
                     PclManageButton(downloadText) { nav.go(PclSection.Download, downloadIndex) }
                 }
@@ -555,7 +555,7 @@ private fun PclInstanceFilePage(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 PclText(
-                    text = if (keyword.isBlank()) "共 ${visible.size} 个" else "搜索结果 ${visible.size} 个",
+                    text = if (keyword.isBlank()) "Total ${visible.size}" else "Search results ${visible.size}",
                     fontSize = 12,
                     color = p.gray2,
                 )
@@ -564,7 +564,7 @@ private fun PclInstanceFilePage(
 
             if (visible.isEmpty()) {
                 PclText(
-                    text = "没有符合当前搜索条件的条目。",
+                    text = "There are no entries matching the current search criteria.",
                     color = p.gray2,
                     modifier = Modifier.padding(vertical = 6.dp),
                 )
@@ -589,7 +589,7 @@ private fun PclInstanceFilePage(
                             logoContent = cover,
                             height = 44.dp,
                             buttons = listOf(
-                                PclListItemButton(PclIcons.delete, "删除") { deleting = file },
+                                PclListItemButton(PclIcons.delete, "delete") { deleting = file },
                             ),
                             // 目录（存档 / 解压后的资源包）直接进去；文件则打开它所在的文件夹
                             onClick = { openFolder(context, if (file.isDirectory) file else dir) },
@@ -604,8 +604,8 @@ private fun PclInstanceFilePage(
     deleting?.let { file ->
         PclConfirmDialog(
             title = deleteTitle,
-            content = "确定要删除「${titleOf(file)}」吗？此操作不可恢复。",
-            confirmText = "删除",
+            content = "Are you sure you want to delete \"${titleOf(file)}\"? ",
+            confirmText = "delete",
             danger = true,
             onConfirm = {
                 scope.launch {
@@ -615,10 +615,10 @@ private fun PclInstanceFilePage(
                         }.getOrDefault(false)
                     }
                     if (ok) {
-                        PclHintHost.push("已删除「${titleOf(file)}」。", PclHintTheme.Green)
+                        PclHintHost.push("\"${titleOf(file)}\" has been deleted.", PclHintTheme.Green)
                         token++
                     } else {
-                        PclHintHost.push("删除失败，文件可能正在被占用。", PclHintTheme.Red)
+                        PclHintHost.push("Deletion failed. The file may be in use.", PclHintTheme.Red)
                     }
                 }
                 deleting = null
@@ -688,23 +688,23 @@ internal fun PclInstanceServerPage(version: Version) {
                     modifier = Modifier.padding(horizontal = 40.dp),
                     contentPadding = PaddingValues(0.dp),
                 ) {
-                    PclLoadingCard(text = "正在读取服务器列表")
+                    PclLoadingCard(text = "Reading server list")
                 }
             } else {
                 PclEmptyState(
-                    title = "服务器列表为空",
+                    title = "Server list is empty",
                     content = if (dataFile.exists()) {
-                        "这个实例的 servers.dat 里还没有任何服务器。\n点下面的「添加服务器」填上地址就能加进来。"
+                        "This instance does not yet have any servers in its servers.dat. "
                     } else {
-                        "这个实例还没有 servers.dat。\n点下面的「添加服务器」填上地址，添加时会自动生成。"
+                        "This instance does not yet have servers.dat. "
                     },
                     modifier = Modifier.padding(40.dp),
-                    buttonText = "添加服务器",
+                    buttonText = "Add server",
                     onButtonClick = { adding = true },
                     contentPadding = PaddingValues(start = 10.dp, top = 10.dp, end = 10.dp, bottom = 0.dp),
                     buttonsTopPadding = 20.dp,
                     moreButtons = listOf(
-                        PclEmptyButton("返回联机页") { nav.go(PclSection.Link) },
+                        PclEmptyButton("Return to online page") { nav.go(PclSection.Link) },
                     ),
                 )
             }
@@ -718,9 +718,9 @@ internal fun PclInstanceServerPage(version: Version) {
                 contentPadding = PaddingValues(15.dp, 15.dp, 0.dp, 15.dp),
             ) {
                 Row(horizontalArrangement = Arrangement.spacedBy(15.dp)) {
-                    PclManageButton("添加服务器", highlight = true) { adding = true }
-                    PclManageButton("刷新") { token++ }
-                    PclManageButton("转到联机") { nav.go(PclSection.Link) }
+                    PclManageButton("Add server", highlight = true) { adding = true }
+                    PclManageButton("refresh") { token++ }
+                    PclManageButton("Go online") { nav.go(PclSection.Link) }
                 }
             }
             Spacer(Modifier.height(PclDimens.cardGap))
@@ -730,7 +730,7 @@ internal fun PclInstanceServerPage(version: Version) {
                 title = " ",
                 contentPadding = PaddingValues(start = 10.dp, top = 13.dp, end = 10.dp, bottom = 22.dp),
             ) {
-                PclText(text = "共 ${servers.size} 个服务器", fontSize = 12, color = p.gray2)
+                PclText(text = "Total ${servers.size} servers", fontSize = 12, color = p.gray2)
                 Spacer(Modifier.height(7.dp))
                 servers.forEach { server ->
                     PclServerEntry(
@@ -740,7 +740,7 @@ internal fun PclInstanceServerPage(version: Version) {
                             // 小三角 = 启动这个实例并直接进服（PCL 的服务器列表双击同款效果）
                             if (runtime.playServer(version, server.originIp)) {
                                 PclHintHost.push(
-                                    "正在启动「${version.getVersionName()}」，进入后自动连接 ${server.originIp}。",
+                                    "Starting \"${version.getVersionName()}\", it will automatically connect to ${server.originIp} after entering.",
                                     PclHintTheme.Green,
                                 )
                             }
@@ -757,18 +757,18 @@ internal fun PclInstanceServerPage(version: Version) {
     // ---- 添加服务器（地址 + 名称，PCL 的 PageInstanceServer「添加服务器」）
     if (adding) {
         PclDualInputDialog(
-            title = "添加服务器",
-            label1 = "服务器地址",
-            hint1 = "例如 mc.example.com 或 1.2.3.4:25565",
-            label2 = "服务器名称",
-            hint2 = "留空就用服务器地址",
-            confirmText = "添加",
+            title = "Add server",
+            label1 = "Server address",
+            hint1 = "For example mc.example.com or 1.2.3.4:25565",
+            label2 = "Server name",
+            hint2 = "Leave it blank to use the server address",
+            confirmText = "Add to",
             onConfirm = { address, name ->
                 // 弹窗点完「添加」会立刻关窗，所以真正干活要自己 launch 出去
                 scope.launch {
                     val failure = pclAddServer(address, name, servers, holder, gameDir, dataFile)
                     if (failure == null) {
-                        PclHintHost.push("已添加服务器，正在获取延迟与在线人数…", PclHintTheme.Green)
+                        PclHintHost.push("Server has been added, getting delay and number of people online...", PclHintTheme.Green)
                         token++
                     } else {
                         PclHintHost.push(failure, PclHintTheme.Red)
@@ -782,19 +782,19 @@ internal fun PclInstanceServerPage(version: Version) {
     // ---- 修改服务器（地址 + 名称，PCL 服务器列表的「编辑」）
     editing?.let { server ->
         PclDualInputDialog(
-            title = "修改服务器",
-            label1 = "服务器地址",
+            title = "Modify server",
+            label1 = "Server address",
             initial1 = server.originIp,
-            hint1 = "例如 mc.example.com 或 1.2.3.4:25565",
-            label2 = "服务器名称",
+            hint1 = "For example mc.example.com or 1.2.3.4:25565",
+            label2 = "Server name",
             initial2 = server.name,
-            hint2 = "留空就用服务器地址",
-            confirmText = "保存",
+            hint2 = "Leave it blank to use the server address",
+            confirmText = "save",
             onConfirm = { address, name ->
                 scope.launch {
                     val failure = pclEditServer(server, address, name, servers, holder, gameDir, dataFile)
                     if (failure == null) {
-                        PclHintHost.push("已保存服务器信息，正在重新获取延迟与在线人数…", PclHintTheme.Green)
+                        PclHintHost.push("Server information has been saved and re-obtaining the delay and number of people online...", PclHintTheme.Green)
                         token++
                     } else {
                         PclHintHost.push(failure, PclHintTheme.Red)
@@ -808,10 +808,10 @@ internal fun PclInstanceServerPage(version: Version) {
 
     deleting?.let { server ->
         PclConfirmDialog(
-            title = "删除服务器",
-            content = "确定要从列表里移除「${server.name.ifBlank { server.originIp }}」吗？" +
-                "这只是删掉 servers.dat 里的这一条，不会影响游戏本体。",
-            confirmText = "删除",
+            title = "Delete server",
+            content = "Are you sure you want to remove \"${server.name.ifBlank { server.originIp }}\" from the list?" +
+                "This just deletes this entry in servers.dat and will not affect the game itself.",
+            confirmText = "delete",
             danger = true,
             onConfirm = {
                 scope.launch {
@@ -826,10 +826,10 @@ internal fun PclInstanceServerPage(version: Version) {
                         }.getOrDefault(false)
                     }
                     if (ok) {
-                        PclHintHost.push("已移除服务器「${server.name.ifBlank { server.originIp }}」。", PclHintTheme.Green)
+                        PclHintHost.push("Server \"${server.name.ifBlank { server.originIp }}\" has been removed.", PclHintTheme.Green)
                         token++
                     } else {
-                        PclHintHost.push("写入 servers.dat 失败。", PclHintTheme.Red)
+                        PclHintHost.push("Writing to servers.dat failed.", PclHintTheme.Red)
                     }
                 }
                 deleting = null
@@ -949,8 +949,8 @@ private fun PclServerEntry(
                 PclServerMotd(
                     description = loaded?.status?.description,
                     fallback = when (operation) {
-                        is ServerData.Operation.Loading -> "正在获取服务器信息…"
-                        is ServerData.Operation.Failed -> "无法连接，点这一行重试"
+                        is ServerData.Operation.Loading -> "Getting server information..."
+                        is ServerData.Operation.Failed -> "Unable to connect, click this line to try again"
                         is ServerData.Operation.Loaded -> null
                     },
                     fallbackColor = if (operation is ServerData.Operation.Failed) p.redDark else p.gray2,
@@ -999,21 +999,21 @@ private fun PclServerEntry(
                 logoSize = 14.dp,
                 theme = PclIconTheme.Custom,
                 customColor = p.color3,
-                contentDescription = "启动并进入服务器",
+                contentDescription = "Start and enter the server",
                 onClick = onJoin,
             )
             PclIconButton(
                 logo = PclIcons.loginMsEdit,
                 size = 25.dp,
                 logoScale = 0.85f,
-                contentDescription = "修改服务器地址与名称",
+                contentDescription = "Modify server address and name",
                 onClick = onEdit,
             )
             PclIconButton(
                 logo = PclIcons.delete,
                 size = 25.dp,
                 logoScale = 0.9f,
-                contentDescription = "删除服务器",
+                contentDescription = "Delete server",
                 onClick = onDelete,
             )
         }
@@ -1205,12 +1205,12 @@ private suspend fun pclEditServer(
     dataFile: File,
 ): String? {
     val ip = address.trim()
-    if (ip.isEmpty()) return "服务器地址不能为空。"
+    if (ip.isEmpty()) return "Server address cannot be empty."
     if (runCatching { ServerAddress.parse(ip) }.isFailure) {
-        return "服务器地址格式不对，示例：mc.example.com 或 1.2.3.4:25565。"
+        return "The server address is in the wrong format, example: mc.example.com or 1.2.3.4:25565."
     }
     if (servers.any { it !== server && it.originIp.equals(ip, ignoreCase = true) }) {
-        return "列表里已经有 $ip 了。"
+        return "$ip is already in the list."
     }
 
     val newName = name.trim().ifBlank { ip }
@@ -1229,7 +1229,7 @@ private suspend fun pclEditServer(
             check.serverList.any { it.originIp.equals(ip, ignoreCase = true) && it.name == newName }
         }.getOrDefault(false)
     }
-    return if (saved) null else "写入 servers.dat 失败，请确认游戏目录可写。"
+    return if (saved) null else "Failed to write servers.dat, please confirm that the game directory is writable."
 }
 
 /**
@@ -1253,14 +1253,14 @@ private suspend fun pclAddServer(
     dataFile: File,
 ): String? {
     val ip = address.trim()
-    if (ip.isEmpty()) return "服务器地址不能为空。"
+    if (ip.isEmpty()) return "Server address cannot be empty."
 
     val invalid = runCatching { ServerAddress.parse(ip) }.exceptionOrNull()
     if (invalid != null) {
-        return "服务器地址格式不对，示例：mc.example.com 或 1.2.3.4:25565。"
+        return "The server address is in the wrong format, example: mc.example.com or 1.2.3.4:25565."
     }
     if (servers.any { it.originIp.equals(ip, ignoreCase = true) }) {
-        return "列表里已经有 $ip 了。"
+        return "$ip is already in the list."
     }
 
     val saved = withContext(Dispatchers.IO) {
@@ -1274,7 +1274,7 @@ private suspend fun pclAddServer(
             check.serverList.any { it.originIp.equals(ip, ignoreCase = true) }
         }.getOrDefault(false)
     }
-    return if (saved) null else "写入 servers.dat 失败，请确认游戏目录可写。"
+    return if (saved) null else "Failed to write servers.dat, please confirm that the game directory is writable."
 }
 
 /** `servers.dat` 里的封面是 64×64 的 PNG 字节流，直接解出来当行图标。 */

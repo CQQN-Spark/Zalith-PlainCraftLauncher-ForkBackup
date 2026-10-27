@@ -85,7 +85,7 @@ private const val TAG = "GameInstaller"
  * （见 `modpackImportErrorText`）。
  */
 internal class GameAlreadyInstalledException(val versionName: String) :
-    RuntimeException("已经安装了同名版本「$versionName」，安装没有继续。")
+    RuntimeException("A version with the same name \"$versionName\" has already been installed, but the installation did not continue.")
 
 /**
  * 游戏安装器

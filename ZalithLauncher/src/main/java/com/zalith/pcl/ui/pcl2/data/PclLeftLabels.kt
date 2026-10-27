@@ -36,15 +36,15 @@ object PclLeftLabels {
     val instanceExport = PclStrings.LangPageVersionLeftInstanceExport
 
     // ---- 「游戏资源」分组（PCL CE 的 PageInstanceLeft 在这一组里塞了七个条目）
-    val instanceSaves = "存档"
-    val instanceScreenshot = "截图"
+    val instanceSaves = "Archive"
+    val instanceScreenshot = "screenshot"
     val instanceResourcepack = PclStrings.LangDownloadPageLeftResourcepack
     val instanceShader = PclStrings.LangDownloadPageLeftShader
-    val instanceSchematic = "投影原理图"
-    val instanceServer = "服务器"
+    val instanceSchematic = "Projection schematic"
+    val instanceServer = "server"
 
     /** 分组标签文案（`PageInstanceLeft` 里「游戏资源」那行 12 号小灰字）。 */
-    val instanceResourceGroup = "游戏资源"
+    val instanceResourceGroup = "Game resources"
 
     /**
      * 顺序与 PCL CE 的 `PageInstanceLeft` 一致：
@@ -62,7 +62,7 @@ object PclLeftLabels {
     val downloadGame = PclStrings.LangDownloadPageLeftAutoInstall
     val downloadMod = PclStrings.LangDownloadPageLeftMods
     val downloadModpack = PclStrings.LangDownloadPageLeftModpack
-    val downloadSave = "存档" // PCL 是「数据包」，Zalith 的资源平台只有存档
+    val downloadSave = "Archive" // PCL 是「数据包」，Zalith 的资源平台只有存档
     val downloadResourcepack = PclStrings.LangDownloadPageLeftResourcepack
     val downloadShader = PclStrings.LangDownloadPageLeftShader
 
@@ -84,10 +84,10 @@ object PclLeftLabels {
 
     // Zalith 原生独有的四张设置页（PCL2 只有上面四页）。
     // 标签文案直接沿用原生 `settings_tab_*` 的中文写法，不再另起名字。
-    val setupControl = "控制设置"
-    val setupGamepad = "手柄设置"
-    val setupJava = "Java 管理"
-    val setupControlManage = "控制管理"
+    val setupControl = "Control settings"
+    val setupGamepad = "Controller settings"
+    val setupJava = "Java management"
+    val setupControlManage = "Control management"
 
     val setup = listOf(
         setupGame,

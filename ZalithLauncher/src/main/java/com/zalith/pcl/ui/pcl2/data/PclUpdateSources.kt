@@ -7,7 +7,7 @@
  * 「下载方式」那一栏（`/admin/downloads`）里启用中的条目：
  *
  *     {
- *       "pan123": {"key":"123pan","name":"123云盘","url":"https://…"},
+ *       "pan123": {"key":"123pan","name":"123 cloud disk","url":"https://…"},
  *       "items":  [ …同上结构… ]
  *     }
  *
@@ -83,7 +83,7 @@ object PclUpdateSources {
         if (fromMemory != null && now - lastSuccessAt < FRESH_MS) return@withContext fromMemory
 
         val fetched = runCatching { fetchBlocking() }.getOrElse { e ->
-            Logger.warning(LOG_TAG, "拉取网盘入口失败：${e.javaClass.simpleName}: ${e.message}")
+            Logger.warning(LOG_TAG, "Failed to pull the network disk entrance: ${e.javaClass.simpleName}: ${e.message}")
             null
         }
         if (fetched != null) {
@@ -99,7 +99,7 @@ object PclUpdateSources {
     private fun fetchBlocking(): Source? {
         val base = PclRemoteContent.baseUrl()
         if (base.isEmpty()) {
-            Logger.warning(LOG_TAG, "未配置官网地址，跳过网盘入口")
+            Logger.warning(LOG_TAG, "The official website address is not configured and the network disk entrance is skipped.")
             return null
         }
         var conn: HttpURLConnection? = null
@@ -111,7 +111,7 @@ object PclUpdateSources {
             conn.setRequestProperty("Accept", "application/json")
             val code = conn.responseCode
             if (code != HttpURLConnection.HTTP_OK) {
-                Logger.warning(LOG_TAG, "GET /api/downloads 返回 HTTP $code")
+                Logger.warning(LOG_TAG, "GET /api/downloads returns HTTP $code")
                 return null
             }
             val body = conn.inputStream.bufferedReader().use { it.readText() }
@@ -137,7 +137,7 @@ object PclUpdateSources {
     private fun toSource(obj: JSONObject): Source? {
         val url = obj.optString("url").trim()
         if (url.isEmpty()) return null
-        val name = obj.optString("name").trim().ifEmpty { "123 云盘" }
+        val name = obj.optString("name").trim().ifEmpty { "123 cloud disk" }
         val key = obj.optString("key").trim()
         return Source(key = key, name = name, url = url)
     }
@@ -148,7 +148,7 @@ object PclUpdateSources {
         val obj = JSONObject(raw)
         Source(
             key = obj.optString("key"),
-            name = obj.optString("name").ifEmpty { "123 云盘" },
+            name = obj.optString("name").ifEmpty { "123 cloud disk" },
             url = obj.optString("url"),
         ).takeIf { it.url.isNotBlank() }
     }.getOrNull()

@@ -55,7 +55,7 @@ object PclSettings {
             if (Renderers.getRenderers().isEmpty()) Renderers.init(reset = true)
             Renderers.getRenderers()
         } catch (t: Throwable) {
-            Logger.warning("PclSettings", "读取渲染器列表失败：${t.message}")
+            Logger.warning("PclSettings", "Failed to read renderer list: ${t.message}")
             emptyList()
         }
         // 兜底：`Renderers` 万一没装起来（初始化半途抛异常 / 被别处清空），
@@ -65,7 +65,7 @@ object PclSettings {
             runCatching { PCL_BUILTIN_RENDERERS }.getOrDefault(emptyList())
         }
         if (loaded.isEmpty()) {
-            Logger.warning("PclSettings", "渲染器表为空，已回退到内置渲染器列表")
+            Logger.warning("PclSettings", "Renderer table is empty, fallback to built-in renderer list")
         }
         return list.map { it.getUniqueIdentifier() to it.getRendererName() }
     }

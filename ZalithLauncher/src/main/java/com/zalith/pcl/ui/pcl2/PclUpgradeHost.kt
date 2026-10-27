@@ -108,8 +108,8 @@ fun PclUpgradeHost() {
             var navigated by remember(data) { mutableStateOf(false) }
 
             PclUpgradeDialog(
-                versionText = "当前版本 ${BuildConfig.VERSION_NAME}（${BuildConfig.VERSION_CODE}）" +
-                    "  →  最新版本 ${data.version}（${data.code}）",
+                versionText = "Current version ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})" +
+                    "→ Latest version ${data.version} (${data.code})",
                 bodyText = pclMarkdownToPlain(body.markdown),
                 onDownload = {
                     navigated = true
@@ -168,7 +168,7 @@ fun PclUpgradeHost() {
                     ?: ordered.firstOrNull { it.arch == RemoteData.RemoteFile.Arch.ALL }?.fileName
             }
             PclUpgradeFilesDialog(
-                title = "选择要下载的安装包（${data.version}）",
+                title = "Select the installation package to download (${data.version})",
                 // 只显示「版本 · 架构」，不显示 GitHub 的长链接
                 options = ordered.map { it.fileName to "${data.version} · ${it.arch.abiText()}" },
                 current = defaultFile,
@@ -190,12 +190,12 @@ fun PclUpgradeHost() {
         is LauncherUpgradeOperation.OpenCloudDrive -> {
             val drive = operation.cloudDrive
             val options = if (drive.links.isEmpty()) {
-                listOf("默认链接" to drive.link)
+                listOf("Default link" to drive.link)
             } else {
                 drive.links.map { it.name to it.link }
             }
             PclSelectDialog(
-                title = "选择网盘下载",
+                title = "Select network disk download",
                 options = options,
                 current = null,
                 onSelect = { link ->
@@ -219,7 +219,7 @@ fun PclUpgradeHost() {
                 0f
             }
             PclUpgradeDownloadDialog(
-                title = "正在下载启动器更新",
+                title = "Downloading launcher update",
                 versionText = "${update.version} · ${update.archText}",
                 detailText = buildString {
                     append(formatUpdateSize(update.downloaded))
@@ -230,7 +230,7 @@ fun PclUpgradeHost() {
                     if (update.speed > 0L) {
                         append(" · ").append(formatUpdateSize(update.speed)).append("/s")
                     }
-                    append("\n下载完成后会自动打开安装界面。")
+                    append("\nAfter the download is completed, the installation interface will automatically open.")
                 },
                 progress = progress,
                 onCancel = { PclLauncherUpdate.cancel() },
@@ -239,11 +239,11 @@ fun PclUpgradeHost() {
 
         is PclLauncherUpdateState.Failed -> {
             PclConfirmDialog(
-                title = "更新下载失败",
+                title = "Update download failed",
                 content = "${update.version} · ${update.archText}\n\n${update.message}\n\n" +
-                    "网络不稳时重试通常就好了；也可以点「取消」后到 GitHub Releases 页手动下载。",
-                confirmText = "重试",
-                dismissText = "取消",
+                    "When the network is unstable, it is usually enough to try again; you can also click \"Cancel\" and go to the GitHub Releases page to download manually.",
+                confirmText = "Try again",
+                dismissText = "Cancel",
                 danger = true,
                 onConfirm = { PclLauncherUpdate.retry(context) },
                 onDismiss = { PclLauncherUpdate.dismiss() },
@@ -252,11 +252,11 @@ fun PclUpgradeHost() {
 
         is PclLauncherUpdateState.NeedPermission -> {
             PclConfirmDialog(
-                title = "需要安装权限",
-                content = "安装包已经下载好了（${update.version} · ${update.archText}）。\n\n" +
-                    "系统要求先允许本应用「安装未知应用」，授权后会自动继续安装。",
-                confirmText = "去授权",
-                dismissText = "取消",
+                title = "Requires installation permission",
+                content = "The installation package has been downloaded (${update.version} · ${update.archText}). " +
+                    "The system requires that this application be allowed to \"install unknown applications\" first, and the installation will automatically continue after authorization.",
+                confirmText = "to authorize",
+                dismissText = "Cancel",
                 onConfirm = { PclLauncherUpdate.openInstallSettings(context) },
                 onDismiss = { PclLauncherUpdate.dismiss() },
             )

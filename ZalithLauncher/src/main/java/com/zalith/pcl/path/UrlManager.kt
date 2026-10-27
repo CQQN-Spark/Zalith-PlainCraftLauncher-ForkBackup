@@ -185,7 +185,7 @@ fun createOkHttpClientBuilder(action: (OkHttpClient.Builder) -> Unit = { }): OkH
  *
  * 使用 OkHttp 替代 HttpURLConnection 的主要原因是：
  * OkHttp 使用自实现的 AsyncTimeout 机制，比依赖操作系统 socket 超时的
- * HttpURLConnection 在 Android 上更加可靠，能有效避免"卡 0b/s"问题。
+ * HttpURLConnection 在 Android 上更加可靠，能有效避免"Card 0b/s"问题。
  */
 val DOWNLOAD_OKHTTP_CLIENT: OkHttpClient by lazy {
     buildDownloadClient(listOf(Protocol.HTTP_1_1))

@@ -117,7 +117,7 @@ fun PclWebOverlay(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 PclText(
-                    text = page.title ?: "内置浏览器",
+                    text = page.title ?: "Built-in browser",
                     color = p.color1,
                     fontSize = 15,
                 )
@@ -130,9 +130,9 @@ fun PclWebOverlay(
                     modifier = Modifier.weight(1f),
                 )
                 Spacer(Modifier.width(12.dp))
-                PclTextButton(text = "刷新") { webView?.reload() }
+                PclTextButton(text = "refresh") { webView?.reload() }
                 Spacer(Modifier.width(14.dp))
-                PclTextButton(text = "关闭") { onClose() }
+                PclTextButton(text = "closure") { onClose() }
             }
 
             if (loading) {
@@ -213,7 +213,7 @@ fun PclInlineWeb(
             },
         )
         if (loading) {
-            PclText(text = "正在加载自定义主页…", color = pclPalette.gray2)
+            PclText(text = "Loading custom homepage...", color = pclPalette.gray2)
         }
     }
 
@@ -325,7 +325,7 @@ fun PclInlineHtml(
             },
         )
         if (loading) {
-            PclText(text = "正在加载自定义主页…", color = pclPalette.gray2)
+            PclText(text = "Loading custom homepage...", color = pclPalette.gray2)
         }
     }
 

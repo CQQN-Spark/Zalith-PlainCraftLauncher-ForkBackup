@@ -25,7 +25,7 @@ import org.junit.Test
 /**
  * 互斥进程名单匹配回归：
  * :filemanager 被主界面以 BIND_AUTO_CREATE 常驻绑定、杀后必被系统重建，
- * 一旦误入"必须消失"名单，安装前的等待将永远无法满足（Forge 安装卡死的根因）。
+ * 一旦误入"must disappear"名单，安装前的等待将永远无法满足（Forge 安装卡死的根因）。
  */
 class JvmExclusiveProcessTest {
 

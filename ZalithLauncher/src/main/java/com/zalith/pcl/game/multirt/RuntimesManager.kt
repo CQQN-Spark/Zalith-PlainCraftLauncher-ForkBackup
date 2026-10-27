@@ -321,21 +321,21 @@ object RuntimesManager {
     fun describeRuntimeProblem(name: String): String = runCatching {
         val dest = RUNTIME_FOLDER.child(name)
         when {
-            !dest.exists() -> "目录不存在（可能从未解压成功）"
+            !dest.exists() -> "Directory does not exist (maybe never successfully decompressed)"
 
-            !File(dest, "release").isFile -> "缺少 release 文件（解压不完整）"
+            !File(dest, "release").isFile -> "Missing release file (incomplete decompression)"
 
             else -> {
                 val runtime = forceReload(name)
                 when {
-                    runtime.versionString == null -> "release 里解析不出 JAVA_VERSION"
-                    runtime.arch == null -> "release 里解析不出 OS_ARCH"
-                    !runtime.isCompatible() -> "架构不匹配（release 里是 ${runtime.arch}）"
-                    else -> "可用"
+                    runtime.versionString == null -> "JAVA_VERSION cannot be parsed in release"
+                    runtime.arch == null -> "OS_ARCH cannot be parsed in release"
+                    !runtime.isCompatible() -> "Architecture mismatch (${runtime.arch} in release)"
+                    else -> "Available"
                 }
             }
         }
-    }.getOrElse { "检查运行库时出错：${it.message}" }
+    }.getOrElse { "Error while checking runtime library: ${it.message}" }
 
     /**
      * Unpacks all .pack files into .jar Serves only for java 8, as java 9 brought project jigsaw

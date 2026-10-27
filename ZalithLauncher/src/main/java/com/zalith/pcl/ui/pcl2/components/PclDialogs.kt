@@ -13,7 +13,7 @@
  * **肯定按钮**，在 XAML 的 PanBtn 里也声明在最前（最左）；`MyMsgText.xaml.vb:36` 里
  * 「存在 Button2 且 Button1 不是红色时，Button1 变为 Highlight」。
  * 也就是说 PCL 是 **[确定(蓝)] [取消]**，而不是常见的 [取消] [确定]。
- * 判据：`FormMain.xaml.vb:239` / `:535` 等处 `MyMsgBox(..., "确定", "取消") = 2 Then Return`，
+ * 判据：`FormMain.xaml.vb:239` / `:535` 等处 `MyMsgBox(..., "Sure", "Cancel") = 2 Then Return`，
  * 说明 Button2 才是取消。
  *
  * This program is free software: you can redistribute it and/or modify
@@ -82,10 +82,10 @@ private val MsgBackground = Color(0xFFFBFBFB)
 private val MsgBodyColor = Color(0xFF5C5C5C)
 
 /** 对话框确认按钮的默认文案，对应 `LangDialogBtnOK`。 */
-private const val MSG_BTN_OK = "确定"
+private const val MSG_BTN_OK = "Sure"
 
 /** 对话框取消按钮的默认文案，对应 `LangDialogBtnCancel`。 */
-private const val MSG_BTN_CANCEL = "取消"
+private const val MSG_BTN_CANCEL = "Cancel"
 
 /**
  * 对话框内容容器 —— **所有 `Dialog` 的内容都套一层它**。
@@ -871,7 +871,7 @@ fun PclSelectDialog(
             ) {
                 if (options.isEmpty()) {
                     item {
-                        Text(text = "没有可选项。", style = PclTextStyle.listInfo(p))
+                        Text(text = "There are no options.", style = PclTextStyle.listInfo(p))
                     }
                 } else {
                     items(options.size) { index ->
@@ -945,18 +945,18 @@ fun PclUpgradeDialog(
     val cloudText = cloudButtonText?.takeIf { it.isNotBlank() && onCloudButton != null }
     PclDialogContainer(onDismiss = onLater) { requestClose ->
         PclMsgFrame(
-            title = "发现新版本",
+            title = "new version found",
             buttons = {
                 if (cloudText == null) {
-                    PclMsgButton(text = "立即更新", colorState = PclColorState.Highlight) {
+                    PclMsgButton(text = "Update now", colorState = PclColorState.Highlight) {
                         onDownload()
                         requestClose()
                     }
-                    PclMsgButton(text = "忽略此版本") {
+                    PclMsgButton(text = "Ignore this version") {
                         onIgnore()
                         requestClose()
                     }
-                    PclMsgButton(text = "稍后", onClick = requestClose)
+                    PclMsgButton(text = "later", onClick = requestClose)
                 } else {
                     Column(
                         modifier = Modifier.align(Alignment.CenterVertically),
@@ -967,7 +967,7 @@ fun PclUpgradeDialog(
                             horizontalArrangement = Arrangement.spacedBy(PclDimens.msgButtonGap),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            PclMsgButton(text = "立即更新", colorState = PclColorState.Highlight) {
+                            PclMsgButton(text = "Update now", colorState = PclColorState.Highlight) {
                                 onDownload()
                                 requestClose()
                             }
@@ -980,11 +980,11 @@ fun PclUpgradeDialog(
                             horizontalArrangement = Arrangement.spacedBy(PclDimens.msgButtonGap),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            PclMsgButton(text = "忽略此版本") {
+                            PclMsgButton(text = "Ignore this version") {
                                 onIgnore()
                                 requestClose()
                             }
-                            PclMsgButton(text = "稍后", onClick = requestClose)
+                            PclMsgButton(text = "later", onClick = requestClose)
                         }
                     }
                 }
@@ -1071,7 +1071,7 @@ fun PclUpgradeDownloadDialog(
         PclMsgFrame(
             title = title,
             buttons = {
-                PclMsgButton(text = "取消下载", onClick = {
+                PclMsgButton(text = "Cancel download", onClick = {
                     onCancel()
                     requestClose()
                 })
@@ -1133,9 +1133,9 @@ fun PclRendererConfigDialog(
     val p = pclPalette
     PclDialogContainer(onDismiss = onDismiss) { requestClose ->
         PclMsgFrame(
-            title = "渲染器配置",
+            title = "Renderer configuration",
             buttons = {
-                PclMsgButton(text = "关闭", onClick = requestClose)
+                PclMsgButton(text = "closure", onClick = requestClose)
             },
         ) {
             Column(
@@ -1152,7 +1152,7 @@ fun PclRendererConfigDialog(
             ) {
                 if (units.isEmpty()) {
                     Text(
-                        text = "当前渲染器没有可配置的环境变量。",
+                        text = "The current renderer has no configurable environment variables.",
                         style = PclTextStyle.base(p).copy(
                             fontSize = PclDimens.msgBodyFontSize.sp,
                             color = MsgBodyColor,
@@ -1187,7 +1187,7 @@ fun PclRendererConfigDialog(
 private fun PclEnvKeyText(key: String) {
     val p = pclPalette
     Text(
-        text = "环境变量：$key",
+        text = "Environment variable: $key",
         style = PclTextStyle.base(p).copy(
             fontSize = PclDimens.msgBodyFontSize.sp,
             color = p.color1,
@@ -1218,7 +1218,7 @@ private fun PclSelectableEnvItem(unit: EnvSettingUnit.Selectable) {
         if (unit.rawEnv.check != null) {
             // 插件声明了 check：可以整体关掉这条环境变量
             PclCheckBox(
-                text = "环境变量：${unit.rawEnv.key}",
+                text = "Environment variables: ${unit.rawEnv.key}",
                 checked = unit.isEnabled,
                 modifier = Modifier.fillMaxWidth(),
                 onCheckedChange = { unit.saveCheck(it) },
@@ -1244,7 +1244,7 @@ private fun PclSelectableEnvItem(unit: EnvSettingUnit.Selectable) {
 private fun PclToggleableEnvItem(unit: EnvSettingUnit.Toggleable) {
     Column(modifier = Modifier.fillMaxWidth()) {
         PclSwitchItem(
-            title = "环境变量：${unit.rawEnv.key}",
+            title = "Environment variables: ${unit.rawEnv.key}",
             checked = unit.isEnabled,
             description = unit.summary,
             modifier = Modifier.fillMaxWidth(),
@@ -1263,7 +1263,7 @@ private fun PclCustomizableEnvItem(unit: EnvSettingUnit.Customizable) {
         PclTextBox(
             value = text,
             modifier = Modifier.fillMaxWidth(),
-            hint = unit.defaultValue.ifEmpty { "留空表示不设置" },
+            hint = unit.defaultValue.ifEmpty { "Leave blank to not set it" },
             onValueChange = {
                 text = it
                 unit.save(it)

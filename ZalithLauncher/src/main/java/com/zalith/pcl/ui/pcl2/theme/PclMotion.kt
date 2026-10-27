@@ -118,7 +118,7 @@ object PclMotion {
 /**
  * PCL2 `Modules/Base/ModAnimation.vb` 里 `AniEase*` 系列缓动函数的**原式移植**。
  *
- * PCL 的缓动不是三次贝塞尔，而是一组自定义数学公式（见源码 `#Region "缓动函数"`）：
+ * PCL 的缓动不是三次贝塞尔，而是一组自定义数学公式（见源码 `#Region "Easing function"`）：
  *
  *   - `AniEaseLinear`            : `t`
  *   - `AniEaseInFluent(p)`       : `t^p`

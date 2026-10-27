@@ -23,7 +23,7 @@ import java.util.concurrent.ConcurrentHashMap
 /**
  * 处理启动器按键事件标识
  */
-@Deprecated("怀疑 KeyEventHandler 会导致按键事件混乱，导致游戏乱操作，暂时移除 #894")
+@Deprecated("It is suspected that KeyEventHandler will cause confusion in key events and cause the game to operate randomly. It is temporarily removed #894")
 class KeyEventHandler(
     private val handle: (key: String, pressed: Boolean) -> Unit
 ) {

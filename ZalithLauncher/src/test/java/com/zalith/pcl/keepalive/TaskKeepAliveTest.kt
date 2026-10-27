@@ -29,7 +29,7 @@ import org.junit.Test
 
 /**
  * 保活计数回归：acquire/release 必须严格配对。
- * 若计数下溢会出现"任务仍在运行但前台服务被停掉"，若计数泄漏则会出现"任务已结束但服务无法停止"。
+ * 若计数下溢会出现"The task is still running but the foreground service is stopped"，若计数泄漏则会出现"The task has ended but the service cannot be stopped"。
  */
 class TaskKeepAliveTest {
 

@@ -77,7 +77,7 @@ fun VersionConfig.loginBaseUrl(): String {
 
 /** 登录页 / 提示条上显示的服务器名。没填就给个通用的。 */
 fun VersionConfig.loginServerTitle(): String =
-    loginServerName.trim().ifEmpty { "第三方登录" }
+    loginServerName.trim().ifEmpty { "Third party login" }
 
 /** 这个账户是不是属于某个认证服务器。 */
 fun Account.belongsToAuthServer(baseUrl: String): Boolean {
@@ -89,24 +89,24 @@ fun Account.belongsToAuthServer(baseUrl: String): Boolean {
 
 /** 下拉里每一项的文案（与 PCL 的中文原文一致）。 */
 fun VersionLoginType.displayName(): String = when (this) {
-    VersionLoginType.MICROSOFT_OR_OFFLINE -> "正版登录或离线登录"
-    VersionLoginType.MICROSOFT_ONLY -> "仅正版登录"
-    VersionLoginType.OFFLINE_ONLY -> "仅离线登录"
-    VersionLoginType.UNIFIED_PASSPORT -> "第三方登录：统一通行证"
-    VersionLoginType.AUTHLIB -> "第三方登录：Authlib Injector 或 LittleSkin"
+    VersionLoginType.MICROSOFT_OR_OFFLINE -> "Genuine login or offline login"
+    VersionLoginType.MICROSOFT_ONLY -> "Only genuine login"
+    VersionLoginType.OFFLINE_ONLY -> "Log in offline only"
+    VersionLoginType.UNIFIED_PASSPORT -> "Third-party login: unified pass"
+    VersionLoginType.AUTHLIB -> "Third-party login: Authlib Injector or LittleSkin"
 }
 
 /** 下拉里每一项的一句解释（放在卡片底部的蓝色提示里）。 */
 fun VersionLoginType.description(): String = when (this) {
     VersionLoginType.MICROSOFT_OR_OFFLINE ->
-        "跟随当前选中的账户启动，正版账户与离线账户都可以。"
+        "Start with the currently selected account, both genuine accounts and offline accounts are available."
     VersionLoginType.MICROSOFT_ONLY ->
-        "启动时强制使用微软（正版）账户；当前账户不是正版时会自动切到已登录的正版账户。"
+        "It is mandatory to use a Microsoft (genuine) account at startup; if the current account is not genuine, it will automatically switch to the logged-in genuine account."
     VersionLoginType.OFFLINE_ONLY ->
-        "启动时强制使用离线账户；适合不愿意用正版账户进游戏的版本。"
+        "Force the use of an offline account at startup; suitable for versions that do not want to use a genuine account to enter the game."
     VersionLoginType.UNIFIED_PASSPORT ->
-        "统一通行证（Nide8）：填写服主给的服务器 ID，启动时用该服务器上的角色。"
+        "Unified Pass (Nide8): Fill in the server ID given by the server owner, and use the character on the server when starting."
     VersionLoginType.AUTHLIB ->
-        "通用的外置登录（authlib-injector）。认证服务器填 Yggdrasil API 的完整地址，" +
-                "LittleSkin、各类自建皮肤站都属于这一类。"
+        "Universal external login (authlib-injector). " +
+                "LittleSkin and various self-built skin sites fall into this category."
 }

@@ -40,8 +40,8 @@ import java.util.concurrent.TimeUnit
 /**
  * Range 断点续传语义：
  * 首个响应在传输中途断连（节流 + 响应体起始即断开），触发引擎重试；
- * 是否已收到部分字节取决于客户端缓冲，因此断言对"携带 Range 续传"与
- * "从头重下"两条路径都保持成立，续传资格的精确校验由 ResumeContextTest 覆盖。
+ * 是否已收到部分字节取决于客户端缓冲，因此断言对"Continue uploading with Range"与
+ * "Start all over again"两条路径都保持成立，续传资格的精确校验由 ResumeContextTest 覆盖。
  */
 class FetcherResumeTest {
 

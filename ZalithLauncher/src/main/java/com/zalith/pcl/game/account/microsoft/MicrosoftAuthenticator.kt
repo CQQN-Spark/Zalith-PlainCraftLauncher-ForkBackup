@@ -124,8 +124,8 @@ const val MINECRAFT_SERVICES_URL = "https://api.minecraftservices.com"
  */
 suspend fun fetchDeviceCodeResponse(context: CoroutineContext): DeviceCodeResponse = coroutineScope {
     check(OAUTH_CLIENT_ID.isNotBlank()) {
-        "未配置正版登录 Client ID：请把微软应用注册的客户端 ID 写入工程根目录的 " +
-            ".oauth_client_id.txt，或用环境变量 OAUTH_CLIENT_ID 构建。"
+        "Genuine login Client ID is not configured: Please write the client ID registered by Microsoft application into the project root directory." +
+            ".oauth_client_id.txt, or built with the environment variable OAUTH_CLIENT_ID."
     }
     withRetry {
         submitForm(

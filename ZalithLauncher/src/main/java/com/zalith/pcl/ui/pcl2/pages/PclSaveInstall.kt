@@ -49,19 +49,19 @@ internal suspend fun pclInstallDownloadedSave(zip: File, savesDir: File) {
     if (!zip.name.endsWith(".zip", ignoreCase = true)) {
         // 个别站点会给 .rar / .7z 之类的包：解不了就别动它，但必须告诉玩家文件在哪，
         // 否则「下载完了但游戏里看不到存档」会变成无解的困惑。
-        pclSaveHint("已下载存档包 ${zip.name}，但它不是 zip，需要手动解压到 saves/", PclHintTheme.Yellow)
+        pclSaveHint("Archive package ${zip.name} has been downloaded, but it is not a zip and needs to be manually extracted to saves/", PclHintTheme.Yellow)
         return
     }
     val saveName = zip.nameWithoutExtension
     runCatching { unpackSaveZip(zipFile = zip, targetPath = savesDir) }
         .onSuccess {
             Logger.info(TAG, "Save unpacked: ${zip.absolutePath} -> $saveName")
-            pclSaveHint("存档已安装：saves/$saveName", PclHintTheme.Green)
+            pclSaveHint("Archive installed: saves/$saveName", PclHintTheme.Green)
         }
         .onFailure { e ->
             Logger.warning(TAG, "Failed to unpack save zip: ${zip.absolutePath}", e)
             pclSaveHint(
-                "存档解压失败，已保留下载的 ${zip.name}：${e.message ?: e.javaClass.simpleName}",
+                "Archive decompression failed, downloaded ${zip.name}: ${e.message ?: e.javaClass.simpleName} has been retained",
                 PclHintTheme.Yellow,
             )
         }

@@ -34,16 +34,16 @@ class PclIconBoundsTest {
         val iv = PclIcons.search
         // 宽高都必须接近 1023.14；此前宽只有 888.59（差 134.5）
         assertTrue(
-            "viewportWidth=${iv.viewportWidth} 明显偏小，说明圆弧极值点又漏了",
+            "viewportWidth=${iv.viewportWidth} is obviously too small, indicating that the arc extreme point is missing again",
             abs(iv.viewportWidth - 1023.14f) < 1f,
         )
         assertTrue(
-            "viewportHeight=${iv.viewportHeight} 偏离预期",
+            "viewportHeight=${iv.viewportHeight} deviates from expectations",
             abs(iv.viewportHeight - 1023.18f) < 1f,
         )
         // 视口必须是正方形（路径本身就是方形的），宽高差不能超过 0.1
         assertTrue(
-            "视口不再是正方形：${iv.viewportWidth} x ${iv.viewportHeight}",
+            "The viewport is no longer square: ${iv.viewportWidth} x ${iv.viewportHeight}",
             abs(iv.viewportWidth - iv.viewportHeight) < 0.1f,
         )
         // 平移应当在原点附近（紧密包围盒已经归零，groups 只做 −bounds.left 的微调）
@@ -62,21 +62,21 @@ class PclIconBoundsTest {
             val w = iv.viewportWidth
             val h = iv.viewportHeight
             if (!w.isFinite() || !h.isFinite() || w <= 0f || h <= 0f) {
-                problems += "${iv.name}: 视口非法 ${w} x ${h}"
+                problems += "${iv.name}: Illegal viewport ${w} x ${h}"
                 continue
             }
             if (!iv.defaultWidth.value.isFinite() || iv.defaultWidth.value <= 0f ||
                 !iv.defaultHeight.value.isFinite() || iv.defaultHeight.value <= 0f
             ) {
-                problems += "${iv.name}: defaultWidth/Height 非法 " +
+                problems += "${iv.name}: defaultWidth/Height is illegal" +
                     "${iv.defaultWidth.value} x ${iv.defaultHeight.value}"
             }
             if (abs(iv.root.translationX) > max(w, h) || abs(iv.root.translationY) > max(w, h)) {
-                problems += "${iv.name}: 组平移异常 (${iv.root.translationX}, ${iv.root.translationY})"
+                problems += "${iv.name}: Group translation exception (${iv.root.translationX}, ${iv.root.translationY})"
             }
         }
-        println("PclIcons 共检查 $checked 个图标")
-        assertTrue("反射没抓到图标，检查数 = $checked", checked >= 50)
+        println("PclIcons Checked $checked icons in total")
+        assertTrue("Reflection did not catch the icon, check number = $checked", checked >= 50)
         assertTrue(problems.joinToString("\n"), problems.isEmpty())
     }
 
@@ -104,11 +104,11 @@ class PclIconBoundsTest {
             val tol = max(2f, 0.006f * max(iv.viewportWidth, iv.viewportHeight))
             if (abs(iv.viewportWidth - b.width) > tol || abs(iv.viewportHeight - b.height) > tol) {
                 problems += "${iv.name}: viewport=${iv.viewportWidth}x${iv.viewportHeight} " +
-                    "但密集采样只有 ${b.width}x${b.height}"
+                    "But dense sampling only ${b.width}x${b.height}"
             }
         }
-        println("对拍 $checked 个图标（跳过含圆弧的 $skipped 个）")
-        assertTrue("对拍数太少：$checked", checked >= 20)
+        println("Check $checked icons ($skipped with arcs)")
+        assertTrue("Too few beats: $checked", checked >= 20)
         assertTrue(problems.joinToString("\n"), problems.isEmpty())
     }
 

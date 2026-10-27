@@ -80,7 +80,7 @@ object PclRemoteContent {
     fun randomBlocking(type: String): String? {
         val base = baseUrl()
         if (base.isEmpty()) {
-            lastError = "未配置站点地址"
+            lastError = "Site address not configured"
             return null
         }
         var conn: HttpURLConnection? = null
@@ -98,7 +98,7 @@ object PclRemoteContent {
             val body = conn.inputStream.bufferedReader().use { it.readText() }
             val text = JSONObject(body).optString("text")
             if (text.isBlank()) {
-                lastError = "返回内容为空"
+                lastError = "The return content is empty"
                 return null
             }
             lastError = null
@@ -143,7 +143,7 @@ fun rememberRemoteText(type: String, reloadToken: Int = 0): String {
             }
             Logger.warning(
                 LOG_TAG,
-                "拉取「$type」文案失败（第 ${attempt + 1}/$FETCH_ATTEMPTS 次）：${PclRemoteContent.lastError}"
+                "Failed to pull \"$type\" copy (time ${attempt + 1}/$FETCH_ATTEMPTS): ${PclRemoteContent.lastError}"
             )
             if (attempt < FETCH_ATTEMPTS - 1) delay(500L * (attempt + 1))
         }
@@ -151,5 +151,5 @@ fun rememberRemoteText(type: String, reloadToken: Int = 0): String {
     }
     if (text.isNotBlank()) return text
     // 回声洞的默认文案已删：只有确认拉不到时才给占位，加载中返回空串（不留假信息）。
-    return if (exhausted && type == "cave") "回声洞暂时没有留言，去官网投稿吧～" else ""
+    return if (exhausted && type == "cave") "There are currently no messages for Echo Cave, please go to the official website to submit~" else ""
 }

@@ -42,15 +42,15 @@ import java.util.Locale
 
 /** PCL `UiBackgroundSuit` 的九个取值（顺序照 XAML 里的下拉框）。 */
 enum class PclBackgroundSuit(val value: Int, val label: String) {
-    Auto(0, "智能"),
-    Tile(4, "平铺"),
-    Centered(1, "居中"),
-    Stretch(3, "拉伸"),
-    TopLeft(5, "居于左上"),
-    TopRight(9, "居于右上"),
-    BottomLeft(7, "居于左下"),
-    BottomRight(11, "居于右下"),
-    Adapt(2, "适应"),
+    Auto(0, "intelligent"),
+    Tile(4, "Tile"),
+    Centered(1, "center"),
+    Stretch(3, "stretch"),
+    TopLeft(5, "upper left"),
+    TopRight(9, "upper right"),
+    BottomLeft(7, "Located in the lower left"),
+    BottomRight(11, "Located in the lower right"),
+    Adapt(2, "adapt"),
     ;
 
     companion object {
@@ -301,7 +301,7 @@ object PclAppearance {
     fun startMusic(context: Context) {
         if (playlist.isEmpty()) playlist = musicFiles(context)
         if (playlist.isEmpty()) {
-            PclHintHost.push("背景音乐文件夹是空的，先导入几首歌吧。", PclHintTheme.Yellow)
+            PclHintHost.push("The background music folder is empty. Let’s import a few songs first.", PclHintTheme.Yellow)
             return
         }
         playCurrent(context)
@@ -335,13 +335,13 @@ object PclAppearance {
                 setOnPreparedListener { mp -> runCatching { mp.start() } }
                 setOnErrorListener { _, _, _ ->
                     musicPlaying = false
-                    PclHintHost.push("这首音乐播放失败了：${file.name}", PclHintTheme.Red)
+                    PclHintHost.push("Failed to play this music: ${file.name}", PclHintTheme.Red)
                     true
                 }
                 prepareAsync()
             }
         }.getOrNull() ?: run {
-            PclHintHost.push("这首音乐播放失败了：${file.name}", PclHintTheme.Red)
+            PclHintHost.push("Failed to play this music: ${file.name}", PclHintTheme.Red)
             return
         }
         player = mp
@@ -516,7 +516,7 @@ object PclAppearance {
             }
             context.contentResolver.openInputStream(uri)?.use { input ->
                 target.outputStream().use { output -> input.copyTo(output) }
-            } ?: error("无法读取所选文件")
+            } ?: error("Unable to read selected file")
             target
         }.getOrNull()
     }

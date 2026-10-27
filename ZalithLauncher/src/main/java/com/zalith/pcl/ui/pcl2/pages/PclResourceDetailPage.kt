@@ -4,9 +4,9 @@
  * 资源详情页（对应 PCL 的 `PageDownloadCompDetail` / `PageDownloadResourceDetail`）。
  *
  * 结构照抄 `PageDownloadCompDetail.xaml` + `.xaml.vb:43-250`：
- *   · `CardIntro`（`Margin="0,0,0,25"`，内容 `StackPanel Margin="22,18,22,19"`）：
+ *   · `CardIntro`（`Margin="0,0,0,25"`, content `StackPanel Margin="22,18,22,19"`）：
  *     资源条目本体（`CanInteraction = False`）+ 一行 `MyButton`（高 35、MinWidth 140、右边距 20）；
- *   · `CardFilter`（`Margin="0,0,0,15"`，内容 `Margin="10,10,0,10"`）：
+ *   · `CardFilter`（`Margin="0,0,0,15"`, content `Margin="10,10,0,10"`）：
  *     一排 `MyRadioButton`（`Margin="2,0"`、`ColorType=Highlight`、首项是「全部」，
  *     少于 2 个筛选项时整张卡片隐藏）；
  *   · `PanResults`：每个游戏版本一张可折叠 `MyCard`（`Margin="0,0,0,15"`、
@@ -108,7 +108,7 @@ fun pclResourceDetailPage(
     mcmod: ModTranslations.McMod?,
     classes: PlatformClasses,
 ): PclSubPage = PclSubPage(
-    title = "资源下载 - ${data.platformTitle()}",
+    title = "Resource download - ${data.platformTitle()}",
     content = { PclResourceDetail(data = data, mcmod = mcmod, classes = classes) },
 )
 
@@ -184,7 +184,7 @@ private fun PclResourceDetail(
     val grouped = remember(visibleFiles, versionFilter, installedVersion) {
         val map = LinkedHashMap<String, MutableList<PlatformVersion>>()
         visibleFiles.forEach { file ->
-            val versions = file.platformGameVersion().toList().ifEmpty { listOf("未知版本") }
+            val versions = file.platformGameVersion().toList().ifEmpty { listOf("Unknown version") }
             val keys = versions.filter {
                 versionFilter == null || it == versionFilter || it.pclBigVersion() == versionFilter
             }.ifEmpty { versions }
@@ -239,7 +239,7 @@ private fun PclResourceDetail(
             )
         }
         val where = targets.joinToString("、") { it.getVersionName() }
-        PclHintHost.push("已提交下载任务：${version.platformDisplayName()} → $where", PclHintTheme.Green)
+        PclHintHost.push("Download task submitted: ${version.platformDisplayName()} → $where", PclHintTheme.Green)
     }
 
     /**
@@ -269,7 +269,7 @@ private fun PclResourceDetail(
             // 一个版本都没扫到：能退到「当前版本」就退，连当前版本都没有才报错。
             val only = runtime.currentVersion.value
             if (only == null) {
-                runtime.submitErrorText("没有可用的游戏版本", "先去「下载」里装一个游戏版本，再回来下载这个资源。")
+                runtime.submitErrorText("No game version available", "First go to \"Downloads\" to install a game version, and then come back to download the resource.")
             } else {
                 startResourceDownload(version, listOf(only))
             }
@@ -280,7 +280,7 @@ private fun PclResourceDetail(
             // 结果就是：**只装了一个版本的用户，永远看不到这个确认框**，
             // 点「下载」后资源被静默写进那唯一的版本里，界面上既没有选择也没有二次确认
             // （用户原话：「下载模组或者其他东西时，选择下载版本的界面全不见了」）。
-            // 选择框的价值不只是"挑"，更是"让你看见这东西要装到哪儿"，所以个数不是跳过它的理由。
+            // 选择框的价值不只是"pick"，更是"Let you see where this thing is going to go"，所以个数不是跳过它的理由。
             pendingPick = version
         }
     }
@@ -300,7 +300,7 @@ private fun PclResourceDetail(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 PclButton(
-                    text = "转到 ${platform.displayName}",
+                    text = "Go to ${platform.displayName}",
                     colorState = PclColorState.Highlight,
                     height = 35.dp,
                     enabled = projectUrl != null,
@@ -308,32 +308,32 @@ private fun PclResourceDetail(
                 )
                 mcmod?.mcmod?.takeIf { it.isNotBlank() }?.let { mcmodId ->
                     PclButton(
-                        text = "转到 MC 百科",
+                        text = "Go to MC Encyclopedia",
                         height = 35.dp,
                         onClick = { runtime.activity.openLinkInternal("https://www.mcmod.cn/class/$mcmodId.html") },
                     )
                 }
                 PclButton(
-                    text = "复制名称",
+                    text = "Copy name",
                     height = 35.dp,
                     onClick = {
                         clipboard.setText(AnnotatedString(rawTitle))
-                        PclHintHost.push("已复制名称。", PclHintTheme.Green)
+                        PclHintHost.push("Name copied.", PclHintTheme.Green)
                     },
                 )
                 PclButton(
-                    text = "复制链接",
+                    text = "Copy link",
                     height = 35.dp,
                     enabled = projectUrl != null,
                     onClick = {
                         projectUrl?.let {
                             clipboard.setText(AnnotatedString(it))
-                            PclHintHost.push("已复制链接。", PclHintTheme.Green)
+                            PclHintHost.push("Link copied.", PclHintTheme.Green)
                         }
                     },
                 )
                 PclButton(
-                    text = if (favorite) "已收藏" else "收藏",
+                    text = if (favorite) "Collected" else "collect",
                     colorState = if (favorite) PclColorState.Highlight else PclColorState.Normal,
                     height = 35.dp,
                     onClick = {
@@ -352,14 +352,14 @@ private fun PclResourceDetail(
 
             error != null -> PclCard(modifier = Modifier.fillMaxWidth()) {
                 Column {
-                    PclText(text = "获取文件列表失败：$error", color = p.gray2)
+                    PclText(text = "Failed to get file list: $error", color = p.gray2)
                     Spacer(Modifier.height(10.dp))
-                    PclButton(text = "刷新", onClick = { error = null; loading = true })
+                    PclButton(text = "refresh", onClick = { error = null; loading = true })
                 }
             }
 
             files.isEmpty() -> PclCard(modifier = Modifier.fillMaxWidth()) {
-                PclText(text = "该项目没有可下载的文件。", color = p.gray2)
+                PclText(text = "There are no downloadable files for this project.", color = p.gray2)
             }
 
             else -> {
@@ -414,7 +414,7 @@ private fun PclResourceDetail(
                         list.forEach { file ->
                             PclResourceFileRow(
                                 file = file,
-                                installLabel = if (classes == PlatformClasses.MOD_PACK) "安装" else "下载",
+                                installLabel = if (classes == PlatformClasses.MOD_PACK) "Install" else "download",
                                 onInstall = { download(file) },
                             )
                         }
@@ -428,7 +428,7 @@ private fun PclResourceDetail(
     pendingPick?.let { pending ->
         val all = runtime.versions.value
         PclSelectDialog(
-            title = "选择要下载到的版本",
+            title = "Select the version you want to download to",
             // 名字为空的（加载失败的版本）不列出来，避免出现一排点不动的空条目
             options = all.mapNotNull { v ->
                 v.getVersionName().takeIf { it.isNotBlank() }
@@ -446,7 +446,7 @@ private fun PclResourceDetail(
 
     importer?.let { imp ->
         PclTitledTaskDialog(
-            title = "正在导入整合包",
+            title = "Importing integration package",
             tasks = imp.taskFlow,
             // 「取消」是红按钮，必须真的停掉任务流；原来只把弹窗收起来，安装还在后台跑
             onCancel = { runCatching { imp.cancel() }; importer = null },
@@ -499,7 +499,7 @@ private fun PclFilterChips(
     // （`PageDownloadCompDetail.xaml:25` 的 StackPanel 里由代码动态塞 MyRadioButton）。
     Row(modifier = Modifier.horizontalScroll(rememberScrollState())) {
         PclPillButton(
-            text = "全部",
+            text = "all",
             checked = selected == null,
             highlight = true,
             modifier = Modifier.padding(horizontal = 2.dp),

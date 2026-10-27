@@ -339,11 +339,11 @@ private fun PclLeftPanel(
     }
 }
 
-/** 刷新按钮（`MyIconButton LogoScale="0.85" ToolTip="刷新"`）。 */
-private fun refreshButton(tip: String = "刷新", onClick: () -> Unit = {}) =
+/** 刷新按钮（`MyIconButton LogoScale="0.85" ToolTip="refresh"`）。 */
+private fun refreshButton(tip: String = "refresh", onClick: () -> Unit = {}) =
     PclListItemButton(logo = PclIcons.refresh, tooltip = tip, logoScale = 0.85f, onClick = onClick)
 
-/** 重置按钮（`MyIconButton LogoScale="0.9" ToolTip="初始化本页设置"`）。 */
+/** 重置按钮（`MyIconButton LogoScale="0.9" ToolTip="Initialize settings for this page"`）。 */
 private fun resetButton(tip: String, onClick: () -> Unit = {}) =
     PclListItemButton(logo = PclIcons.reset, tooltip = tip, logoScale = 0.9f, onClick = onClick)
 
@@ -505,7 +505,7 @@ internal fun pclLoaderConflict(
     selected: Set<PclLoaderKind>,
 ): String? {
     fun blockedBy(vararg kinds: PclLoaderKind): String? =
-        kinds.firstOrNull { it in selected }?.let { "与 ${it.displayName} 不兼容" }
+        kinds.firstOrNull { it in selected }?.let { "Not compatible with ${it.displayName}" }
 
     val mc = mcVersion
     return when (target) {
@@ -514,7 +514,7 @@ internal fun pclLoaderConflict(
             PclLoaderKind.Quilt, PclLoaderKind.Cleanroom,
         ) ?: if (PclLoaderKind.OptiFine in selected && mc != null &&
             compareMcVersion(mc, "1.13") >= 0 && compareMcVersion(mc, "1.14.3") <= 0
-        ) "与 OptiFine 不兼容" else null
+        ) "Not compatible with OptiFine" else null
 
         PclLoaderKind.NeoForge -> blockedBy(
             PclLoaderKind.Forge, PclLoaderKind.Fabric,
@@ -526,7 +526,7 @@ internal fun pclLoaderConflict(
             PclLoaderKind.Quilt, PclLoaderKind.Cleanroom,
         ) ?: if (PclLoaderKind.OptiFine in selected && mc != null &&
             compareMcVersion(mc, "1.20.4") > 0
-        ) "与 OptiFine 不兼容" else null
+        ) "Not compatible with OptiFine" else null
 
         PclLoaderKind.Quilt -> blockedBy(
             PclLoaderKind.Forge, PclLoaderKind.NeoForge,
@@ -537,10 +537,10 @@ internal fun pclLoaderConflict(
             PclLoaderKind.NeoForge, PclLoaderKind.Quilt, PclLoaderKind.Cleanroom,
         ) ?: if (PclLoaderKind.Forge in selected && mc != null &&
             compareMcVersion(mc, "1.13") >= 0 && compareMcVersion(mc, "1.14.3") <= 0
-        ) "与 Forge 不兼容"
+        ) "Not compatible with Forge"
         else if (PclLoaderKind.Fabric in selected && mc != null &&
             compareMcVersion(mc, "1.20.4") > 0
-        ) "与 Fabric 不兼容" else null
+        ) "Not compatible with Fabric" else null
 
         // Cleanroom 是 1.12.2 的 Forge 分支，和另外几个模组加载器天然无法共存。
         PclLoaderKind.Cleanroom -> blockedBy(
@@ -722,7 +722,7 @@ private fun PclDownloadInstallPage(nav: PclNavController) {
     fun startInstall() {
         val mc = selectedMc
         if (mc == null) {
-            PclHintHost.push("请先选择一个游戏版本。", PclHintTheme.Red)
+            PclHintHost.push("Please select a game version first.", PclHintTheme.Red)
             return
         }
         // 输入框空着 = 用默认名（带加载器后缀的那个）。
@@ -830,7 +830,7 @@ private fun PclDownloadInstallPage(nav: PclNavController) {
                         if (installTasks.isNotEmpty()) {
                             // 安装是全局任务：弹窗被收起来（后台运行）时在这里也能看到
                             PclHint(
-                                text = "游戏正在安装中，可在右下角「下载管理」查看进度。",
+                                text = "The game is being installed. You can check the progress in \"Download Management\" in the lower right corner.",
                                 theme = PclHintTheme.Blue,
                             )
                             Spacer(Modifier.height(10.dp))
@@ -857,7 +857,7 @@ private fun PclDownloadInstallPage(nav: PclNavController) {
                             logoRes = R.drawable.pcl_block_anvil,
                             labelOf = { it.versionName },
                             infoOf = { info ->
-                                info.releaseTime.takeIf { it.isNotBlank() }?.let { "发布于 $it" }
+                                info.releaseTime.takeIf { it.isNotBlank() }?.let { "Posted by $it" }
                             },
                             disabledReason = pclLoaderConflict(PclLoaderKind.Forge, mcId, selectedLoaders),
                         )
@@ -929,8 +929,8 @@ private fun PclDownloadInstallPage(nav: PclNavController) {
 
                         Spacer(Modifier.height(10.dp))
                         PclText(
-                            text = "LiteLoader / OptiFabric 在 Zalith 后端没有安装实现，因此未列出；" +
-                                "所有加载器版本列表均实时来自官方/镜像源。",
+                            text = "LiteLoader / OptiFabric does not have an installed implementation in the Zalith backend and is therefore not listed;" +
+                                "All loader version lists are live from official/mirror sources.",
                             fontSize = 12,
                             color = p.gray2,
                         )
@@ -1052,7 +1052,7 @@ internal fun MinecraftVersion.pclLogoRes(): Int = pclGroupOf().logoRes
 /**
  * 版本列表态（`PanMinecraft`）：最新版本卡片 + 四组折叠卡片。
  *
- * 卡片几何取自 PCL：卡片 `Margin="0,15,0,15"`（最新版本）/ `Margin="0,0,0,15"`（分组），
+ * 卡片几何取自 PCL：卡片 `Margin="0,15,0,15"`(latest version)/`Margin="0,0,0,15"`（分组），
  * 内容容器 `Margin="20,40,18,0"`（见 [PclVersionStackPadding]），而 `MyCard.StackInstall`
  * 会在末尾补 18 高的占位（`MyCard.vb:170`），所以内容下边距直接取 18。
  *
@@ -1079,7 +1079,7 @@ internal fun PclMcVersionListView(
 
             error != null -> PclCard(title = PclStrings.LangDownloadLatest, modifier = Modifier.fillMaxWidth()) {
                 Column {
-                    PclHint(text = "版本列表获取失败：$error", theme = PclHintTheme.Red)
+                    PclHint(text = "Failed to obtain version list: $error", theme = PclHintTheme.Red)
                     Spacer(Modifier.height(10.dp))
                     PclButton(text = PclStrings.LangRefresh, onClick = onRetry)
                 }
@@ -1089,7 +1089,7 @@ internal fun PclMcVersionListView(
                 title = PclStrings.LangDownloadLatest,
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                PclText(text = "没有获取到任何可安装的版本。", color = pclPalette.gray2)
+                PclText(text = "No installable version was found.", color = pclPalette.gray2)
             }
 
             else -> {
@@ -1313,24 +1313,24 @@ private fun PclDownloadSourceCard(runtime: PclRuntime) {
     }
 
     val measuredText = when (runtime.measuredFastestSource) {
-        MirrorSourceType.MIRROR -> "BMCL API 镜像"
-        MirrorSourceType.OFFICIAL -> "官方源"
-        MirrorSourceType.AUTO -> "还没测过"
+        MirrorSourceType.MIRROR -> "BMCL API image"
+        MirrorSourceType.OFFICIAL -> "official source"
+        MirrorSourceType.AUTO -> "Haven't tested it yet"
     }
     val statusText = when (runtime.downloadSource) {
         MirrorSourceType.AUTO ->
             if (runtime.measuredFastestSource == MirrorSourceType.AUTO) {
-                "自动：还没测过速，暂时按当前网络环境静态判定。"
+                "Automatic: The speed has not been tested yet, and it will be determined statically based on the current network environment for the time being."
             } else {
-                "自动：已选用实测最快的 $measuredText。"
+                "Automatic: The fastest measured $measuredText has been selected."
             }
 
-        MirrorSourceType.OFFICIAL -> "已强制使用官方源（不注入镜像）。"
-        MirrorSourceType.MIRROR -> "已强制使用 BMCL API 镜像源。"
+        MirrorSourceType.OFFICIAL -> "Forced to use official sources (no mirrors injected)."
+        MirrorSourceType.MIRROR -> "The use of BMCL API mirror sources has been forced."
     }
 
     PclCard(
-        title = "下载源",
+        title = "Download source",
         modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
         contentPadding = PaddingValues(start = 20.dp, top = 40.dp, end = 18.dp, bottom = 15.dp),
     ) {
@@ -1345,7 +1345,7 @@ private fun PclDownloadSourceCard(runtime: PclRuntime) {
                 )
                 Spacer(Modifier.width(10.dp))
                 PclButton(
-                    text = if (runtime.isProbingSources) "测速中…" else "测速选最快",
+                    text = if (runtime.isProbingSources) "Speed ​​measurement in progress…" else "Choose the fastest speed test",
                     enabled = !runtime.isProbingSources,
                     onClick = { runtime.probeDownloadSources() },
                 )
@@ -1361,7 +1361,7 @@ private fun PclDownloadSourceCard(runtime: PclRuntime) {
                 )
             }
             PclText(
-                text = "测速会各拉一次版本清单（约 200 KB）比吞吐与延迟，换个网络后建议重新测。",
+                text = "The speed test will pull out a version list (about 200 KB) to compare throughput and latency. It is recommended to retest after changing the network.",
                 fontSize = 12,
                 color = p.gray4,
                 modifier = Modifier.padding(top = 6.dp),
@@ -1495,13 +1495,13 @@ private fun <T> PclLoaderCard(
                 )
 
                 state.error != null -> {
-                    PclHint(text = "获取失败：${state.error}", theme = PclHintTheme.Red)
+                    PclHint(text = "Failed to obtain: ${state.error}", theme = PclHintTheme.Red)
                     Spacer(Modifier.height(10.dp))
                     PclButton(text = PclStrings.LangRefresh, onClick = { PclDownloadRefresh.trigger() })
                 }
 
                 state.items.isEmpty() -> PclText(
-                    text = "该游戏版本下没有可用的 $title 版本。",
+                    text = "There is no $title version available for this version of the game.",
                     fontSize = 12,
                     color = p.gray2,
                 )
@@ -1564,7 +1564,7 @@ internal fun PclTitledTaskDialog(
             )
             if (list.isEmpty()) {
                 Text(
-                    text = "准备中…",
+                    text = "In preparation…",
                     style = PclTextStyle.base(p),
                     modifier = Modifier.padding(top = 14.dp),
                 )
@@ -1605,9 +1605,9 @@ internal fun PclTitledTaskDialog(
                 modifier = Modifier.padding(top = 18.dp).fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center,
             ) {
-                PclButton(text = "取消", colorState = PclColorState.Red, onClick = onCancel)
+                PclButton(text = "Cancel", colorState = PclColorState.Red, onClick = onCancel)
                 Spacer(Modifier.width(10.dp))
-                PclButton(text = "后台运行", colorState = PclColorState.Highlight, onClick = requestClose)
+                PclButton(text = "Running in the background", colorState = PclColorState.Highlight, onClick = requestClose)
             }
         }
     }
@@ -1634,7 +1634,7 @@ private fun platformClassesFor(section: Int): PlatformClasses = when (section) {
 private const val PCL_ASSET_PAGE_SIZE = 40
 
 /** 「自定义版本」这个特殊下拉项的显示文本。 */
-private const val PCL_VERSION_CUSTOM = "自定义…"
+private const val PCL_VERSION_CUSTOM = "Customize…"
 
 /** 来源候选；`null` 表示「全部」（`LangDownloadCompSearchSourceAll`）。 */
 private fun pclSourceChoices(classes: PlatformClasses): List<Platform?> =
@@ -1803,8 +1803,8 @@ internal fun PlatformSearchData.pclVersionText(): String {
 
 /** 下载量文案（`ResourceProject.ToResourceItem:565-567`：亿四舍五入两位、万向下取整）。 */
 internal fun formatCount(count: Long): String = when {
-    count > 100_000_000 -> String.format(java.util.Locale.US, "%.2f 亿", count / 100_000_000.0)
-    count > 100_000 -> String.format(java.util.Locale.US, "%d 万", count / 10_000)
+    count > 100_000_000 -> String.format(java.util.Locale.US, "%.2f billion", count / 100_000_000.0)
+    count > 100_000 -> String.format(java.util.Locale.US, "%d million", count / 10_000)
     else -> count.toString()
 }
 
@@ -1826,7 +1826,7 @@ private fun PclDownloadResourcePage(nav: PclNavController, section: Int) {
     val categoryName = when (section) {
         1 -> PclStrings.LangDownloadPageLeftMods
         2 -> PclStrings.LangDownloadPageLeftModpack
-        3 -> "存档"
+        3 -> "Archive"
         4 -> PclStrings.LangDownloadPageLeftResourcepack
         else -> PclStrings.LangDownloadPageLeftShader
     }
@@ -1904,7 +1904,7 @@ private fun PclDownloadResourcePage(nav: PclNavController, section: Int) {
             val pages = results.mapNotNull { it.second.getOrNull() }
             val failure = results.firstNotNullOfOrNull { it.second.exceptionOrNull()?.message }
             if (pages.isEmpty()) {
-                error = failure ?: "没有获取到结果。"
+                error = failure ?: "No results were obtained."
                 page = null
             } else {
                 page = PclAssetPage(
@@ -1969,7 +1969,7 @@ private fun PclDownloadResourcePage(nav: PclNavController, section: Int) {
                 PclSearchBox(
                     value = keyword,
                     modifier = Modifier.weight(1f),
-                    hint = "搜索$categoryName",
+                    hint = "Search $categoryName",
                     onSearch = { search(0) },
                     onValueChange = { keyword = it },
                 )
@@ -2085,7 +2085,7 @@ private fun PclDownloadResourcePage(nav: PclNavController, section: Int) {
                         theme = PclHintTheme.Red,
                     )
                     Spacer(Modifier.height(10.dp))
-                    PclButton(text = "重试", onClick = { search(pageIndex) })
+                    PclButton(text = "Try again", onClick = { search(pageIndex) })
                 }
             }
 
@@ -2094,8 +2094,8 @@ private fun PclDownloadResourcePage(nav: PclNavController, section: Int) {
                     PclText(text = PclStrings.LangDownloadCompSearchTips, color = p.gray2)
                     Spacer(Modifier.height(8.dp))
                     PclText(
-                        text = "目标版本：" +
-                            (runtime.currentVersion.value?.getVersionName() ?: "未选择"),
+                        text = "Target version:" +
+                            (runtime.currentVersion.value?.getVersionName() ?: "Not selected"),
                         color = p.gray2,
                         fontSize = 12,
                     )
@@ -2153,15 +2153,15 @@ private fun PclDownloadResourcePage(nav: PclNavController, section: Int) {
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     PclButton(
-                        text = "上一页",
+                        text = "Previous page",
                         enabled = pageIndex > 0,
                         onClick = { if (pageIndex - PCL_ASSET_PAGE_SIZE >= 0) search(pageIndex - PCL_ASSET_PAGE_SIZE) },
                     )
                     Spacer(Modifier.width(14.dp))
-                    PclText(text = "第 ${page!!.pageNumber} / ${page!!.totalPage} 页")
+                    PclText(text = "Page ${page!!.pageNumber} / ${page!!.totalPage}")
                     Spacer(Modifier.width(14.dp))
                     PclButton(
-                        text = "下一页",
+                        text = "Next page",
                         enabled = !page!!.isLastPage,
                         onClick = { search(pageIndex + PCL_ASSET_PAGE_SIZE) },
                     )
@@ -2174,8 +2174,8 @@ private fun PclDownloadResourcePage(nav: PclNavController, section: Int) {
     // ---- 自定义版本号
     if (versionInput) {
         PclInputDialog(
-            title = "自定义版本",
-            label = "游戏版本号（例如 1.21.1）",
+            title = "Custom version",
+            label = "Game version number (e.g. 1.21.1)",
             initial = gameVersion.orEmpty(),
             onConfirm = {
                 gameVersion = it.trim().ifEmpty { null }
@@ -2188,7 +2188,7 @@ private fun PclDownloadResourcePage(nav: PclNavController, section: Int) {
     // ---- 选择具体文件后执行真实下载
     pendingPick?.let { pick ->
         PclSelectDialog(
-            title = "选择要下载的文件",
+            title = "Select file to download",
             options = pick.candidates.map { it.platformId() to it.pickLabel() },
             current = pick.candidates.firstOrNull()?.platformId(),
             onSelect = { id ->
@@ -2244,7 +2244,7 @@ private fun PclDownloadResourcePage(nav: PclNavController, section: Int) {
                             )
                         }
                         PclHintHost.push(
-                            "已提交下载任务：${chosen.platformDisplayName()}",
+                            "Download task submitted: ${chosen.platformDisplayName()}",
                             PclHintTheme.Green,
                         )
                     }
@@ -2257,7 +2257,7 @@ private fun PclDownloadResourcePage(nav: PclNavController, section: Int) {
 
     modpackImporterHolder?.let { imp ->
         PclTitledTaskDialog(
-            title = "正在导入整合包",
+            title = "Importing integration package",
             tasks = imp.taskFlow,
             // 这个弹窗的「取消」是红按钮，必须真的把导入任务流停掉。
             // 原来只把 holder 置空 —— 弹窗消失了，后台的安装却在继续跑。
@@ -2322,7 +2322,7 @@ private fun installAsset(
             .getOrNull()
             .orEmpty()
         if (raw.isEmpty()) {
-            onError("该项目没有可下载的文件。")
+            onError("There are no downloadable files for this project.")
             return@launch
         }
         val inited = runCatching { raw.initAll(projectId) }.getOrDefault(raw)
@@ -2362,7 +2362,7 @@ internal fun startModpackImport(
     onImporter: (ModpackImporter?) -> Unit,
 ) {
     val context: android.content.Context = runtime.activity
-    val title = "安装整合包：${version.platformDisplayName()}"
+    val title = "Install integration package: ${version.platformDisplayName()}"
     // 专用目录，与 `temp_modpack` 平级 —— 导入器清缓存时不会波及这里。
     val outDir = File(PathManager.DIR_CACHE, "pcl2_modpack_import").apply { mkdirs() }
     val output = File(outDir, version.platformFileName())
@@ -2383,7 +2383,7 @@ internal fun startModpackImport(
     val downloadTask = Task.runTask(
         id = "pcl2_modpack_download/${version.platformId()}",
         task = { task ->
-            task.updateMessage(androidText("正在下载整合包：${version.platformFileName()}"))
+            task.updateMessage(androidText("Downloading integration package: ${version.platformFileName()}"))
             var done = 0L
             downloadFile(
                 url = version.platformDownloadUrl(),
@@ -2420,16 +2420,16 @@ internal fun startModpackImport(
                 runtime.clearModpackImport(importId)
                 if (!userCancelled) {
                     runtime.submitErrorText(
-                        "整合包下载失败",
-                        if (output.isFile && output.length() > 0L) "下载中断，请重试。"
-                        else "请检查网络后重试。",
+                        "Integration package download failed",
+                        if (output.isFile && output.length() > 0L) "Download interrupted, please try again."
+                        else "Please check the network and try again.",
                     )
                 }
                 return@submitTask
             }
             // 包已经落地，接下来直接交给导入器，不需要用户再点任何东西。
             // 这条提示同时也是「下载完会自动装」的可见凭据 —— 用户切到别的版块时也能看到。
-            PclHintHost.push("整合包下载完成，开始自动安装。", PclHintTheme.Blue)
+            PclHintHost.push("The download of the integration package is completed and the automatic installation begins.", PclHintTheme.Blue)
             runCatching {
                 val importer = ModpackImporter(
                     context = context,
@@ -2442,7 +2442,7 @@ internal fun startModpackImport(
                     waitForVersionName = { packName ->
                         pclAskVersionName(
                             rawDefault = packName.ifBlank { version.platformDisplayName() },
-                            title = "设置版本名称",
+                            title = "Set version name",
                         )
                     },
                     waitForConfirmMobileData = { true },
@@ -2471,7 +2471,7 @@ internal fun startModpackImport(
                                 // 先关弹窗再提示：弹窗标题写的是「正在导入」，跑完了不该还挂在那儿
                                 onImporter(null)
                                 runtime.clearModpackImport(importId)
-                                PclHintHost.push("整合包「$name」安装完成。", PclHintTheme.Green)
+                                PclHintHost.push("The integration package \"$name\" is installed.", PclHintTheme.Green)
                                 runtime.refreshVersions()
                                 runCatching { output.delete() }
                             },
@@ -2496,7 +2496,7 @@ internal fun startModpackImport(
                                     if (pclDiscardIncompleteVersion(importer.resolvedVersionNameOrNull())) {
                                         runtime.refreshVersions()
                                     }
-                                    runtime.submitErrorText("整合包导入失败", modpackImportErrorText(th))
+                                    runtime.submitErrorText("Integration package import failed", modpackImportErrorText(th))
                                 }
                                 runCatching { output.delete() }
                             },
@@ -2510,7 +2510,7 @@ internal fun startModpackImport(
                 }
             }.onFailure {
                 runtime.clearModpackImport(importId)
-                runtime.submitErrorText("整合包导入失败", modpackImportErrorText(it))
+                runtime.submitErrorText("Integration package import failed", modpackImportErrorText(it))
             }
         },
     )
@@ -2531,29 +2531,29 @@ internal fun startModpackImport(
  */
 internal fun modpackImportErrorText(th: Throwable): String = when (th) {
     is DownloadFailedException ->
-        "安装这个整合包需要的文件没能全部下载成功，通常是网络中断，或者当前下载源上缺这些文件。\n" +
-            "可以换一个下载源再试一次，或者稍后重试。\n\n${th.message.orEmpty()}"
+        "All the files required to install this integration package could not be downloaded successfully, usually because the network is interrupted, or the files are missing from the current download source. " +
+            "You can change the download source and try again, or try again later. "
 
     is PackNotSupportedException -> when (th.reason) {
         UnsupportedPackReason.CorruptedArchive ->
-            "这个整合包文件已损坏，或不是能解压的压缩包。请重新下载一份完整的整合包再导入。"
+            "This integration package file is damaged or is not a compressed package that can be decompressed. "
 
         UnsupportedPackReason.UnsupportedFormat ->
-            "无法识别这个整合包的格式。目前认得 CurseForge、Modrinth、MCBBS " +
-                "以及 MultiMC / HMCL 导出的整合包。"
+            "The format of this modpack is not recognized. " +
+                "and integration packages for MultiMC / HMCL exports."
     }
 
     // 正常流程下走不到这里了（导入前会用 `pclUniqueVersionName` 让开已占用的名字），
     // 但如果真撞上，至少别只给一个类名。
     is GameAlreadyInstalledException ->
-        "已经有一个叫「${th.versionName}」的版本了，导入没有继续。\n" +
-            "在「版本选择」里把它删掉（或改个名字），再重新导入一次。"
+        "There is already a version called \"${th.versionName}\", but the import did not continue. " +
+            "Delete it (or change its name) in \"Version Selection\" and import it again."
 
     // 未知异常：给一句人话 + 原始信息，末尾附上异常类型方便排查。
     // 以前这里直接 `th.message ?: th.javaClass.simpleName`，用户截图上就是一行
     // 「GameAlreadyInstalledException」—— 既不知道发生了什么，也不知道能做什么。
     else -> buildString {
-        append("导入过程中出现了一个意料之外的错误。\n")
+        append("An unexpected error occurred during the import process. ")
         th.message?.takeIf { it.isNotBlank() }?.let { append(it).append('\n') }
         append("\n（${th.javaClass.simpleName}）")
     }
@@ -2622,29 +2622,29 @@ fun PclLinkRight(nav: PclNavController) {
     } else {
         PclContent {
             PclHint(
-                text = "陶瓦联机还没启用。启用之后才连得上大厅；启用时会同时打开「设置 → 联机」里的陶瓦联机开关。",
+                text = "Terracotta online is not enabled yet. ",
                 theme = PclHintTheme.Yellow,
             )
             Spacer(Modifier.height(15.dp))
-            PclCard(modifier = Modifier.fillMaxWidth(), title = "联机状态（陶瓦 Terracotta）") {
+            PclCard(modifier = Modifier.fillMaxWidth(), title = "Online Status (Terracotta)") {
                 Column {
-                    PclText(text = "当前状态：未启用", fontSize = 15)
+                    PclText(text = "Current status: Not enabled", fontSize = 15)
                     Spacer(Modifier.height(8.dp))
                     PclText(
-                        text = "陶瓦会在本机建一条虚拟网卡，和好友打洞组网；首次启用时需要授权 VPN。",
+                        text = "Taowa will create a virtual network card on the local machine and create a hole-in-the-wall network with friends; VPN authorization is required when it is enabled for the first time.",
                         color = p.gray2,
                         fontSize = 12,
                     )
                     Spacer(Modifier.height(12.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         PclButton(
-                            text = "启用陶瓦联机",
+                            text = "Enable terracotta online",
                             colorState = PclColorState.Highlight,
                             onClick = { asking = true },
                         )
                         Spacer(Modifier.width(14.dp))
                         // 也可以自己跑去「设置 → 联机」勾那一枚开关，效果完全一样（同一个设置单元）
-                        PclTextButton(text = "前往联机设置") {
+                        PclTextButton(text = "Go to online settings") {
                             nav.go(PclSection.Setup, 1)
                         }
                     }
@@ -2656,14 +2656,14 @@ fun PclLinkRight(nav: PclNavController) {
 
     if (asking) {
         PclConfirmDialog(
-            title = "启用陶瓦联机",
-            content = "联机大厅要用陶瓦（Terracotta）打洞组网，现在还没有启用。\n" +
-                "启用后会同时打开「设置 → 联机」里的陶瓦联机开关，首次使用还会申请 VPN 权限。",
-            confirmText = "启用",
+            title = "Enable terracotta online",
+            content = "The online lobby requires holes in Terracotta to form a network, which is not yet enabled. " +
+                "After enabling it, the Taowa connection switch in \"Settings → Connection\" will be turned on at the same time, and VPN permission will be applied for when using it for the first time.",
+            confirmText = "enable",
             onConfirm = {
                 // 和「设置 → 联机」用的是同一个设置单元：这里存下去，那边那枚开关立刻就是勾上的
                 AllSettings.enableTerracotta.save(true)
-                PclHintHost.push("已启用陶瓦联机。", PclHintTheme.Green)
+                PclHintHost.push("Terracotta Online is enabled.", PclHintTheme.Green)
             },
             onDismiss = { asking = false },
         )
@@ -2687,7 +2687,7 @@ private fun PclLinkContent() {
     val eventViewModel: EventViewModel = viewModel()
 
     var player by remember {
-        mutableStateOf(AccountsManager.currentAccountFlow.value?.username ?: "匿名玩家")
+        mutableStateOf(AccountsManager.currentAccountFlow.value?.username ?: "anonymous player")
     }
     var busy by remember { mutableStateOf(false) }
     // 「正在连接」：从点了【加入】到状态机给出 GuestOK / Exception 之间为 true。
@@ -2810,10 +2810,10 @@ private fun PclLinkContent() {
     // 外层再套一层初始化进度：还没初始化完时 `state` 一定是 null，
     // 单看 `state` 会把「正在加载原生库」显示成「空闲」，让人以为已经就绪。
     val statusText = when (initPhase) {
-        PclLinkInit.Initializing -> "正在初始化…"
-        PclLinkInit.Failed -> "初始化失败"
+        PclLinkInit.Initializing -> "Initializing…"
+        PclLinkInit.Failed -> "Initialization failed"
         PclLinkInit.Ready -> when (ready) {
-            null, is TerracottaState.Waiting -> "空闲"
+            null, is TerracottaState.Waiting -> "idle"
             else -> context.getString(ready.localStringRes())
         }
     }
@@ -2828,7 +2828,7 @@ private fun PclLinkContent() {
     fun joinRoom(raw: String, onJoined: () -> Unit) {
         val code = raw.trim()
         if (code.isEmpty()) {
-            PclHintHost.push("请先填写大厅编号。", PclHintTheme.Red)
+            PclHintHost.push("Please fill in the hall number first.", PclHintTheme.Red)
             return
         }
         if (busy) return
@@ -2852,7 +2852,7 @@ private fun PclLinkContent() {
                 val nodes = withContext(Dispatchers.Default) {
                     runCatching { fetchNodes().map { it.toString() } }.getOrDefault(emptyList())
                 }
-                val accepted = Terracotta.setGuesting(code, player.ifBlank { "匿名玩家" }, nodes)
+                val accepted = Terracotta.setGuesting(code, player.ifBlank { "anonymous player" }, nodes)
                 if (!accepted) {
                     PclHintHost.push(
                         context.getString(R.string.terracotta_status_waiting_guest_prompt_invalid),
@@ -2878,7 +2878,7 @@ private fun PclLinkContent() {
                         joinCode = ""
                         if (joinDialog) onJoined()
                         PclHintHost.push(
-                            "已加入大厅，现在可以进入游戏了 —— 打开「多人游戏」就能看到这个房间。",
+                            "Joined the lobby and can now enter the game - you can see this room by opening Multiplayer.",
                             PclHintTheme.Green,
                         )
                     }
@@ -2888,20 +2888,20 @@ private fun PclLinkContent() {
                             context.getString(result.getEnumType().textRes)
                         }.getOrNull().orEmpty()
                         PclHintHost.push(
-                            "加入大厅失败：${desc.ifBlank { "连接被拒绝" }}",
+                            "Failed to join the lobby: ${desc.ifBlank {"连接被拒绝" }}",
                             PclHintTheme.Red,
                         )
                     }
 
                     else -> PclHintHost.push(
-                        "连接超时：房主可能还没开好大厅，或者网络不通，稍后可以重试。",
+                        "Connection timeout: The host may not have opened the lobby yet, or the network is unavailable. You can try again later.",
                         PclHintTheme.Red,
                     )
                 }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Throwable) {
-                PclHintHost.push("加入大厅失败：${e.message ?: e.javaClass.simpleName}", PclHintTheme.Red)
+                PclHintHost.push("Failed to join the lobby: ${e.message ?: e.javaClass.simpleName}", PclHintTheme.Red)
             } finally {
                 joining = false
                 busy = false
@@ -2913,15 +2913,15 @@ private fun PclLinkContent() {
         // PCL 原版的这一条只提「Terracotta 内网穿透」，而页尾又说「由内置的 EasyTier 节点提供」，
         // 两种说法看着像两套东西。其实陶瓦就是基于 EasyTier 的，这里合并成一句。
         PclHint(
-            text = "联机由内置的陶瓦（Terracotta，基于 EasyTier）打洞组网，首次使用会申请 VPN 权限。",
+            text = "The connection is made by the built-in Terracotta (based on EasyTier), and VPN permission will be applied for when using it for the first time.",
             theme = PclHintTheme.Blue,
         )
         Spacer(Modifier.height(15.dp))
 
         // ---- 联机状态 + 房间成员
-        PclCard(modifier = Modifier.fillMaxWidth(), title = "联机状态（陶瓦 Terracotta）") {
+        PclCard(modifier = Modifier.fillMaxWidth(), title = "Online Status (Terracotta)") {
             Column {
-                PclText(text = "当前状态：$statusText", fontSize = 15)
+                PclText(text = "Current status: $statusText", fontSize = 15)
 
                 // 初始化失败时把原因摊开给用户看，并给一个重试入口 ——
                 // 陶瓦的原生库加载失败（缺 so、没存储权限）以前只会闪一下红条，
@@ -2929,13 +2929,13 @@ private fun PclLinkContent() {
                 if (initPhase == PclLinkInit.Failed) {
                     Spacer(Modifier.height(8.dp))
                     PclText(
-                        text = "陶瓦初始化失败：${initError ?: "未知错误"}",
+                        text = "Terracotta initialization failed: ${initError ?:"未知错误"}",
                         color = p.gray2,
                         fontSize = 12,
                     )
                     Spacer(Modifier.height(8.dp))
                     PclButton(
-                        text = "重试初始化",
+                        text = "Retry initialization",
                         colorState = PclColorState.Highlight,
                         onClick = { initRetry++ },
                     )
@@ -2944,22 +2944,22 @@ private fun PclLinkContent() {
                 // 房主：大厅编号就是好友加入要用的那串码（PCL 里叫「房间邀请码」）
                 lobbyCode?.let { code ->
                     Spacer(Modifier.height(10.dp))
-                    PclText(text = "大厅编号：$code", fontSize = 16)
+                    PclText(text = "Hall number: $code", fontSize = 16)
                     Spacer(Modifier.height(8.dp))
-                    PclButton(text = "复制编号", colorState = PclColorState.Highlight, onClick = {
+                    PclButton(text = "copy number", colorState = PclColorState.Highlight, onClick = {
                         clipboard.setText(AnnotatedString(code))
-                        PclHintHost.push("大厅编号已复制，发给好友即可加入。", PclHintTheme.Green)
+                        PclHintHost.push("The lobby number has been copied and sent to friends to join.", PclHintTheme.Green)
                     })
                 }
 
                 // 房客：大厅映射到本机的地址
                 guestUrl?.let { url ->
                     Spacer(Modifier.height(10.dp))
-                    PclText(text = "服务器地址：$url", fontSize = 16)
+                    PclText(text = "Server address: $url", fontSize = 16)
                     Spacer(Modifier.height(8.dp))
-                    PclButton(text = "复制地址", colorState = PclColorState.Highlight, onClick = {
+                    PclButton(text = "Copy address", colorState = PclColorState.Highlight, onClick = {
                         clipboard.setText(AnnotatedString(url))
-                        PclHintHost.push("服务器地址已复制。", PclHintTheme.Blue)
+                        PclHintHost.push("Server address copied.", PclHintTheme.Blue)
                     })
                 }
 
@@ -2974,13 +2974,13 @@ private fun PclLinkContent() {
                 if (ready == null || ready is TerracottaState.Waiting) {
                     Spacer(Modifier.height(8.dp))
                     PclText(
-                        text = "当前没有加入大厅。填好玩家名后，用好友给的大厅编号点「加入房间」。",
+                        text = "There are currently no lobbies to join. ",
                         color = p.gray2,
                         fontSize = 12,
                     )
                 } else {
                     Spacer(Modifier.height(12.dp))
-                    PclButton(text = "退出大厅", colorState = PclColorState.Red, onClick = {
+                    PclButton(text = "Exit the lobby", colorState = PclColorState.Red, onClick = {
                         runCatching { Terracotta.setWaiting(true) }
                     })
                 }
@@ -2993,7 +2993,7 @@ private fun PclLinkContent() {
         PclCard(modifier = Modifier.fillMaxWidth(), title = PclStrings.LangLinkMainRoomList) {
             Column {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    PclText(text = "玩家名", modifier = Modifier.width(70.dp))
+                    PclText(text = "player name", modifier = Modifier.width(70.dp))
                     PclTextBox(
                         value = player,
                         modifier = Modifier.weight(1f),
@@ -3002,7 +3002,7 @@ private fun PclLinkContent() {
                 }
                 Spacer(Modifier.height(6.dp))
                 PclText(
-                    text = "这是你在大厅里显示的名字，默认取当前账户名。",
+                    text = "This is the name you display in the lobby. It defaults to the current account name.",
                     color = p.gray2,
                     fontSize = 12,
                 )
@@ -3023,7 +3023,7 @@ private fun PclLinkContent() {
                 }
                 Spacer(Modifier.height(10.dp))
                 PclText(
-                    text = "联机节点由内置的 EasyTier 提供，可在「设置 → 联机」里配置自定义节点。",
+                    text = "Online nodes are provided by the built-in EasyTier, and custom nodes can be configured in \"Settings → Online\".",
                     color = p.gray2,
                     fontSize = 12,
                 )
@@ -3040,25 +3040,25 @@ private fun PclLinkContent() {
     // 排在右边，与页面上的「加入房间」保持同一个方向。
     if (joinDialog) {
         PclMsgInputDialog(
-            title = "加入大厅",
+            title = "Join lobby",
             // 连接期间把正文换成进度说明：点完【加入】要等十几秒才真的连上，
             // 期间弹窗一直开着，用户才知道自己点到了、还在连。
             lines = if (joining) listOf(
-                "正在连接大厅，请稍候…",
-                "需要扫描房主并建立隧道，通常十几秒到一分钟，连上后会自动提示。",
+                "Connecting to the lobby, please wait...",
+                "You need to scan the homeowner and establish a tunnel, which usually takes ten seconds to one minute. You will be prompted automatically after connecting.",
             ) else listOf(
-                "1、把好友发来的大厅编号填在下面，点【加入】。",
-                "2、连上之后再启动游戏，在【多人游戏】→ 局域网里就能看到这个大厅。",
+                "1. Fill in the lobby number sent by your friend below and click [Join].",
+                "2. After connecting, start the game. You can see this lobby in [Multiplayer Game] → LAN.",
             ),
             value = joinCode,
-            hint = "大厅编号",
+            hint = "Hall number",
             onValueChange = { joinCode = it },
             buttons = { requestClose ->
-                PclMsgButton(text = "清除", enabled = !joining) { joinCode = "" }
-                PclMsgButton(text = "粘贴", enabled = !joining) {
+                PclMsgButton(text = "Clear", enabled = !joining) { joinCode = "" }
+                PclMsgButton(text = "Paste", enabled = !joining) {
                     val text = clipboard.getText()?.text.orEmpty().trim()
                     if (text.isEmpty()) {
-                        PclHintHost.push("剪贴板里没有内容。", PclHintTheme.Blue)
+                        PclHintHost.push("There is no content in the clipboard.", PclHintTheme.Blue)
                     } else {
                         joinCode = text
                     }
@@ -3066,7 +3066,7 @@ private fun PclLinkContent() {
                 // 加入成功后由 joinRoom 回调 requestClose —— 让弹窗走「退出动画」再关，
                 // 而不是直接把 joinDialog 置 false（那样是瞬间消失，没有收场动画）。
                 PclMsgButton(
-                    text = if (joining) "连接中…" else "加入",
+                    text = if (joining) "Connecting…" else "join in",
                     enabled = !joining,
                     colorState = PclColorState.Highlight,
                 ) {
@@ -3230,7 +3230,7 @@ private fun resetSettingsPage(index: Int) {
             else -> {}
         }
     }
-    PclHintHost.push("本页设置已恢复默认值。", PclHintTheme.Blue)
+    PclHintHost.push("The settings on this page have been restored to default values.", PclHintTheme.Blue)
 }
 
 /** 「控制设置」的初始化（原生 `ControlSettingsScreen` 对应项）。 */
@@ -3267,7 +3267,7 @@ private fun resetControlSettingsPage() {
             gyroscopeInvertY.reset()
         }
     }
-    PclHintHost.push("本页设置已恢复默认值。", PclHintTheme.Blue)
+    PclHintHost.push("The settings on this page have been restored to default values.", PclHintTheme.Blue)
 }
 
 /** 「手柄设置」的初始化（原生 `GamepadSettingsScreen` 对应项）。 */
@@ -3283,7 +3283,7 @@ private fun resetGamepadSettingsPage() {
             gamepadMappingConfig.reset()
         }
     }
-    PclHintHost.push("本页设置已恢复默认值。", PclHintTheme.Blue)
+    PclHintHost.push("The settings on this page have been restored to default values.", PclHintTheme.Blue)
 }
 
 /** `PageSetupLeft.PageGet` —— 按左侧选中项切换到八张设置页。

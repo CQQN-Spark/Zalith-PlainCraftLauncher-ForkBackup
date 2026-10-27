@@ -313,7 +313,7 @@ private fun PclInstanceRight(inav: PclInstanceNav) {
         PclContent {
             PclEmptyState(
                 title = PclStrings.LangLaunchLeftNoAvailableInstance,
-                content = "请先在「版本选择」里选择一个版本，或到「下载」页安装一个新版本。",
+                content = "Please select a version in \"Version Selection\" first, or go to the \"Download\" page to install a new version.",
                 modifier = Modifier.align(Alignment.CenterHorizontally),
             )
             Spacer(Modifier.height(PclDimens.cardGap))
@@ -354,7 +354,7 @@ internal fun openFolder(context: android.content.Context, folder: File) {
  * ⑤ 高级管理（导出启动脚本 / 测试游戏 / 补全文件 ；重置 / 删除实例 / 修补核心）
  *
  * 三张带标题卡片的正文都是 `StackPanel Margin="25,40,25,15"`，按钮行是
- * `Grid Margin="0,2,0,7" Height="35"`、每行 3 个 `MinWidth=140 Padding="13,0"` 且右边距 20。
+ * `Grid Margin="0,2,0,7" Height="35"`, 3 per line `MinWidth=140 Padding="13,0"` 且右边距 20。
  *
  * 每一项的实际动作都接在 Zalith 的真实能力上（见各按钮处的注释）；
  * 其中「分类 / 启动次数 / 图标选择」内核没有对应字段，由 [PclInstanceMeta] 单独记录。
@@ -387,15 +387,15 @@ private fun PclInstanceOverallPage(version: Version) {
                 target.parentFile?.mkdirs()
                 context.contentResolver.openInputStream(uri)?.use { input ->
                     FileOutputStream(target).use { output -> input.copyTo(output) }
-                } ?: error("无法读取所选图片")
+                } ?: error("Unable to read selected image")
                 true
             }.getOrElse { false }
             if (ok) {
                 PclInstanceMeta.setIconChoice(versionName, PclInstanceMeta.ICON_CUSTOM)
                 refreshKey++
-                PclHintHost.push("已更新实例图标。", PclHintTheme.Green)
+                PclHintHost.push("Instance icon updated.", PclHintTheme.Green)
             } else {
-                PclHintHost.push("图标设置失败。", PclHintTheme.Red)
+                PclHintHost.push("Icon setting failed.", PclHintTheme.Red)
             }
         }
     }
@@ -420,7 +420,7 @@ private fun PclInstanceOverallPage(version: Version) {
 
         // ② 实例信息
         PclCard(modifier = Modifier.fillMaxWidth(),
-            title = "实例信息",
+            title = "Instance information",
             contentPadding = PaddingValues(25.dp, 40.dp, 25.dp, 15.dp),
         ) {
             Row(
@@ -430,8 +430,8 @@ private fun PclInstanceOverallPage(version: Version) {
             ) {
                 PclInstanceInfoItem(
                     icon = { PclIconBox(PclIcons.instanceOverview) },
-                    title = "启动次数",
-                    info = "已启动 $startCount 次",
+                    title = "Number of starts",
+                    info = "Started $startCount times",
                 )
                 PclInstanceInfoItem(
                     icon = { PclIconBox(painterResource(R.drawable.pcl_block_grass)) },
@@ -444,10 +444,10 @@ private fun PclInstanceOverallPage(version: Version) {
 
         // ③ 个性化
         PclCard(modifier = Modifier.fillMaxWidth(),
-            title = "个性化",
+            title = "personalization",
             contentPadding = PaddingValues(25.dp, 40.dp, 25.dp, 15.dp),
         ) {
-            PclInstanceSettingRow("图标") {
+            PclInstanceSettingRow("icon") {
                 PclComboBox(
                     items = PCL_OVERALL_ICONS,
                     selected = PCL_OVERALL_ICONS.firstOrNull { it.second == iconChoice }
@@ -474,9 +474,9 @@ private fun PclInstanceOverallPage(version: Version) {
                                 if (ok) {
                                     PclInstanceMeta.setIconChoice(versionName, option.second)
                                     refreshKey++
-                                    PclHintHost.push("已更新实例图标。", PclHintTheme.Green)
+                                    PclHintHost.push("Instance icon updated.", PclHintTheme.Green)
                                 } else {
-                                    PclHintHost.push("图标设置失败。", PclHintTheme.Red)
+                                    PclHintHost.push("Icon setting failed.", PclHintTheme.Red)
                                 }
                             }
                         }
@@ -484,7 +484,7 @@ private fun PclInstanceOverallPage(version: Version) {
                 )
             }
             Spacer(Modifier.height(9.dp))
-            PclInstanceSettingRow("分类") {
+            PclInstanceSettingRow("Classification") {
                 PclComboBox(
                     items = PCL_OVERALL_CATEGORIES,
                     selected = PCL_OVERALL_CATEGORIES.first { it.second == category },
@@ -499,9 +499,9 @@ private fun PclInstanceOverallPage(version: Version) {
             }
             Spacer(Modifier.height(15.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
-                PclOverallButton("修改实例名") { renaming = true }
-                PclOverallButton("修改实例描述") { editingDesc = true }
-                PclOverallButton(if (version.pinnedState) "从收藏夹中移除" else "加入收藏夹") {
+                PclOverallButton("Modify instance name") { renaming = true }
+                PclOverallButton("Modify instance description") { editingDesc = true }
+                PclOverallButton(if (version.pinnedState) "Remove from favorites" else "Add to favorites") {
                     runtime.togglePinned(version)
                     refreshKey++
                 }
@@ -511,12 +511,12 @@ private fun PclInstanceOverallPage(version: Version) {
 
         // ④ 快捷方式
         PclCard(modifier = Modifier.fillMaxWidth(),
-            title = "快捷方式",
+            title = "shortcut",
             contentPadding = PaddingValues(25.dp, 40.dp, 25.dp, 15.dp),
         ) {
             Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
-                PclOverallButton("实例文件夹") { openFolder(context, version.getVersionPath()) }
-                PclOverallButton("存档文件夹") {
+                PclOverallButton("instance folder") { openFolder(context, version.getVersionPath()) }
+                PclOverallButton("archive folder") {
                     openFolder(context, VersionFolders.SAVES.getDir(version.getGameDir()))
                 }
             }
@@ -525,26 +525,26 @@ private fun PclInstanceOverallPage(version: Version) {
 
         // ⑤ 高级管理
         PclCard(modifier = Modifier.fillMaxWidth(),
-            title = "高级管理",
+            title = "Senior Management",
             contentPadding = PaddingValues(25.dp, 40.dp, 25.dp, 15.dp),
         ) {
             Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
-                PclOverallButton("导出启动脚本") { exportLaunchArgs(context, version) }
-                PclOverallButton("测试游戏") {
+                PclOverallButton("Export startup script") { exportLaunchArgs(context, version) }
+                PclOverallButton("test game") {
                     runtime.selectVersion(version)
                     runtime.tryLaunch()
                 }
-                PclOverallButton("补全文件") { verifyAndRepair(context, version) }
+                PclOverallButton("Completion file") { verifyAndRepair(context, version) }
             }
             Spacer(Modifier.height(2.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
-                PclOverallButton("重置") {
+                PclOverallButton("reset") {
                     resetVersionConfig(version)
-                    PclHintHost.push("已把「$versionName」的设置恢复为默认值。", PclHintTheme.Green)
+                    PclHintHost.push("The setting for '$versionName' has been restored to its default value.", PclHintTheme.Green)
                 }
-                PclOverallButton("删除实例", danger = true) { deleting = true }
+                PclOverallButton("Delete instance", danger = true) { deleting = true }
                 // 修补核心同样走「校验并修复」：它会重新校验并下载所有缺失/损坏的文件（含核心 jar）
-                PclOverallButton("修补核心") { verifyAndRepair(context, version) }
+                PclOverallButton("patch core") { verifyAndRepair(context, version) }
             }
             Spacer(Modifier.height(7.dp))
         }
@@ -553,8 +553,8 @@ private fun PclInstanceOverallPage(version: Version) {
 
     if (renaming) {
         PclInputDialog(
-            title = "重命名版本",
-            label = "新的版本名（不能包含 \\ / : * ? \" < > |）",
+            title = "Rename version",
+            label = "New version name (cannot contain \\ / : * ? \" < > |）",
             initial = versionName,
             onConfirm = { name ->
                 if (name.isNotBlank() && name != versionName) runtime.renameVersion(version, name)
@@ -564,8 +564,8 @@ private fun PclInstanceOverallPage(version: Version) {
     }
     if (editingDesc) {
         PclInputDialog(
-            title = "更改描述",
-            label = "修改版本的描述文本，留空则使用默认描述",
+            title = "Change description",
+            label = "Modify the description text of the version. If left blank, the default description will be used.",
             initial = customInfo,
             onConfirm = { text ->
                 runCatching {
@@ -574,9 +574,9 @@ private fun PclInstanceOverallPage(version: Version) {
                     config.save()
                 }.onSuccess {
                     refreshKey++
-                    PclHintHost.push("描述已更新。", PclHintTheme.Green)
+                    PclHintHost.push("Description updated.", PclHintTheme.Green)
                 }.onFailure {
-                    runtime.submitErrorText("保存描述失败", it.message ?: it.javaClass.simpleName)
+                    runtime.submitErrorText("Failed to save description", it.message ?: it.javaClass.simpleName)
                 }
             },
             onDismiss = { editingDesc = false },
@@ -589,9 +589,9 @@ private fun PclInstanceOverallPage(version: Version) {
     }
     if (deleting) {
         PclConfirmDialog(
-            title = "删除版本",
-            content = "确定要删除「$versionName」吗？该版本的存档、Mod 与配置都会一并删除，且无法恢复。",
-            confirmText = "删除",
+            title = "delete version",
+            content = "Are you sure you want to delete \"$versionName\"? ",
+            confirmText = "delete",
             danger = true,
             onConfirm = { runtime.deleteVersion(version) },
             onDismiss = { deleting = false },
@@ -601,29 +601,29 @@ private fun PclInstanceOverallPage(version: Version) {
 
 /** 图标组合框的候选项：`(显示名, 键, 内置图片资源)`；`键` 用 [PclInstanceMeta] 里的常量。 */
 private val PCL_OVERALL_ICONS: List<Triple<String, String, Int?>> = listOf(
-    Triple("自动", PclInstanceMeta.ICON_AUTO, null),
-    Triple("自定义…", PclInstanceMeta.ICON_CUSTOM, null),
-    Triple("圆石", "res:cobblestone", R.drawable.pcl_block_cobblestone),
-    Triple("命令方块", "res:command_block", R.drawable.pcl_block_command_block),
-    Triple("金块", "res:gold_block", R.drawable.pcl_block_gold_block),
-    Triple("草方块", "res:grass", R.drawable.pcl_block_grass),
-    Triple("土径", "res:grass_path", R.drawable.pcl_block_grass_path),
-    Triple("铁砧", "res:anvil", R.drawable.pcl_block_anvil),
-    Triple("红石块", "res:redstone", R.drawable.pcl_block_redstone),
-    Triple("红石灯（开）", "res:redstone_lamp", R.drawable.pcl_block_redstone_lamp),
-    Triple("鸡蛋", "res:egg", R.drawable.pcl_block_egg),
-    Triple("布料（Fabric）", "res:fabric", R.drawable.pcl_block_fabric),
-    Triple("狐狸（NeoForge）", "res:neoforge", R.drawable.pcl_block_neoforge),
+    Triple("automatic", PclInstanceMeta.ICON_AUTO, null),
+    Triple("Customize…", PclInstanceMeta.ICON_CUSTOM, null),
+    Triple("round stone", "res:cobblestone", R.drawable.pcl_block_cobblestone),
+    Triple("command block", "res:command_block", R.drawable.pcl_block_command_block),
+    Triple("bullion", "res:gold_block", R.drawable.pcl_block_gold_block),
+    Triple("grass block", "res:grass", R.drawable.pcl_block_grass),
+    Triple("dirt path", "res:grass_path", R.drawable.pcl_block_grass_path),
+    Triple("anvil", "res:anvil", R.drawable.pcl_block_anvil),
+    Triple("red stone block", "res:redstone", R.drawable.pcl_block_redstone),
+    Triple("Redstone lamp (on)", "res:redstone_lamp", R.drawable.pcl_block_redstone_lamp),
+    Triple("egg", "res:egg", R.drawable.pcl_block_egg),
+    Triple("Fabric", "res:fabric", R.drawable.pcl_block_fabric),
+    Triple("Fox (NeoForge)", "res:neoforge", R.drawable.pcl_block_neoforge),
 )
 
 /** 分类组合框的候选项：`(显示名, 键)`，顺序与 PCL 一致。 */
 private val PCL_OVERALL_CATEGORIES: List<Pair<String, String>> = listOf(
-    "自动" to PclInstanceMeta.CATEGORY_AUTO,
-    "从版本列表中隐藏" to PclInstanceMeta.CATEGORY_HIDDEN,
-    "可安装 Mod 的版本" to PclInstanceMeta.CATEGORY_MOD,
-    "常规版本" to PclInstanceMeta.CATEGORY_REGULAR,
-    "不常用版本" to PclInstanceMeta.CATEGORY_UNCOMMON,
-    "愚人节版本" to PclInstanceMeta.CATEGORY_FOOL,
+    "automatic" to PclInstanceMeta.CATEGORY_AUTO,
+    "Hide from version list" to PclInstanceMeta.CATEGORY_HIDDEN,
+    "Mod-installable versions" to PclInstanceMeta.CATEGORY_MOD,
+    "regular version" to PclInstanceMeta.CATEGORY_REGULAR,
+    "Less commonly used version" to PclInstanceMeta.CATEGORY_UNCOMMON,
+    "April Fool's Day version" to PclInstanceMeta.CATEGORY_FOOL,
 )
 
 /** 实例信息里的一项：图标 + 标题 + 说明（PCL 用两块 34 高的图标配两行文字）。 */
@@ -713,29 +713,29 @@ private fun copyDrawableToFile(context: android.content.Context, resId: Int, tar
 private fun exportLaunchArgs(context: android.content.Context, version: Version) {
     runCatching {
         val config = version.getVersionConfig()
-        val file = File(version.getVersionPath(), "启动参数.txt")
+        val file = File(version.getVersionPath(), "startup parameters.txt")
         file.writeText(
             buildString {
-                appendLine("版本：${version.getVersionName()}")
+                appendLine("Version: ${version.getVersionName()}")
                 appendLine("Minecraft：${version.getVersionInfo()?.minecraftVersion ?: "-"}")
-                appendLine("加载器：${version.getVersionInfo()?.primaryLoader?.let { "${it.loader.displayName} ${it.version}" } ?: "原版"}")
-                appendLine("游戏目录：${version.getGameHome()}")
-                appendLine("版本目录：${version.getVersionPath().absolutePath}")
-                appendLine("版本隔离：${if (version.isIsolation()) "开启" else "关闭"}")
-                appendLine("跳过文件校验：${if (version.skipGameIntegrityCheck()) "是" else "否"}")
-                appendLine("Java 运行库：${config.javaRuntime.ifBlank { "跟随全局设置" }}")
-                appendLine("内存分配：${if (config.ramAllocation > 0) "${config.ramAllocation} MB" else "跟随全局设置"}")
-                appendLine("渲染器：${config.renderer.ifBlank { "跟随全局设置" }}")
-                appendLine("自定义 JVM 参数：${config.jvmArgs.ifBlank { "（空）" }}")
-                appendLine("自定义游戏参数：${config.gameArgs.ifBlank { "（空）" }}")
+                appendLine("Loader: ${version.getVersionInfo()?.primaryLoader?.let {"${it.loader.displayName} ${it.version}" } ?: "Original"}")
+                appendLine("Game directory: ${version.getGameHome()}")
+                appendLine("Version directory: ${version.getVersionPath().absolutePath}")
+                appendLine("Version isolation: ${if (version.isIsolation())"开启" else "closure"}")
+                appendLine("Skip file verification: ${if (version.skipGameIntegrityCheck())"是" else "no"}")
+                appendLine("Java runtime: ${config.javaRuntime.ifBlank {"Follow global settings" }}")
+                appendLine("Memory allocation: ${if (config.ramAllocation > 0)"${config.ramAllocation} MB" else "Follow global settings"}")
+                appendLine("Renderer: ${config.renderer.ifBlank {"Follow global settings" }}")
+                appendLine("Custom JVM parameters: ${config.jvmArgs.ifBlank {"（空）" }}")
+                appendLine("Custom game parameters: ${config.gameArgs.ifBlank {"（空）" }}")
                 appendLine()
-                appendLine("注：Zalith 的实际启动命令由内核在启动时生成，")
-                appendLine("    完整内容见启动日志（概览页的日志或「更多 → 帮助」里的日志入口）。")
+                appendLine("Note: The actual startup command for Zalith is generated by the kernel at startup.")
+                appendLine("For complete details, see the startup log (log on the overview page or the log entry in \"More → Help\").")
             }
         )
-        PclHintHost.push("启动参数已导出到：${file.absolutePath}", PclHintTheme.Green)
+        PclHintHost.push("Startup parameters have been exported to: ${file.absolutePath}", PclHintTheme.Green)
     }.onFailure {
-        PclHintHost.push("导出启动脚本失败：${it.message ?: it.javaClass.simpleName}", PclHintTheme.Red)
+        PclHintHost.push("Failed to export startup script: ${it.message ?: it.javaClass.simpleName}", PclHintTheme.Red)
     }
 }
 
@@ -753,13 +753,13 @@ private fun verifyAndRepair(context: android.content.Context, version: Version) 
             gameHome = version.getGameHome(),
             mode = DownloadMode.VERIFY_AND_REPAIR,
             onError = { message ->
-                PclHintHost.push("校验失败：$message", PclHintTheme.Red)
+                PclHintHost.push("Verification failed: $message", PclHintTheme.Red)
             },
         ).getDownloadTask()
         TaskSystem.submitTask(task)
-        PclHintHost.push("已提交校验任务，进度见「下载管理」。", PclHintTheme.Blue)
+        PclHintHost.push("The verification task has been submitted. Please see \"Download Management\" for the progress.", PclHintTheme.Blue)
     }.onFailure {
-        PclHintHost.push("无法启动校验：${it.message ?: it.javaClass.simpleName}", PclHintTheme.Red)
+        PclHintHost.push("Unable to start verification: ${it.message ?: it.javaClass.simpleName}", PclHintTheme.Red)
     }
 }
 
@@ -878,15 +878,15 @@ private fun PclInstanceSetupPage(version: Version) {
             contentPadding = PaddingValues(0.dp),
         ) {
             PclListItem(
-                title = "修改",
-                info = "重新选择 Minecraft 版本与模组加载器",
+                title = "Revise",
+                info = "Reselect Minecraft version and mod loader",
                 logo = PclIcons.instanceSetup,
                 logoScale = 0.9f,
                 height = 46.dp,
                 buttons = listOf(
                     PclListItemButton(
                         logo = PclIcons.restartAlt,
-                        tooltip = "修改此实例",
+                        tooltip = "Modify this instance",
                         logoScale = 0.9f,
                     ) { nav.push(pclInstanceModifyPage(version)) },
                 ),
@@ -898,10 +898,10 @@ private fun PclInstanceSetupPage(version: Version) {
         // ---- 启动选项
         PclCard(
             modifier = Modifier.fillMaxWidth(),
-            title = "启动选项",
+            title = "boot options",
             contentPadding = PaddingValues(25.dp, 40.dp, 25.dp, 15.dp),
         ) {
-            PclSetupRow("实例隔离") {
+            PclSetupRow("Instance isolation") {
                 PclComboBox(
                     items = settingStateOrder,
                     selected = config.isolationType,
@@ -911,18 +911,18 @@ private fun PclInstanceSetupPage(version: Version) {
                 )
             }
             Spacer(Modifier.height(9.dp))
-            PclSetupRow("自定义信息") {
+            PclSetupRow("Custom information") {
                 PclTextBox(
                     value = config.customInfo,
                     modifier = Modifier.fillMaxWidth(),
-                    hint = "跟随全局设置",
+                    hint = "Follow global settings",
                     onValueChange = { config.customInfo = it; saveToken() },
                 )
             }
             Spacer(Modifier.height(9.dp))
-            PclSetupRow("游戏 Java") {
+            PclSetupRow("Game Java") {
                 // 同样直接列出全部 Java（空串 = 跟随全局），别再走「先展开一条、再点开弹窗」。
-                val items = listOf("" to "跟随全局设置") + javaOptions
+                val items = listOf("" to "Follow global settings") + javaOptions
                 PclComboBox(
                     items = items,
                     selected = items.firstOrNull { it.first == config.javaRuntime } ?: items.first(),
@@ -937,7 +937,7 @@ private fun PclInstanceSetupPage(version: Version) {
         // ---- 游戏内存
         PclCard(
             modifier = Modifier.fillMaxWidth(),
-            title = "游戏内存",
+            title = "game memory",
             contentPadding = PaddingValues(25.dp, 40.dp, 25.dp, 15.dp),
         ) {
             Column {
@@ -1008,11 +1008,11 @@ private fun PclInstanceSetupPage(version: Version) {
         // 时，`PclThirdPartyLogin` 会在那一瞬间问账号密码并当场登录。
         PclCard(
             modifier = Modifier.fillMaxWidth(),
-            title = "服务器",
+            title = "server",
             contentPadding = PaddingValues(25.dp, 40.dp, 25.dp, 15.dp),
         ) {
             var loginType by remember(version) { mutableStateOf(config.loginTypeValue()) }
-            PclSetupRow("登录方式") {
+            PclSetupRow("Login method") {
                 PclComboBox(
                     items = VersionLoginType.entries,
                     selected = loginType,
@@ -1029,34 +1029,34 @@ private fun PclInstanceSetupPage(version: Version) {
             if (loginType.isThirdParty()) {
                 val isUnifiedPassport = loginType == VersionLoginType.UNIFIED_PASSPORT
                 Spacer(Modifier.height(9.dp))
-                PclSetupRow(if (isUnifiedPassport) "服务器 ID" else "认证服务器") {
+                PclSetupRow(if (isUnifiedPassport) "Server ID" else "Authentication server") {
                     PclTextBox(
                         value = config.loginAuthServer,
                         modifier = Modifier.fillMaxWidth(),
                         hint = if (isUnifiedPassport) {
-                            "服主后台 → 集成说明 中提供的服务器 ID"
+                            "Server ID provided in Server Host Backend → Integration Instructions"
                         } else {
-                            "Yggdrasil API 认证服务器的完整地址"
+                            "Full address of Yggdrasil API authentication server"
                         },
                         onValueChange = { config.loginAuthServer = it; saveToken() },
                     )
                 }
                 if (!isUnifiedPassport) {
                     Spacer(Modifier.height(9.dp))
-                    PclSetupRow("注册链接") {
+                    PclSetupRow("Registration link") {
                         PclTextBox(
                             value = config.loginRegisterUrl,
                             modifier = Modifier.fillMaxWidth(),
-                            hint = "注册账号的网页地址，如 https://xxxxx.xxx/auth/register",
+                            hint = "The web address of the registered account, such as https://xxxxx.xxx/auth/register",
                             onValueChange = { config.loginRegisterUrl = it; saveToken() },
                         )
                     }
                     Spacer(Modifier.height(9.dp))
-                    PclSetupRow("服务器名称") {
+                    PclSetupRow("Server name") {
                         PclTextBox(
                             value = config.loginServerName,
                             modifier = Modifier.fillMaxWidth(),
-                            hint = "显示在登录页面的服务器名称",
+                            hint = "The server name displayed on the login page",
                             onValueChange = { config.loginServerName = it; saveToken() },
                         )
                     }
@@ -1066,11 +1066,11 @@ private fun PclInstanceSetupPage(version: Version) {
             // PCL 的顺序：三行认证信息 → 「自动进入服务器」→ 按钮（`PageInstanceSetup.xaml` 里
             // 按钮在 Grid 外面，所以永远排在这些行后面）。
             Spacer(Modifier.height(9.dp))
-            PclSetupRow("自动进入服务器") {
+            PclSetupRow("Automatically enter the server") {
                 PclTextBox(
                     value = config.serverIp,
                     modifier = Modifier.fillMaxWidth(),
-                    hint = "例如 mc.example.com:25565，留空则直接进主界面",
+                    hint = "For example, mc.example.com:25565, leave it blank to enter the main interface directly.",
                     onValueChange = { config.serverIp = it; saveToken() },
                 )
             }
@@ -1080,7 +1080,7 @@ private fun PclInstanceSetupPage(version: Version) {
                 // 注意别用 fillMaxWidth —— 它在 PCL 里是个小按钮，拉满整行会显得整张卡都散了。
                 Spacer(Modifier.height(12.dp))
                 PclButton(
-                    text = "设置为 LittleSkin",
+                    text = "Set to LittleSkin",
                     height = 35.dp,
                     colorState = PclColorState.Highlight,
                     modifier = Modifier.widthIn(min = 150.dp),
@@ -1090,7 +1090,7 @@ private fun PclInstanceSetupPage(version: Version) {
                         config.loginServerName = LITTLESKIN_SERVER_NAME
                         saveToken()
                         PclHintHost.push(
-                            "已填入 LittleSkin 的认证服务器，启动该版本时会用 LittleSkin 账户登录。",
+                            "LittleSkin's authentication server has been filled in. When starting this version, you will log in with your LittleSkin account.",
                             PclHintTheme.Green,
                         )
                     },
@@ -1102,7 +1102,7 @@ private fun PclInstanceSetupPage(version: Version) {
         // ---- 高级启动选项（PCL 默认折叠）
         PclCard(
             modifier = Modifier.fillMaxWidth(),
-            title = "高级启动选项",
+            title = "Advanced startup options",
             collapsible = true,
             initiallyCollapsed = true,
             contentPadding = PaddingValues(25.dp, 40.dp, 25.dp, 15.dp),
@@ -1117,7 +1117,7 @@ private fun PclInstanceSetupPage(version: Version) {
                 )
             }
             Spacer(Modifier.height(9.dp))
-            PclSetupRow("渲染器") {
+            PclSetupRow("Renderer") {
                 // 下拉里**直接列出全部渲染器**（空串那项 = 跟随全局）。
                 //
                 // 这里原来是「单条目下拉 + 点它再弹选择框」：下拉永远只显示当前那一项，
@@ -1126,7 +1126,7 @@ private fun PclInstanceSetupPage(version: Version) {
                 val globalName = rendererOptions
                     .firstOrNull { it.first == PclSettings.currentRendererId() }
                     ?.second
-                val followLabel = globalName?.let { "跟随全局设置（$it）" } ?: "跟随全局设置"
+                val followLabel = globalName?.let { "Follow global settings ($it)" } ?: "Follow global settings"
                 val items = listOf("" to followLabel) + rendererOptions
                 PclComboBox(
                     items = items,
@@ -1137,9 +1137,9 @@ private fun PclInstanceSetupPage(version: Version) {
                 )
             }
             Spacer(Modifier.height(9.dp))
-            PclSetupRow("图形 API") {
-                val items = listOf("跟随全局设置" to "") + GraphicsApi.entries.map { api ->
-                    (api.displayName.ifBlank { "默认（游戏设定）" }) to api.name
+            PclSetupRow("Graphics API") {
+                val items = listOf("Follow global settings" to "") + GraphicsApi.entries.map { api ->
+                    (api.displayName.ifBlank { "Default (game settings)" }) to api.name
                 }
                 val current = config.graphicsApi?.name.orEmpty()
                 PclComboBox(
@@ -1154,12 +1154,12 @@ private fun PclInstanceSetupPage(version: Version) {
                 )
             }
             Spacer(Modifier.height(9.dp))
-            PclSetupRow("控制布局") {
+            PclSetupRow("Control layout") {
                 // 配置里存的是**布局文件名**（`Version.getControlPath()` 拿它去
                 // `DIR_CONTROL_LAYOUTS` 底下拼路径），所以选项 id 用 `file.name`、显示名用布局名。
                 // 原来这里是 `onSelect = { config.control = it.second }` + 按显示名比对，
                 // 存下去的是「用户看到的中文名」而不是文件名，进游戏根本找不到布局。
-                val items = listOf("" to "跟随全局设置") + controlOptions
+                val items = listOf("" to "Follow global settings") + controlOptions
                 PclComboBox(
                     items = items,
                     selected = items.firstOrNull { it.first == config.control } ?: items.first(),
@@ -1169,40 +1169,40 @@ private fun PclInstanceSetupPage(version: Version) {
                 )
             }
             Spacer(Modifier.height(9.dp))
-            PclSetupRow("驱动") {
+            PclSetupRow("drive") {
                 PclTextBox(
                     value = config.driver,
                     modifier = Modifier.fillMaxWidth(),
-                    hint = "跟随全局设置",
+                    hint = "Follow global settings",
                     onValueChange = { config.driver = it; saveToken() },
                 )
             }
             Spacer(Modifier.height(9.dp))
-            PclSetupRow("自定义游戏路径") {
+            PclSetupRow("Custom game path") {
                 PclTextBox(
                     value = config.customPath,
                     modifier = Modifier.fillMaxWidth(),
-                    hint = "跟随全局设置",
+                    hint = "Follow global settings",
                     onValueChange = { config.customPath = it; saveToken() },
                 )
             }
             Spacer(Modifier.height(9.dp))
-            PclSetupRow("自定义 JVM 参数") {
+            PclSetupRow("Custom JVM parameters") {
                 PclTextBox(
                     value = config.jvmArgs,
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = false,
-                    hint = "留空则使用全局设置",
+                    hint = "Leave blank to use global settings",
                     onValueChange = { config.jvmArgs = it; saveToken() },
                 )
             }
             Spacer(Modifier.height(9.dp))
-            PclSetupRow("自定义游戏参数") {
+            PclSetupRow("Custom game parameters") {
                 PclTextBox(
                     value = config.gameArgs,
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = false,
-                    hint = "留空则使用全局设置",
+                    hint = "Leave blank to use global settings",
                     onValueChange = { config.gameArgs = it; saveToken() },
                 )
             }
@@ -1211,7 +1211,7 @@ private fun PclInstanceSetupPage(version: Version) {
 
         // PCL 页面底部那句提示 + 「→ 全局设置」（PCL 里是右下角的悬浮按钮）
         PclText(
-            text = "跳过校验可以加快启动，但游戏文件缺失时不会自动修复。",
+            text = "Skipping verification can speed up startup, but it will not automatically fix missing game files.",
             fontSize = 12,
             color = p.gray2,
             modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
@@ -1221,7 +1221,7 @@ private fun PclInstanceSetupPage(version: Version) {
             horizontalArrangement = Arrangement.End,
         ) {
             PclButton(
-                text = "→ 全局设置",
+                text = "→ Global settings",
                 colorState = PclColorState.Highlight,
                 onClick = { nav.go(PclSection.Setup) },
             )
@@ -1307,15 +1307,15 @@ private fun PclInstanceModPage(version: Version) {
                     val target = File(modsDir, if (name.endsWith(".jar")) name else "$name.jar")
                     context.contentResolver.openInputStream(uri)?.use { input ->
                         FileOutputStream(target).use { output -> input.copyTo(output) }
-                    } ?: error("无法读取所选文件")
+                    } ?: error("Unable to read selected file")
                     true
                 }.getOrDefault(false)
             }
             if (ok) {
-                PclHintHost.push("已安装「$name」。", PclHintTheme.Green)
+                PclHintHost.push("\"$name\" is already installed.", PclHintTheme.Green)
                 token++
             } else {
-                PclHintHost.push("安装失败。", PclHintTheme.Red)
+                PclHintHost.push("Installation failed.", PclHintTheme.Red)
             }
         }
     }
@@ -1360,22 +1360,22 @@ private fun PclInstanceModPage(version: Version) {
             if (loading) {
                 // PanLoad：MyCard + 居中 MyLoading（Margin="20,20,20,17"）
                 PclCard(modifier = Modifier.padding(horizontal = 40.dp), contentPadding = PaddingValues(0.dp)) {
-                    PclLoading(text = "正在加载 Mod 列表")
+                    PclLoading(text = "Loading Mod List")
                 }
             } else {
                 // PanEmpty：MyCard（Center/Center，Margin=40）+ 标题 + 细线 + 说明 + 三个按钮
                 PclEmptyState(
-                    title = "尚未安装 Mod",
-                    content = "你可以下载新的 Mod，或者从已经下载好的文件安装 Mod。",
+                    title = "Mod not installed yet",
+                    content = "You can download new mods or install mods from already downloaded files.",
                     modifier = Modifier.padding(40.dp),
-                    buttonText = "下载新 Mod",
+                    buttonText = "Download new mods",
                     onButtonClick = { nav.go(PclSection.Download) },
                     // PageInstanceMod 的说明是 Margin="10,10,10,0"，按钮行 Margin="15,20,0,5"
                     contentPadding = PaddingValues(start = 10.dp, top = 10.dp, end = 10.dp, bottom = 0.dp),
                     buttonsTopPadding = 20.dp,
                     moreButtons = listOf(
-                        PclEmptyButton("从文件安装") { installPicker.launch("application/java-archive") },
-                        PclEmptyButton("打开文件夹") { openFolder(context, modsDir) },
+                        PclEmptyButton("Install from file") { installPicker.launch("application/java-archive") },
+                        PclEmptyButton("open folder") { openFolder(context, modsDir) },
                     ),
                 )
             }
@@ -1391,7 +1391,7 @@ private fun PclInstanceModPage(version: Version) {
         PclSearchBox(
             value = keyword,
             modifier = Modifier.fillMaxWidth().padding(vertical = 15.dp),
-            hint = "搜索 Mod 名称 / 描述 / 标签",
+            hint = "Search Mod Name/Description/Tag",
             onValueChange = { keyword = it },
         )
 
@@ -1402,13 +1402,13 @@ private fun PclInstanceModPage(version: Version) {
             contentPadding = PaddingValues(15.dp, 15.dp, 0.dp, 15.dp),
         ) {
             Row(horizontalArrangement = Arrangement.spacedBy(15.dp)) {
-                PclManageButton("打开文件夹", highlight = true) { openFolder(context, modsDir) }
-                PclManageButton("从文件安装") { installPicker.launch("application/java-archive") }
-                PclManageButton("下载新 Mod") { nav.go(PclSection.Download) }
+                PclManageButton("open folder", highlight = true) { openFolder(context, modsDir) }
+                PclManageButton("Install from file") { installPicker.launch("application/java-archive") }
+                PclManageButton("Download new mods") { nav.go(PclSection.Download) }
                 // PageInstanceMod.xaml.vb:270 —— 「全选」的文字永不变化，点一下在
                 // 「全选中」与「全不选」之间切换（ChangeAllSelected(SelectedMods.Count < 列表数)），
                 // 选中后的操作都放在底部悬浮条上。
-                PclManageButton("全选", highlight = selected.isNotEmpty()) {
+                PclManageButton("Select all", highlight = selected.isNotEmpty()) {
                     val selectAll = selected.size < visible.size
                     selected = if (selectAll) visible.map { it.file.absolutePath }.toSet() else emptySet()
                 }
@@ -1437,9 +1437,9 @@ private fun PclInstanceModPage(version: Version) {
                 // 计数为 0 的胶囊点进去只会看到一句「没有符合当前筛选条件的 Mod」，无害，
                 // 于是改成常驻，同时保留原版「当前筛选一定可见」的那半条规则。
                 val pills = buildList {
-                    add((if (searching) "搜索结果" else "全部") to 0)
-                    add("已启用" to 1)
-                    add("已禁用" to 2)
+                    add((if (searching) "Search results" else "all") to 0)
+                    add("Enabled" to 1)
+                    add("Disabled" to 2)
                 }
                 pills.forEach { (label, index) ->
                     PclPillButton(
@@ -1455,7 +1455,7 @@ private fun PclInstanceModPage(version: Version) {
 
             when {
                 visible.isEmpty() -> PclText(
-                    text = "没有符合当前筛选条件的 Mod。",
+                    text = "There are no mods that match the current filter.",
                     color = p.gray2,
                     modifier = Modifier.padding(vertical = 6.dp),
                 )
@@ -1477,7 +1477,7 @@ private fun PclInstanceModPage(version: Version) {
                                 if (isNotEmpty()) append(" · ")
                                 append(it)
                             }
-                            if (!enabled) append(" · 已禁用")
+                            if (!enabled) append("· Disabled")
                         },
                         // MyLocalModItem 的主 Logo：有就画模组自带的图标，
                         // 没有就退回 PCL 的 `Icons/NoIcon.png` 占位；
@@ -1502,7 +1502,7 @@ private fun PclInstanceModPage(version: Version) {
                                 if (!enabled) {
                                     Image(
                                         painter = painterResource(R.drawable.pcl_mod_disabled),
-                                        contentDescription = "已禁用",
+                                        contentDescription = "Disabled",
                                         modifier = Modifier
                                             .align(Alignment.BottomEnd)
                                             .size(20.dp),
@@ -1520,7 +1520,7 @@ private fun PclInstanceModPage(version: Version) {
                                 // 即**启用中显示「停用」（圆圈横线）**、**已禁用显示对勾**。
                                 // 原来恒用 reset（循环箭头），光看图标分不出这一项现在是什么状态。
                                 logo = if (enabled) PclIcons.selectDisable else PclIcons.selectEnable,
-                                tooltip = if (enabled) "禁用" else "启用",
+                                tooltip = if (enabled) "Disable" else "enable",
                             ) {
                                 scope.launch {
                                     withContext(Dispatchers.IO) {
@@ -1529,7 +1529,7 @@ private fun PclInstanceModPage(version: Version) {
                                     token++
                                 }
                             },
-                            PclListItemButton(PclIcons.delete, "删除") { deleting = mod },
+                            PclListItemButton(PclIcons.delete, "delete") { deleting = mod },
                         ),
                         onClick = {
                             val path = mod.file.absolutePath
@@ -1558,7 +1558,7 @@ private fun PclInstanceModPage(version: Version) {
                         mods.firstOrNull { it.file.absolutePath == path }?.file?.delete()
                     }
                 }
-                PclHintHost.push("已删除所选 Mod。", PclHintTheme.Green)
+                PclHintHost.push("The selected mod has been deleted.", PclHintTheme.Green)
                 selected = emptySet()
                     token++
             }
@@ -1571,9 +1571,9 @@ private fun PclInstanceModPage(version: Version) {
 
     deleting?.let { mod ->
         PclConfirmDialog(
-            title = "删除 Mod",
-            content = "确定要删除「${mod.name}」吗？此操作不可恢复。",
-            confirmText = "删除",
+            title = "Remove Mod",
+            content = "Are you sure you want to delete \"${mod.name}\"? ",
+            confirmText = "delete",
             danger = true,
             onConfirm = {
                 scope.launch {
@@ -1614,20 +1614,20 @@ private fun PclInstanceModUnavailablePage() {
         PclEmptyState(
             // 文案取自 PCL 的 LangPageVersionModDisabledTitle / Content / Btn*，
             // 只把「版本」换成 z-pcl 里一贯的「实例」（与截图里那份一致）。
-            title = "该实例不可使用模组",
-            content = "你需要先安装 Forge、Fabric 等模组加载器才能使用模组，" +
-                    "请在下载页面安装这些实例。\n" +
-                    "如果你已经安装过了模组加载器，那么你很可能选择了错误的实例，" +
-                    "请点击实例选择按钮切换实例。",
+            title = "Mods are not available for this instance",
+            content = "You need to install a module loader such as Forge and Fabric before you can use the module." +
+                    "Please install these instances from the download page. " +
+                    "If you have already installed the mod loader, you may have selected the wrong instance." +
+                    "Please click the instance selection button to switch instances.",
             modifier = Modifier.padding(40.dp),
-            buttonText = "转到下载页面",
+            buttonText = "Go to download page",
             // PageInstanceModDisabled.xaml.vb:4 —— 跳 Download 的安装子页，
             // 也就是本文件里「下载新 Mod」走的同一条路。
             onButtonClick = { nav.go(PclSection.Download) },
             moreButtons = listOf(
                 // PageInstanceModDisabled.xaml.vb:8 —— 原版先锚定 Launch 再进版本选择，
                 // 是为了让「选定版本」只回退一层。这里是 push，返回即回到这张卡，效果相同。
-                PclEmptyButton("实例选择") { nav.push(pclVersionSelectPage()) },
+                PclEmptyButton("Instance selection") { nav.push(pclVersionSelectPage()) },
             ),
         )
     }
@@ -1681,7 +1681,7 @@ private fun PclModSelectBar(
             contentPadding = PaddingValues(horizontal = 5.dp, vertical = 0.dp),
         ) {
             PclText(
-                text = "已选择 $selected 个文件",
+                text = "$selected files selected",
                 color = p.color2,
                 modifier = Modifier.fillMaxWidth().padding(top = 9.dp),
                 textAlign = TextAlign.Center,
@@ -1690,13 +1690,13 @@ private fun PclModSelectBar(
                 modifier = Modifier.fillMaxWidth().padding(top = 1.dp, bottom = 5.dp),
                 horizontalArrangement = Arrangement.Center,
             ) {
-                PclPillButton(text = "启用", logo = PclIcons.selectEnable, logoScale = 1.05f, highlight = true, enabled = hasDisabled, onClick = onEnable)
+                PclPillButton(text = "enable", logo = PclIcons.selectEnable, logoScale = 1.05f, highlight = true, enabled = hasDisabled, onClick = onEnable)
                 Spacer(Modifier.width(8.dp))
-                PclPillButton(text = "禁用", logo = PclIcons.selectDisable, highlight = true, enabled = hasEnabled, onClick = onDisable)
+                PclPillButton(text = "Disable", logo = PclIcons.selectDisable, highlight = true, enabled = hasEnabled, onClick = onDisable)
                 Spacer(Modifier.width(8.dp))
-                PclPillButton(text = "删除", logo = PclIcons.delete, logoScale = 0.96f, highlight = true, onClick = onDelete)
+                PclPillButton(text = "delete", logo = PclIcons.delete, logoScale = 0.96f, highlight = true, onClick = onDelete)
                 Spacer(Modifier.width(8.dp))
-                PclPillButton(text = "取消选择", logo = PclIcons.selectCancel, logoScale = 0.8f, highlight = true, onClick = onCancel)
+                PclPillButton(text = "Deselect", logo = PclIcons.selectCancel, logoScale = 0.8f, highlight = true, onClick = onCancel)
             }
         }
     }
@@ -1802,7 +1802,7 @@ private fun PclSelectLeft() {
     val paths by GamePathManager.gamePathData.collectAsStateWithLifecycle()
     // ⚠️ 这里拿的是**当前游戏目录的路径字符串**（`GamePathManager._currentPath`），
     // 不是目录的 id。原来的变量名写成 `currentPathId` 并且拿去和 `path.id` 比较，
-    // 于是 "default"/UUID 永远不可能等于 "/storage/emulated/0/.minecraft" ——
+    // 于是 "default"/UUID can never be equal to"/storage/emulated/0/.minecraft" ——
     // 所有目录条目恒为未选中，用户看到的「选不了、切不了」有一半就是这个。
     // 原生 `VersionsManageScreen.kt:383` 用的也是路径比较：`currentPath == pathItem.path`。
     val currentPath by GamePathManager.currentPath.collectAsStateWithLifecycle()
@@ -1826,7 +1826,7 @@ private fun PclSelectLeft() {
             runCatching { act.startActivity(getPermissionSettingsAndroid11AndAbove(act)) }
                 .onFailure {
                     PclHintHost.push(
-                        "打不开权限设置页，请手动到系统设置 → 应用 → Zalith-Plain Craft Launcher 里开启「管理设备所有文件」。",
+                        "If the permission setting page cannot be opened, please manually go to System Settings → Application → Zalith-Plain Craft Launcher to turn on \"Manage all device files\".",
                         PclHintTheme.Red,
                     )
                 }
@@ -1881,11 +1881,11 @@ private fun PclSelectLeft() {
             // `saveCurrentPath` 只有两种失败：`IllegalStateException`（没权限）与
             // `IllegalArgumentException`（列表里找不到这个 id）。前者给个人话版本。
             val reason = if (th is IllegalStateException) {
-                "没有外部存储权限，请在系统设置里为启动器开启「管理设备所有文件」。"
+                "If there is no external storage permission, please turn on \"Manage all device files\" for the launcher in the system settings."
             } else {
                 th.message ?: th.javaClass.simpleName
             }
-            PclHintHost.push("切换游戏目录失败：$reason", PclHintTheme.Red)
+            PclHintHost.push("Failed to switch game directory: $reason", PclHintTheme.Red)
         }
     }
 
@@ -1915,9 +1915,9 @@ private fun PclSelectLeft() {
     val folderPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
         if (uri != null) {
             when (val realPath = treeUriToPath(uri)) {
-                null -> PclHintHost.push("无法识别所选文件夹的路径，请换一个位置重试。", PclHintTheme.Red)
+                null -> PclHintHost.push("The path to the selected folder cannot be recognized, please try again in another location.", PclHintTheme.Red)
                 else -> if (GamePathManager.containsPath(realPath)) {
-                    PclHintHost.push("该文件夹已经在列表里了。", PclHintTheme.Blue)
+                    PclHintHost.push("The folder is already in the list.", PclHintTheme.Blue)
                 } else {
                     pendingPickedPath = realPath
                 }
@@ -1954,14 +1954,14 @@ private fun PclSelectLeft() {
                     // `pclAskVersionName` 负责「默认名先避让重名 → 用户可改 → 改完再兜一次
                     // sanitize/去重」，三条整合包链路共用同一套规则。
                     waitForVersionName = { packName ->
-                        pclAskVersionName(packName, title = "设置版本名称")
+                        pclAskVersionName(packName, title = "Set version name")
                     },
                     waitForConfirmMobileData = { true },
                 )
                 importer = newImporter
                 // 这条链没有下载阶段，直接就是安装：登记后「下载管理」里同样能看到各阶段，
                 // 关掉进度弹窗、离开这一页都不会让它从界面上消失。
-                val importId = runtime.trackModpackImport("导入整合包", importer = newImporter)
+                val importId = runtime.trackModpackImport("Import integration package", importer = newImporter)
                 // 与下载页那条链同规矩：`ModpackImporter` 共用写死的 `cache/temp_modpack`
                 // 且开工前会把它整个删掉，两个整合包同时装必然互相踩 —— 这里在安装锁上排队。
                 runtime.backgroundScope.launch {
@@ -1975,7 +1975,7 @@ private fun PclSelectLeft() {
                             onFinished = { name ->
                                 importer = null
                                 runtime.clearModpackImport(importId)
-                                PclHintHost.push("整合包「$name」安装完成。", PclHintTheme.Green)
+                                PclHintHost.push("The integration package \"$name\" is installed.", PclHintTheme.Green)
                                 runtime.refreshVersions()
                             },
                             onCancelled = {
@@ -1996,7 +1996,7 @@ private fun PclSelectLeft() {
                                     if (pclDiscardIncompleteVersion(newImporter.resolvedVersionNameOrNull())) {
                                         runtime.refreshVersions()
                                     }
-                                    runtime.submitErrorText("整合包导入失败", modpackImportErrorText(th))
+                                    runtime.submitErrorText("Integration package import failed", modpackImportErrorText(th))
                                 }
                             },
                         )
@@ -2008,7 +2008,7 @@ private fun PclSelectLeft() {
             }.onFailure { th ->
                 importer = null
                 runtime.clearModpackImport()
-                runtime.submitErrorText("整合包导入失败", modpackImportErrorText(th))
+                runtime.submitErrorText("Integration package import failed", modpackImportErrorText(th))
             }
         }
     }
@@ -2022,7 +2022,7 @@ private fun PclSelectLeft() {
         paths.forEachIndexed { index, path ->
             PclStaggerIn(1 + index) {
                 PclListItem(
-                    title = path.title.ifBlank { "游戏目录" },
+                    title = path.title.ifBlank { "Game directory" },
                     info = path.path,
                     type = PclListItemType.RadioBox,
                     checked = path.path == currentPath,
@@ -2091,9 +2091,9 @@ private fun PclSelectLeft() {
                     height = 34.dp,
                     onClick = {
                         runCatching { GamePathManager.saveDefaultPath() }
-                            .onSuccess { PclHintHost.push("已创建默认游戏文件夹并切换过去。", PclHintTheme.Green) }
+                            .onSuccess { PclHintHost.push("The default game folder has been created and switched to it.", PclHintTheme.Green) }
                             .onFailure {
-                                runtime.submitErrorText("创建失败", it.message ?: it.javaClass.simpleName)
+                                runtime.submitErrorText("Creation failed", it.message ?: it.javaClass.simpleName)
                             }
                     },
                 )
@@ -2125,14 +2125,14 @@ private fun PclSelectLeft() {
     // 添加文件夹：问显示名（PCL 的 LangSelectDialogInputNameTitle）
     pendingPickedPath?.let { path ->
         PclInputDialog(
-            title = "添加文件夹",
-            label = "文件夹显示名称",
+            title = "Add folder",
+            label = "Folder display name",
             initial = path.trimEnd('/').substringAfterLast('/'),
             onConfirm = { name ->
                 val title = name.ifBlank { path.trimEnd('/').substringAfterLast('/') }
                 runCatching { GamePathManager.addNewPath(title = title, path = path) }
-                    .onSuccess { PclHintHost.push("已添加文件夹「$title」", PclHintTheme.Green) }
-                    .onFailure { runtime.submitErrorText("添加文件夹失败", it.message ?: it.javaClass.simpleName) }
+                    .onSuccess { PclHintHost.push("Added folder \"$title\"", PclHintTheme.Green) }
+                    .onFailure { runtime.submitErrorText("Failed to add folder", it.message ?: it.javaClass.simpleName) }
                 pendingPickedPath = null
             },
             onDismiss = { pendingPickedPath = null },
@@ -2142,7 +2142,7 @@ private fun PclSelectLeft() {
     // 导入整合包的进度（与下载页共用同一个弹窗组件）
     importer?.let { imp ->
         PclTitledTaskDialog(
-            title = "正在导入整合包",
+            title = "Importing integration package",
             tasks = imp.taskFlow,
             // 「取消」是红按钮，必须真的停掉任务流；原来只把弹窗收起来，安装还在后台跑
             onCancel = { runCatching { imp.cancel() }; importer = null },
@@ -2180,15 +2180,15 @@ private fun PclSelectLeft() {
             storageIgnoreAction = null
         }
         PclActionDialog(
-            title = "警告",
+            title = "warn",
             content = message,
-            secondaryText = "忽略",
+            secondaryText = "neglect",
             onSecondary = {
                 val ignore = storageIgnoreAction
                 finishPrompt()
                 ignore?.invoke()
             },
-            primaryText = "授权",
+            primaryText = "Authorize",
             onPrimary = {
                 finishPrompt()
                 openStoragePermissionSettings()
@@ -2315,7 +2315,7 @@ private fun PclVersionRow(
     PclListItem(
         title = version.getVersionName(),
         titleSuffix = titleSuffix,
-        info = info?.getInfoString() ?: "未知版本",
+        info = info?.getInfoString() ?: "Unknown version",
         // ToListItem 的 Logo：版本自带图标（VersionIconImage 读 VersionIcon.png，缺失时回退加载器图标）
         // 用 fillMaxSize 而不是 fillMaxWidth：图标盒（PclListItem 里宽 34、高 = 项高）是**确定尺寸**的，
         // 只给宽度的话高度得由图片自身的固有比例算，加载中/加载失败时那个高度会是 0 —— 图标整块消失。
@@ -2376,7 +2376,7 @@ private fun PclVersionRow(
  * 布局取自 `PageSelectRight.xaml` + `.xaml.vb:28-91`：
  * ```
  * StackPanel PanMain Margin="25,25,25,10"          ← PclContent 的默认外边距
- * └ MyCard  Title="{名称} ({数量})"  Margin="0,0,0,15"  SwapType=0
+ * └ MyCard  Title="{Name} ({Quantity})"  Margin="0,0,0,15"  SwapType=0
  *    └ StackPanel Margin="20,40,18,0"              ← 内容容器，顶边距就是 MyCard.SwapedHeight(=40)
  * ```
  * 「不常用版本 / 愚人节版本 / 错误的版本」三张卡默认折叠；若只剩一张卡且它是折叠的则展开。
@@ -2428,7 +2428,7 @@ private fun PclSelectRight() {
                 content = if (keyword.isBlank()) {
                     PclStrings.LangSelectNoAvailableVersionTip
                 } else {
-                    "没有与「$keyword」匹配的版本。"
+                    "No version matching '$keyword'."
                 },
                 modifier = Modifier.align(Alignment.CenterHorizontally),
                 buttonText = PclStrings.LangSelectNoAvailableVersionDownloadGame,
@@ -2492,8 +2492,8 @@ private fun PclSelectRight() {
 
     renaming?.let { version ->
         PclInputDialog(
-            title = "重命名版本",
-            label = "新的版本名",
+            title = "Rename version",
+            label = "new version name",
             initial = version.getVersionName(),
             onConfirm = { name ->
                 if (name.isNotBlank()) runtime.renameVersion(version, name)
@@ -2503,8 +2503,8 @@ private fun PclSelectRight() {
     }
     deleting?.let { version ->
         PclConfirmDialog(
-            title = "删除版本",
-            content = "确定要删除「${version.getVersionName()}」吗？操作不可恢复。",
+            title = "delete version",
+            content = "Are you sure you want to delete \"${version.getVersionName()}\"? ",
             confirmText = PclStrings.LangDialogBtnDelete,
             danger = true,
             onConfirm = { runtime.deleteVersion(version) },

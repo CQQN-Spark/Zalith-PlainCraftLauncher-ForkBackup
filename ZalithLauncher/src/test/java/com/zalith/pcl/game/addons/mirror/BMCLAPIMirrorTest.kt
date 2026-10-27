@@ -62,7 +62,7 @@ class BMCLAPIMirrorTest {
             "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json".mirrorUrlFor(),
         )
         assertEquals(
-            "指向 BMCLAPI 自身的链接必须原样返回，不能被二次拼接",
+            "Links pointing to BMCLAPI itself must be returned intact and cannot be spliced ​​twice.",
             "$base/version_manifest_v2.json",
             "$base/version_manifest_v2.json".mirrorUrlFor(),
         )

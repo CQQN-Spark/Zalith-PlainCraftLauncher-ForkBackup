@@ -182,7 +182,7 @@ internal object PclLauncherUpdate {
                 state = PclLauncherUpdateState.Failed(
                     version = version,
                     archText = archText,
-                    message = e.message ?: "下载失败",
+                    message = e.message ?: "Download failed",
                 )
             }
         }
@@ -191,7 +191,7 @@ internal object PclLauncherUpdate {
     /** 重试上一次失败的下载。 */
     fun retry(context: Context) {
         val file = pendingRemote ?: return
-        start(context, currentVersionText().ifEmpty { "最新版本" }, file)
+        start(context, currentVersionText().ifEmpty { "latest version" }, file)
     }
 
     fun cancel() {
@@ -242,7 +242,7 @@ internal object PclLauncherUpdate {
         val version = currentVersionText()
         val archText = pendingRemote?.arch?.abiText().orEmpty()
         if (!file.exists() || file.length() == 0L) {
-            state = PclLauncherUpdateState.Failed(version, archText, "安装包没有下载成功，文件是空的。")
+            state = PclLauncherUpdateState.Failed(version, archText, "The installation package was not downloaded successfully and the file is empty.")
             return
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
@@ -267,7 +267,7 @@ internal object PclLauncherUpdate {
             pendingFile = null
         }.onFailure {
             state = PclLauncherUpdateState.Failed(
-                version, archText, it.message ?: "无法打开安装程序。",
+                version, archText, it.message ?: "The installer cannot be opened.",
             )
         }
     }
@@ -277,7 +277,7 @@ internal object PclLauncherUpdate {
 
 /** 字节数的紧凑写法：`181.6 MB`。 */
 internal fun formatUpdateSize(bytes: Long): String {
-    if (bytes <= 0L) return "未知大小"
+    if (bytes <= 0L) return "unknown size"
     val units = listOf("B", "KB", "MB", "GB")
     var value = bytes.toDouble()
     var index = 0

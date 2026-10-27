@@ -48,7 +48,7 @@ class ModrinthVersion(
      */
     @Transient
     @SerialName("changelog")
-    @Deprecated("不应该被代码使用！")
+    @Deprecated("Should not be used by code!")
     val changelog: String? = null,
 
     /** 此版本所依赖的特定项目版本的列表 */

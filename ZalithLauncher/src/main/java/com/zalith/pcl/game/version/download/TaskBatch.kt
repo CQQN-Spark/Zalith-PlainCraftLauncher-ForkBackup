@@ -86,7 +86,7 @@ suspend fun Task.runBatchDownloads(
         it.runFileDownloadedTask()
     }
 
-    //已复用文件的字节并入"已下载"口径，进度条才能从已完成部分起步
+    //已复用文件的字节并入"Downloaded"口径，进度条才能从已完成部分起步
     if (reusable.isNotEmpty()) {
         batch.stats.addBytes(reusable.sumOf { maxOf(it.size, 0L) })
         //随后重置测速基线，避免一次性并入的字节被当作瞬时速率报出

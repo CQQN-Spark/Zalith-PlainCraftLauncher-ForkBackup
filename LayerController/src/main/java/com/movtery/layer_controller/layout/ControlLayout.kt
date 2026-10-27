@@ -182,7 +182,7 @@ fun patchLayoutJson(jsonString: String): String? {
     if (!map.containsKey("info")) {
         map["info"] = buildJsonObject {
             put("name", buildJsonObject {
-                put("default", JsonPrimitive("导入的布局"))
+                put("default", JsonPrimitive("Imported layout"))
                 put("matchQueue", buildJsonArray { })
             })
             put("author", buildJsonObject {

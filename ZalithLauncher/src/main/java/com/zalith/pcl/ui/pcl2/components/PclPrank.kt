@@ -238,11 +238,11 @@ private const val PI = 3.1415927f
 
 /** 彩蛋收场时的提示语。 */
 private val PRANK_LINES = listOf(
-    "开玩笑的，什么都没发生，也没有任何文件被删除。",
-    "恭喜你发现了启动器里最没用的一个按钮。",
-    "这个按钮的唯一作用，就是证明你真的会点它。",
-    "三个「确定」你都要选一个，这就是人生。",
+    "Just kidding, nothing happened and no files were deleted.",
+    "Congratulations on discovering the most useless button in the launcher.",
+    "The only purpose of this button is to prove that you actually click it.",
+    "You have to choose one of the three \"sureties\". This is life.",
 )
 
 /** 开始整活时的提示 —— 得告诉用户怎么出去，不然只能杀进程。 */
-private const val START_HINT = "彩蛋进行中，点一下屏幕就停下。"
+private const val START_HINT = "The easter egg is in progress. Click the screen to stop."

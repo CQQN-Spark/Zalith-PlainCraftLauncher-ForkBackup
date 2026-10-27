@@ -190,7 +190,7 @@ object PclThirdPartyLogin {
             if (profiles.isEmpty()) {
                 // 服务器返回了空角色表（账号还没建角色）：收掉，别让协程一直挂着
                 if (!outcome.isCompleted) {
-                    outcome.complete(LoginOutcome(null, "该账号在「$serverName」上还没有角色，请先到服务器网站创建角色。"))
+                    outcome.complete(LoginOutcome(null, "This account does not have a role on \"$serverName\" yet. Please go to the server website to create a role first."))
                 }
             } else if (profiles.size == 1) {
                 select(profiles.first())
@@ -202,7 +202,7 @@ object PclThirdPartyLogin {
                     cancel = {
                         if (!outcome.isCompleted) {
                             outcome.complete(
-                                LoginOutcome(null, "没有选择角色，本次登录已取消。", aborted = true)
+                                LoginOutcome(null, "No role selected, this login has been cancelled.", aborted = true)
                             )
                         }
                     },
@@ -221,7 +221,7 @@ object PclThirdPartyLogin {
     ) {
         val request = pending ?: return
         if (email.isBlank() || password.isBlank()) {
-            request.error = "请输入邮箱 / 用户名与密码。"
+            request.error = "Please enter your email/username and password."
             return
         }
         request.error = null
@@ -249,7 +249,7 @@ object PclThirdPartyLogin {
                     pending = null
                     request.answer.complete(null)
                 }
-                else -> request.error = outcome.error ?: "登录失败"
+                else -> request.error = outcome.error ?: "Login failed"
             }
         }
     }
@@ -295,7 +295,7 @@ fun PclThirdPartyLoginHost() {
     // 底下的「正在登录」遮罩和输入框都得让开（那个 Task 正卡在 `hasMultipleRoles` 里等）。
     PclThirdPartyLogin.pendingRoles?.let { roles ->
         PclSelectDialog(
-            title = "「${roles.serverName}」上有多个角色，请选择要用的那一个",
+            title = "There are multiple characters on \"${roles.serverName}\", please choose the one you want to use",
             options = roles.profiles.map { it.id to it.name },
             current = null,
             onSelect = { PclThirdPartyLogin.chooseRole(it) },
@@ -310,25 +310,25 @@ fun PclThirdPartyLoginHost() {
 
     when {
         request.error != null -> PclNoticeDialog(
-            title = "第三方登录失败",
+            title = "Third party login failed",
             content = request.error.orEmpty(),
             onDismiss = { PclThirdPartyLogin.clearError() },
         )
 
         request.busy -> PclNoticeDialog(
-            title = "第三方登录",
-            content = "正在登录「${request.serverName}」……\n\n" +
-                    "服务器：${request.baseUrl}",
-            confirmText = "取消",
+            title = "Third party login",
+            content = "Logging in \"${request.serverName}\"......\n\n" +
+                    "Server: ${request.baseUrl}",
+            confirmText = "Cancel",
             onDismiss = { PclThirdPartyLogin.abort() },
         )
 
         else -> PclDualInputDialog(
-            title = "第三方登录",
-            label1 = "「${request.serverName}」的邮箱 / 用户名",
-            label2 = "密码",
-            hint2 = "密码只用于向该认证服务器换取凭据",
-            confirmText = "登录",
+            title = "Third party login",
+            label1 = "Email/username of \"${request.serverName}\"",
+            label2 = "password",
+            hint2 = "The password is only used to exchange credentials with this authentication server",
+            confirmText = "Log in",
             onConfirm = { email, password ->
                 PclThirdPartyLogin.submit(scope, context, email, password)
             },

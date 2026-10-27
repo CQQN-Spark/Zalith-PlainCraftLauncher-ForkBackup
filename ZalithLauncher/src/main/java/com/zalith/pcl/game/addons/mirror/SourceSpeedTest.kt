@@ -66,14 +66,14 @@ data class SourceSpeedResult(
             append(" ms")
         }
     } else {
-        "${type.displayName} · 不可用${error?.let { "（$it）" }.orEmpty()}"
+        "${type.displayName} · Not available ${error?.let {"（$it）" }.orEmpty()}"
     }
 }
 
 /** 对单个源测速。 */
 suspend fun measureSourceSpeed(type: SourceType): SourceSpeedResult = withContext(Dispatchers.IO) {
     val url = PROBE_URLS[type]
-        ?: return@withContext SourceSpeedResult(type, error = "没有可用的探针地址")
+        ?: return@withContext SourceSpeedResult(type, error = "No probe address available")
 
     var connection: HttpURLConnection? = null
     try {
@@ -135,8 +135,8 @@ suspend fun probeAndApplyFastestSource(): List<SourceSpeedResult> {
     AllSettings.gameDownloadProbeTime.save(System.currentTimeMillis())
     Logger.info(
         TAG,
-        "测速完成：" + results.joinToString("，") { it.describe() } +
-            "，选用 " + (best?.type?.displayName ?: "无（全部失败，保持静态判定）"),
+        "Speed ​​test completed:" + results.joinToString("，") { it.describe() } +
+            ", selected " + (best?.type?.displayName ?: "None (all failed, keep static judgment)"),
     )
     return results
 }

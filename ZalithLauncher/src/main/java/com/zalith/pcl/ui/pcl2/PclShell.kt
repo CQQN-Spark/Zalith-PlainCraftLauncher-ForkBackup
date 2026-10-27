@@ -229,7 +229,7 @@ class PclNavController(initial: PclSection = PclSection.Home) {
 
 /** 供各页面获取导航控制器。 */
 val LocalPclNav = staticCompositionLocalOf<PclNavController> {
-    error("PclNavController 尚未提供，请在 PclMainScreen 内使用")
+    error("PclNavController is not provided yet, please use it within PclMainScreen")
 }
 
 /* ============================================================================
@@ -620,7 +620,7 @@ private fun PclTitleBar(nav: PclNavController) {
                 }
             }
         } else {
-            // 子页面标题栏（PanTitleInner）：返回键 Margin="12,0,0,0"、标题 Margin="47,1,60,0"、字号 15
+            // 子页面标题栏（PanTitleInner）：返回键 Margin="12,0,0,0", title Margin="47,1,60,0"、字号 15
             Row(
                 modifier = Modifier.align(Alignment.CenterStart).padding(start = PclDimens.titleInnerBackStart),
                 verticalAlignment = Alignment.CenterVertically,
@@ -630,7 +630,7 @@ private fun PclTitleBar(nav: PclNavController) {
                     theme = PclIconTheme.White,
                     size = PclDimens.titleButtonSize,
                     logoScale = 0.87f,
-                    contentDescription = "返回",
+                    contentDescription = "return",
                     onClick = { nav.back() },
                 )
                 Spacer(Modifier.width(PclDimens.titleInnerTitleStart - PclDimens.titleInnerBackStart - PclDimens.titleButtonSize))
@@ -650,7 +650,7 @@ private fun PclTitleBar(nav: PclNavController) {
                 theme = PclIconTheme.White,
                 size = PclDimens.titleButtonSize,
                 logoScale = 0.72f,
-                contentDescription = "最小化",
+                contentDescription = "minimize",
                 onClick = { activity?.moveTaskToBack(true) },
             )
             Spacer(Modifier.width(PclDimens.titleButtonGap))
@@ -659,7 +659,7 @@ private fun PclTitleBar(nav: PclNavController) {
                 theme = PclIconTheme.White,
                 size = PclDimens.titleButtonSize,
                 logoScale = 0.72f,
-                contentDescription = "关闭",
+                contentDescription = "closure",
                 onClick = { activity?.finish() },
                 modifier = Modifier.padding(end = PclDimens.titleButtonMarginEnd),
             )
@@ -1254,7 +1254,7 @@ private fun PclHiddenPeekGesture(modifier: Modifier = Modifier) {
 
                 val hiddenCount = PclSkinSettings.hiddenCount
                 if (hiddenCount == 0) {
-                    PclHintHost.push("当前没有被隐藏的功能。", PclHintTheme.Blue)
+                    PclHintHost.push("There are currently no hidden features.", PclHintTheme.Blue)
                     return@clickable
                 }
 
@@ -1262,7 +1262,7 @@ private fun PclHiddenPeekGesture(modifier: Modifier = Modifier) {
                 if (PclSkinSettings.isPeeking()) {
                     PclSkinSettings.stopPeek()
                     PclHintHost.push(
-                        "已收起临时显示，$hiddenCount 个入口重新隐藏。",
+                        "The temporary display has been closed, and $hiddenCount entries have been hidden again.",
                         PclHintTheme.Blue,
                     )
                     return@clickable
@@ -1270,10 +1270,10 @@ private fun PclHiddenPeekGesture(modifier: Modifier = Modifier) {
 
                 PclSkinSettings.startPeek()
                 PclHintHost.push(
-                    "已临时显示 $hiddenCount 个被隐藏的入口，" +
-                            "${PclSkinSettings.PEEK_DURATION_MS / 1000} 秒后自动隐藏。" +
-                            "去「设置 → 个性化 → 功能隐藏」取消勾选就能永久恢复；" +
-                            "再连点右下角 ${PclSkinSettings.PEEK_TAP_COUNT} 次可提前收起。",
+                    "$hiddenCount hidden entries have been temporarily displayed." +
+                            "${PclSkinSettings.PEEK_DURATION_MS / 1000} Automatically hide after seconds." +
+                            "Go to \"Settings → Personalization → Function Hide\" and uncheck it to restore it permanently;" +
+                            "Click the lower right corner again ${PclSkinSettings.PEEK_TAP_COUNT} times to close it in advance.",
                     PclHintTheme.Green,
                 )
                 // 「功能隐藏」在「设置 → 个性化」（左栏第 3 项）底部
@@ -1329,8 +1329,8 @@ private fun PclExtraButtons(
     val showDownload = taskCount > 0 && nav.subPage?.title != PclStrings.LangPageNameDownloadManagement
 
     val buttons = buildList {
-        if (shouldShowBack) add(Triple("回到顶部", PclIcons.extraBackToTop, { PclScrollSignal.request() }))
-        if (showDownload) add(Triple("下载管理", PclIcons.navDownload, onOpenDownloadTasks))
+        if (shouldShowBack) add(Triple("back to top", PclIcons.extraBackToTop, { PclScrollSignal.request() }))
+        if (showDownload) add(Triple("Download management", PclIcons.navDownload, onOpenDownloadTasks))
     }
     if (buttons.isEmpty()) return
 
@@ -1354,7 +1354,7 @@ private fun PclExtraButtons(
                     )
                 }
                 // 有下载/安装任务时在「下载管理」上显示数量角标
-                if (tip == "下载管理" && taskCount > 0) {
+                if (tip == "Download management" && taskCount > 0) {
                     Box(
                         modifier = Modifier
                             .align(Alignment.TopEnd)

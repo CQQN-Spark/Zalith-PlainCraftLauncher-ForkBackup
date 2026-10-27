@@ -326,13 +326,13 @@ object ControlManager {
                 true
             }
         } catch (e: Exception) {
-            Logger.warning(TAG, "控制布局写盘失败", e)
+            Logger.warning(TAG, "Control layout failed to write to disk", e)
             null
         }
         if (copied == null) {
             FileUtils.deleteQuietly(file)
             catchedError(
-                IllegalStateException("读取这个文件失败或超时（20 秒），可能是文件太大，或者文件管理器没有正常返回数据。")
+                IllegalStateException("Reading this file failed or timed out (20 seconds). The file may be too large, or the file manager did not return data normally.")
             )
             return@withContext
         }
@@ -342,7 +342,7 @@ object ControlManager {
         val text = try {
             file.readText()
         } catch (e: Exception) {
-            Logger.warning(TAG, "控制布局读出失败（可能不是 UTF-8 文本）", e)
+            Logger.warning(TAG, "Control layout readout failed (may not be UTF-8 text)", e)
             catchedError(e)
             return@withContext
         }
@@ -357,31 +357,31 @@ object ControlManager {
             // 解析成功就按标准格式重写一遍：补齐过的字段要真正落到磁盘，
             // 否则列表重新扫的时候读的还是原始那份，又变回「不支持」。
             layout.saveToFile(file)
-            Logger.info(TAG, "控制布局导入成功：${file.name}")
+            Logger.info(TAG, "Control layout imported successfully: ${file.name}")
             onFinished()
         } catch (e: SerializationException) {
-            Logger.warning(TAG, "控制布局不是可识别的 JSON 格式", e)
+            Logger.warning(TAG, "Control layout is not in a recognized JSON format", e)
             // 原始异常是一句英文（`The file does not contain the key "editorVersion".`），
             // 用户看不出问题在哪；这里换成能对号入座的说法，并强调文件已经存下来了。
             val message = when {
                 e.message?.contains("editorVersion") == true ->
-                    "文件已保存，但读不出来：这份 json 缺少 editorVersion 字段，不是本启动器的控制布局格式。"
+                    "The file has been saved but cannot be read: This json is missing the editorVersion field and is not the control layout format of this launcher."
                 e.message?.contains("Unexpected JSON token", ignoreCase = true) == true ->
-                    "文件已保存，但读不出来：不是合法的 JSON，内容可能已损坏（比如从网页复制时丢了括号）。"
-                else -> "文件已保存，但读不出来：${e.message}"
+                    "The file was saved but cannot be read: it is not valid JSON and the content may be corrupted (e.g. missing parentheses when copied from a web page)."
+                else -> "The file has been saved but cannot be read: ${e.message}"
             }
             onSerializationError(SerializationException(message, e))
         } catch (e: IllegalArgumentException) {
             // `loadLayoutFromString` 在文件的 editorVersion 比本启动器新时抛这个。
             // 注意 SerializationException 也继承自 IllegalArgumentException，必须排在它后面。
-            Logger.warning(TAG, "控制布局版本过新", e)
+            Logger.warning(TAG, "Control layout version is out of date", e)
             catchedError(
                 IllegalArgumentException(
-                    "文件已保存，但这个布局来自更新版本的启动器，需要先升级启动器才能打开。", e
+                    "The file has been saved, but this layout is from a newer version of the launcher and requires a launcher upgrade before it can be opened.", e
                 )
             )
         } catch (e: Exception) {
-            Logger.warning(TAG, "控制布局解析失败", e)
+            Logger.warning(TAG, "Control layout parsing failed", e)
             catchedError(e)
         }
     }
@@ -400,10 +400,10 @@ object ControlManager {
 
         val patched = runCatching { patchLayoutJson(jsonString) }.getOrNull()
         if (patched != null && patched != jsonString) {
-            Logger.info(TAG, "布局缺少部分字段，补齐后重试解析")
+            Logger.info(TAG, "The layout is missing some fields. Please fill them in and try parsing again.")
             runCatching { loadLayoutFromString(patched) }.getOrNull()?.let { return it }
         }
-        throw first.exceptionOrNull() ?: SerializationException("无法把这个文件读成控制布局")
+        throw first.exceptionOrNull() ?: SerializationException("Unable to read this file into a control layout")
     }
 
 }

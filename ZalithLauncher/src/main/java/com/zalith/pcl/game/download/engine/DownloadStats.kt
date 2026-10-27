@@ -31,7 +31,7 @@ data class BatchProgress(
 )
 
 /**
- * 跨线程的字节/文件计数器，内嵌"逐秒分块"测速：
+ * 跨线程的字节/文件计数器，内嵌"chunk by second"测速：
  * 每个报表值就是刚刚完整过去的一秒里真实落盘的字节数，每秒更新一次，
  * 不做任何跨窗口平滑或外推——报出来的数字永远有对应的实际流量。
  * 热路径只有原子加法。
@@ -66,7 +66,7 @@ class DownloadStats {
     }
 
     /**
-     * 把"本地已复用文件"的字节并入已下载量
+     * 把"Locally reused files"的字节并入已下载量
      */
     fun resetSpeedBaseline() {
         synchronized(this) {

@@ -188,38 +188,38 @@ class PclRuntime(
      */
     fun installGame(info: GameDownloadInfo, onFinished: (String) -> Unit = {}) {
         if (gameInstallerFlow.value != null) {
-            hint("已有安装任务正在进行，请稍候。", PclHintTheme.Yellow)
+            hint("There is already an installation task in progress, please wait.", PclHintTheme.Yellow)
             return
         }
         val installer = GameInstaller(activity, info, scope)
         installIsModify = false
         gameInstallerFlow.value = installer
-        installTitle = "${info.customVersionName} 安装"
+        installTitle = "${info.customVersionName} Installation"
         installer.installGame(
             isRunning = {
                 gameInstallerFlow.value = null
-                hint("上一个安装任务还在收尾，请稍等一下再试。", PclHintTheme.Yellow)
+                hint("The previous installation task is still being completed, please wait a moment and try again.", PclHintTheme.Yellow)
                 onFinished("")
             },
             onInstalled = { version ->
                 gameInstallerFlow.value = null
                 refreshVersions()
-                hint("版本「$version」安装完成。", PclHintTheme.Green)
+                hint("Version \"$version\" is installed.", PclHintTheme.Green)
                 onFinished(version)
             },
             onError = { th ->
                 gameInstallerFlow.value = null
                 // 弹窗只显示 message，定位不到崩溃行；完整堆栈写进日志方便排查。
-                Logger.error(TAG, "安装失败", th)
+                Logger.error(TAG, "Installation failed", th)
                 pendingError = ErrorViewModel.ThrowableMessage(
-                    title = androidText("安装失败"),
+                    title = androidText("Installation failed"),
                     message = androidText(th.message ?: th.javaClass.simpleName),
                 )
                 onFinished("")
             },
             onGameAlreadyInstalled = {
                 gameInstallerFlow.value = null
-                hint("该版本已经安装过了。", PclHintTheme.Blue)
+                hint("This version has already been installed.", PclHintTheme.Blue)
                 onFinished("")
             },
         )
@@ -240,7 +240,7 @@ class PclRuntime(
      */
     fun modifyGame(version: Version, info: GameDownloadInfo, onFinished: (Boolean) -> Unit = {}) {
         if (gameInstallerFlow.value != null) {
-            hint("已有安装任务正在进行，请稍候。", PclHintTheme.Yellow)
+            hint("There is already an installation task in progress, please wait.", PclHintTheme.Yellow)
             onFinished(false)
             return
         }
@@ -254,26 +254,26 @@ class PclRuntime(
         )
         installIsModify = true
         gameInstallerFlow.value = installer
-        installTitle = "${info.customVersionName} 重置"
+        installTitle = "${info.customVersionName} Reset"
         installer.modifyVersion(
             // 安装器内部拒绝受理时（任务流还占着）必须**说出来并释放槽位**：
             // 否则界面会停在「正在重置」、按钮再也点不动，用户看到的就是「没反应」。
             isRunning = {
                 gameInstallerFlow.value = null
-                hint("上一个安装任务还在收尾，请稍等一下再试。", PclHintTheme.Yellow)
+                hint("The previous installation task is still being completed, please wait a moment and try again.", PclHintTheme.Yellow)
                 onFinished(false)
             },
             onModified = {
                 gameInstallerFlow.value = null
                 refreshVersions()
-                hint("实例「${info.customVersionName}」已重置完成。", PclHintTheme.Green)
+                hint("Instance \"${info.customVersionName}\" has been reset.", PclHintTheme.Green)
                 onFinished(true)
             },
             onError = { th ->
                 gameInstallerFlow.value = null
-                Logger.error(TAG, "重置失败", th)
+                Logger.error(TAG, "Reset failed", th)
                 pendingError = ErrorViewModel.ThrowableMessage(
-                    title = androidText("重置失败"),
+                    title = androidText("Reset failed"),
                     message = androidText(th.message ?: th.javaClass.simpleName),
                 )
                 onFinished(false)
@@ -287,7 +287,7 @@ class PclRuntime(
         // 重置任务取消时**不能**清目标目录 —— 那正是用户正在用的实例
         installer.cancelInstall(clearTarget = !installIsModify)
         gameInstallerFlow.value = null
-        hint("已取消安装。", PclHintTheme.Yellow)
+        hint("Installation canceled.", PclHintTheme.Yellow)
     }
 
     // ------------------------------------------------------------------ 整合包导入
@@ -358,7 +358,7 @@ class PclRuntime(
                                 title = task.title,
                                 rows = buildList {
                                     task.downloadTask?.let {
-                                        add(TitledTask(title = androidText("下载整合包"), task = it))
+                                        add(TitledTask(title = androidText("Download integration package"), task = it))
                                     }
                                     addAll(installRows)
                                 },
@@ -423,7 +423,7 @@ class PclRuntime(
         val previous = list.find { it.id == targetId }
         val updated = ModpackImportTask(
             id = targetId,
-            title = title.ifBlank { previous?.title.orEmpty() }.ifBlank { "安装整合包" },
+            title = title.ifBlank { previous?.title.orEmpty() }.ifBlank { "Install integration package" },
             downloadTask = downloadTask ?: previous?.downloadTask,
             importer = importer ?: previous?.importer,
         )
@@ -512,12 +512,12 @@ class PclRuntime(
                 val best = results.filter { it.ok }.maxByOrNull { it.bytesPerSec }
                 if (best != null) {
                     hint(
-                        "测速完成：已选用 ${best.describe()}",
+                        "Speed ​​test completed: ${best.describe()} selected",
                         PclHintTheme.Green,
                     )
                 } else {
                     hint(
-                        "测速失败：所有下载源都不可用，已保持原有选择。",
+                        "Speed ​​test failed: All download sources are unavailable and the original selection has been maintained.",
                         PclHintTheme.Red,
                     )
                 }
@@ -577,13 +577,13 @@ class PclRuntime(
                 }
             }
             PclLaunchCheck.NoVersion ->
-                hint("没有可用的游戏版本，请先在「下载」页安装一个版本。", PclHintTheme.Red)
+                hint("There is no game version available, please install a version from the Download page first.", PclHintTheme.Red)
             PclLaunchCheck.InvalidVersion ->
-                hint("当前版本文件不完整，请在「下载」页重新安装该版本。", PclHintTheme.Red)
+                hint("The current version file is incomplete, please reinstall this version on the \"Download\" page.", PclHintTheme.Red)
             PclLaunchCheck.NoAccount ->
-                hint("尚未登录任何账户，请先在「更多 → 账号」中登录。", PclHintTheme.Red)
+                hint("If you have not logged into any account yet, please log in first in \"More → Account\".", PclHintTheme.Red)
             PclLaunchCheck.AlreadyLaunching ->
-                hint("游戏已经在启动中了，请稍候。", PclHintTheme.Blue)
+                hint("The game is already starting, please wait.", PclHintTheme.Blue)
             null -> Unit
         }
     }
@@ -613,7 +613,7 @@ class PclRuntime(
                 } else {
                     val target = all.firstOrNull { it.isMicrosoftAccount() }
                     if (target == null) {
-                        hint("该版本设置为「仅正版登录」，请先在「更多 → 账号」里登录微软账户。", PclHintTheme.Red)
+                        hint("This version is set to \"Genuine login only\". Please log in to your Microsoft account in \"More → Account\" first.", PclHintTheme.Red)
                         false
                     } else {
                         switchAccount(target)
@@ -628,7 +628,7 @@ class PclRuntime(
                 } else {
                     val target = all.firstOrNull { it.isLocalAccount() }
                     if (target == null) {
-                        hint("该版本设置为「仅离线登录」，请先在「更多 → 账号」里创建离线账户。", PclHintTheme.Red)
+                        hint("This version is set to \"Offline login only\". Please create an offline account in \"More → Account\" first.", PclHintTheme.Red)
                         false
                     } else {
                         switchAccount(target)
@@ -642,9 +642,9 @@ class PclRuntime(
                 if (baseUrl.isBlank()) {
                     hint(
                         if (type == VersionLoginType.UNIFIED_PASSPORT) {
-                            "该版本设置为统一通行证登录，请先在「版本设置 → 服务器」里填写服务器 ID。"
+                            "This version is set for unified pass login. Please fill in the server ID in \"Version Settings → Server\" first."
                         } else {
-                            "该版本设置为第三方登录，请先在「版本设置 → 服务器」里填写认证服务器地址。"
+                            "This version is set for third-party login. Please fill in the authentication server address in \"Version Settings → Server\" first."
                         },
                         PclHintTheme.Red,
                     )
@@ -665,11 +665,11 @@ class PclRuntime(
                     registerUrl = config.loginRegisterUrl,
                 )
                 if (account == null) {
-                    hint("已取消第三方登录，本次没有启动游戏。", PclHintTheme.Blue)
+                    hint("The third-party login has been canceled and the game has not been started this time.", PclHintTheme.Blue)
                     return false
                 }
                 hint(
-                    "已登录「${account.username}」" +
+                    "Logged in \"${account.username}\"" +
                             "（${account.accountType ?: config.loginServerTitle()}）",
                     PclHintTheme.Green,
                 )
@@ -699,15 +699,15 @@ class PclRuntime(
     fun playServer(version: Version, address: String): Boolean {
         when {
             isLaunching -> {
-                hint("游戏已经在启动中了，请稍候。", PclHintTheme.Blue)
+                hint("The game is already starting, please wait.", PclHintTheme.Blue)
                 return false
             }
             !version.isValid() -> {
-                hint("版本「${version.getVersionName()}」文件不完整，无法启动。", PclHintTheme.Red)
+                hint("The version \"${version.getVersionName()}\" file is incomplete and cannot be started.", PclHintTheme.Red)
                 return false
             }
             currentAccount.value == null -> {
-                hint("尚未登录任何账户，请先在「更多 → 账号」中登录。", PclHintTheme.Red)
+                hint("If you have not logged into any account yet, please log in first in \"More → Account\".", PclHintTheme.Red)
                 return false
             }
         }
@@ -730,9 +730,9 @@ class PclRuntime(
         version.quickPlaySingle = quickPlay
 
         clearLog()
-        appendLocalLog("▷ 准备启动 ${version.getVersionName()}")
+        appendLocalLog("▷ Ready to start ${version.getVersionName()}")
         if (quickPlay is QuickPlay.Server) {
-            appendLocalLog("▷ 启动后自动进入服务器 ${quickPlay.serverAddress}")
+            appendLocalLog("▷ Automatically enter the server after startup ${quickPlay.serverAddress}")
         }
         isLaunching = true
         //概览页的「启动次数」（PCL 存在 Setup.ini 的 LaunchCount 里，内核没有这个概念）
@@ -745,17 +745,17 @@ class PclRuntime(
             submitError = { tm -> pendingError = tm },
             onReloginRequired = { acc ->
                 pendingError = ErrorViewModel.ThrowableMessage(
-                    title = androidText("账号需要重新登录"),
-                    message = androidText("账号「${acc.username}」的登录凭据已被服务器拒绝，请在「更多 → 账号」中重新登录。"),
+                    title = androidText("Account needs to be logged in again"),
+                    message = androidText("The login credentials for the account \"${acc.username}\" have been rejected by the server. Please log in again in \"More → Account\"."),
                 )
             },
             onRefreshFailed = { acc, th ->
                 pendingError = ErrorViewModel.ThrowableMessage(
-                    title = androidText("账号刷新失败"),
-                    message = androidText("账号「${acc.username}」刷新失败：${th.message ?: th.javaClass.simpleName}"),
+                    title = androidText("Account refresh failed"),
+                    message = androidText("Account \"${acc.username}\" failed to refresh: ${th.message ?: th.javaClass.simpleName}"),
                 )
             },
-            isRunning = { hint("已有启动任务正在进行。", PclHintTheme.Blue) },
+            isRunning = { hint("There is already a startup task in progress.", PclHintTheme.Blue) },
             onComplete = {
                 // 「直接进服务器」只对这一次启动有效，用完立刻清掉
                 version.quickPlaySingle = null
@@ -775,7 +775,7 @@ class PclRuntime(
     fun cancelLaunch() {
         launchFlow.cancel()
         isLaunching = false
-        appendLocalLog("▷ 已取消启动")
+        appendLocalLog("▷ Start canceled")
     }
 
     // ================================================================== 版本操作
@@ -783,7 +783,7 @@ class PclRuntime(
     /** 切换当前版本。 */
     fun selectVersion(version: Version) {
         VersionsManager.saveVersion(version)
-        hint("已切换到版本「${version.getVersionName()}」", PclHintTheme.Blue)
+        hint("Switched to version \"${version.getVersionName()}\"", PclHintTheme.Blue)
     }
 
     fun refreshVersions() {
@@ -792,17 +792,17 @@ class PclRuntime(
 
     fun renameVersion(version: Version, newName: String) {
         VersionsManager.renameVersion(version, newName)
-        hint("已重命名为「$newName」", PclHintTheme.Green)
+        hint("Renamed to \"$newName\"", PclHintTheme.Green)
     }
 
     fun deleteVersion(version: Version) {
         VersionsManager.deleteVersion(version)
-        hint("已删除版本「${version.getVersionName()}」", PclHintTheme.Green)
+        hint("Deleted version \"${version.getVersionName()}\"", PclHintTheme.Green)
     }
 
     fun copyVersion(version: Version, newName: String) {
         VersionsManager.copyVersion(version, newName, true)
-        hint("已复制为「$newName」", PclHintTheme.Green)
+        hint("Copied as \"$newName\"", PclHintTheme.Green)
     }
 
     fun togglePinned(version: Version) {
@@ -815,7 +815,7 @@ class PclRuntime(
     fun createLocalAccount(userName: String, onCreated: () -> Unit = {}) {
         val name = userName.trim()
         if (name.isEmpty()) {
-            hint("请输入玩家名。", PclHintTheme.Red)
+            hint("Please enter player name.", PclHintTheme.Red)
             return
         }
         scope.launch {
@@ -825,7 +825,7 @@ class PclRuntime(
             )
             AccountsManager.suspendSaveAccount(account)
             withContext(Dispatchers.Main) {
-                hint("已创建离线账户「$name」", PclHintTheme.Green)
+                hint("Offline account \"$name\" has been created", PclHintTheme.Green)
                 onCreated()
             }
         }
@@ -833,7 +833,7 @@ class PclRuntime(
 
     fun switchAccount(account: Account) {
         AccountsManager.setCurrentAccount(account)
-        hint("已切换到账户「${account.username}」", PclHintTheme.Blue)
+        hint("Switched to account \"${account.username}\"", PclHintTheme.Blue)
     }
 
     fun deleteAccount(account: Account) {
@@ -846,7 +846,7 @@ class PclRuntime(
             account = account,
             onFailed = { th ->
                 pendingError = ErrorViewModel.ThrowableMessage(
-                    title = androidText("刷新失败"),
+                    title = androidText("Refresh failed"),
                     message = androidText(th.message ?: th.javaClass.simpleName),
                 )
             },
@@ -962,7 +962,7 @@ class PclRuntime(
 
 /** 供页面获取运行时。 */
 val LocalPclRuntime = staticCompositionLocalOf<PclRuntime> {
-    error("PclRuntime 尚未提供，请在 PclMainScreen 内使用")
+    error("PclRuntime is not provided yet, please use it within PclMainScreen")
 }
 
 /**

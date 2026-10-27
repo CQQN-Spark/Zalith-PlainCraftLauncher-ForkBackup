@@ -13,7 +13,7 @@
  *   MyCard Margin="0,0,0,15"              ── 导出内容选项（一长串复选框，子项缩进 30）
  *     BtnOverrideCancel  右上角「重置」
  *     StackPanel Margin="25,38,15,15"
- *   MyCard Title="高级选项" CanSwap=True IsSwapped=True
+ *   MyCard Title="Advanced options" CanSwap=True IsSwapped=True
  *     StackPanel Margin="25,37,23,20"     ── 提示 + 两个总开关 + 三个按钮
  * BtnExport  MyExtraTextButton 底部居中「开始导出」
  * ```
@@ -297,7 +297,7 @@ private fun buildSubOptions(
  * PCL `IsVisible` 里的粗查：
  *   1. 先只拿前两级的文件名/文件夹名去比对规则；
  *   2. 对三级以上的规则（如 `config/tacz/custom/`）把通配符裁掉后按真实路径查一次
- *      —— PCL 的 `Rule.Trim("*?")` 之后 `Split("\").Count >= 3` 那一支。
+ *      —— PCL 的 `Rule.Trim("*?")` followed by `Split("\").Count >= 3` 那一支。
  */
 private fun roughlyHasEntry(gameDir: File, rules: String): Boolean {
     val entries = ArrayList<String>()
@@ -342,26 +342,26 @@ private fun buildExportOptions(
     // 「游戏本体」：不可取消，且不参与规则（整合包本身就是它）
     options += PclExportOption(
         key = "basic",
-        title = "游戏本体",
+        title = "Game body",
         description = versionDisplayName,
         forcedOn = true,
     )
     options += PclExportOption(
         key = "options",
-        title = "游戏本体设置",
-        description = "键位、音量、视频设置等",
+        title = "Game settings",
+        description = "Key position, volume, video settings, etc.",
         rules = "options.txt|configureddefaults/",
         defaultChecked = true,
     )
     options += PclExportOption(
         key = "profile",
-        title = "游戏本体个人信息",
-        description = "命令历史、已保存的快捷栏",
+        title = "Game body personal information",
+        description = "Command history, saved shortcut bar",
         rules = "hotbar.nbt|command_history.txt",
     )
     options += PclExportOption(
         key = "optifine",
-        title = "OptiFine 设置",
+        title = "OptiFine settings",
         rules = "optionsof.txt|optionsshaders.txt",
         defaultChecked = true,
         requireOptiFine = true,
@@ -369,22 +369,22 @@ private fun buildExportOptions(
     options += PclExportOption(
         key = "mod",
         title = "Mod",
-        description = "模组",
+        description = "module",
         rules = "mods/|!mods/*.disabled|!mods/*.old|!mods/.connector/|coremods/|lib/",
         defaultChecked = true,
         requireModLoader = true,
     )
     options += PclExportOption(
         key = "modDisabled",
-        title = "已禁用的 Mod",
+        title = "Disabled Mods",
         rules = "mods/*.disabled|mods/*.old",
         indent = true,
         visibleWhen = "mod",
     )
     options += PclExportOption(
         key = "modAddons",
-        title = "整合包重要数据",
-        description = "脚本文件、内置资源包、数据包等",
+        title = "Important data of the integrated package",
+        description = "Script files, built-in resource packages, data packages, etc.",
         rules = "hotai/|bansoukou/|addons/|multiblocked/|modpack-update-checker/|global_packs/|" +
                 "global_resource_packs/|global_data_packs/|optional_data_packs/|moonlight-global-datapacks/|" +
                 "maps/|icon.png|mods-resourcepacks/|matmos/|resource_assorts/|resource_assorts.json|" +
@@ -398,7 +398,7 @@ private fun buildExportOptions(
     )
     options += PclExportOption(
         key = "modSettings",
-        title = "Mod 设置",
+        title = "Mod settings",
         rules = "config/|!config/jei/world/|!config/worldedit/|config/worldedit/worldedit.properties|" +
                 "!config/spark/|config/spark/config.json|defaultconfigs/|journeymap/config/|journeymap/server/|" +
                 "TrashSlotSaveState.json|customfov.txt|gg.essential.mod/|essential/|!essential/*/|" +
@@ -413,7 +413,7 @@ private fun buildExportOptions(
     )
     options += PclExportOption(
         key = "tacz",
-        title = "TaCZ 枪包",
+        title = "TaCZ gun bag",
         rules = "tacz/|config/tacz/custom/",
         defaultChecked = true,
         indent = true,
@@ -421,7 +421,7 @@ private fun buildExportOptions(
     )
     options += PclExportOption(
         key = "paintings",
-        title = "已上传的沉浸画",
+        title = "Uploaded immersion paintings",
         rules = "immersive_paintings/",
         defaultChecked = true,
         indent = true,
@@ -429,40 +429,40 @@ private fun buildExportOptions(
     )
     options += PclExportOption(
         key = "mapRecord",
-        title = "已绘制的地图",
-        description = "地图类 Mod 为现有的存档、服务器记录的地图、路标点等",
+        title = "map drawn",
+        description = "Map Mods include existing archives, server-recorded maps, landmarks, etc.",
         rules = "journeymap/data/|xaero/|XaeroWaypoints/|XaeroWorldMap/",
         indent = true,
         visibleWhen = "mod",
     )
     options += PclExportOption(
         key = "jei",
-        title = "JEI 个人信息",
-        description = "物品收藏夹等",
+        title = "JEI personal information",
+        description = "Item favorites etc.",
         rules = "config/jei/world/",
         indent = true,
         visibleWhen = "mod",
     )
     options += PclExportOption(
         key = "emi",
-        title = "EMI 个人信息",
-        description = "物品收藏夹、默认配方、合成历史记录等",
+        title = "EMI personal information",
+        description = "Item favorites, default recipes, synthesis history, etc.",
         rules = "emi.json",
         indent = true,
         visibleWhen = "mod",
     )
     options += PclExportOption(
         key = "patchouli",
-        title = "帕秋莉手册个人信息",
-        description = "教程书的已读记录、书签、阅读历史记录等",
+        title = "Patchouli Handbook Personal Information",
+        description = "Reading records, bookmarks, reading history, etc. of tutorial books",
         rules = "patchouli_data.json",
         indent = true,
         visibleWhen = "mod",
     )
     options += PclExportOption(
         key = "resourcepacks",
-        title = "资源包",
-        description = "纹理包/材质包",
+        title = "Resource pack",
+        description = "Texture pack/material pack",
         showRules = "resourcepacks/|texturepacks/",
         defaultChecked = true,
     )
@@ -470,41 +470,41 @@ private fun buildExportOptions(
     options += buildSubOptions("texturepacks", gameDir, "texturepacks", true, true)
     options += PclExportOption(
         key = "shaderpacks",
-        title = "光影包",
+        title = "Light and shadow package",
         showRules = "shaderpacks/",
         defaultChecked = true,
         requireModLoaderOrOptiFine = true,
     )
     options += buildSubOptions("shaderpacks", gameDir, "shaderpacks", true, true)
-    options += PclExportOption(key = "screenshot", title = "截图", rules = "screenshots/")
+    options += PclExportOption(key = "screenshot", title = "screenshot", rules = "screenshots/")
     options += PclExportOption(
         key = "schematics",
-        title = "导出的结构",
-        description = "schematics 文件夹",
+        title = "exported structure",
+        description = "schematics folder",
         rules = "schematics/",
     )
     options += PclExportOption(
         key = "replay",
-        title = "录像回放",
-        description = "Replay Mod 的录像文件",
+        title = "Video playback",
+        description = "Video files of Replay Mod",
         rules = "replay_recordings/|replay_videos/",
         requireModLoader = true,
     )
     options += PclExportOption(
         key = "saves",
-        title = "单人游戏存档",
-        description = "世界/地图",
+        title = "Single player save",
+        description = "world/map",
         showRules = "saves/",
     )
     options += buildSubOptions("saves", gameDir, "saves", false, true)
     options += PclExportOption(
         key = "license",
-        title = "协议",
-        description = "Licence 文件",
+        title = "protocol",
+        description = "License file",
         rules = "LICEN*",
         defaultChecked = true,
     )
-    options += PclExportOption(key = "servers", title = "多人游戏服务器列表", rules = "servers.dat")
+    options += PclExportOption(key = "servers", title = "Multiplayer server list", rules = "servers.dat")
 
     // 可见性（PCL 的 IsVisible）：先看 RequireXxx，再**不分父子**地用 `Rules ?: ShowRules`
     // 粗查磁盘上是否真的有对应的文件/文件夹 —— 子项（如「TaCZ 枪包」）也一样要查，
@@ -585,7 +585,7 @@ fun PclInstanceExportPage(version: Version) {
                 val files = withContext(Dispatchers.IO) { selectExportFiles(version.getGameDir(), rules) }
                 if (files.isEmpty()) {
                     running = false
-                    PclHintHost.push("没有匹配到任何要导出的文件，请检查「导出内容」的勾选。", PclHintTheme.Red)
+                    PclHintHost.push("No files to be exported were found, please check the \"Export content\" checkbox.", PclHintTheme.Red)
                     return@launch
                 }
                 val loader = info?.primaryLoader?.let { ExportInfo.LoaderVersion(it.loader, it.version) }
@@ -613,13 +613,13 @@ fun PclInstanceExportPage(version: Version) {
                         running = false
                         // 提示里带后缀：用户选保存位置时未必补了扩展名，靠它确认存成了什么文件
                         val suffix = if (advancedModrinth) "mrpack" else "zip"
-                        PclHintHost.push("整合包已导出：$name.$suffix", PclHintTheme.Green)
+                        PclHintHost.push("The integration package has been exported: $name.$suffix", PclHintTheme.Green)
                     },
                     onError = { th ->
                         running = false
                         Logger.warning(TAG_EXPORT, "Export modpack failed", th)
                         PclHintHost.push(
-                            "导出失败：${th.message ?: th.javaClass.simpleName}",
+                            "Export failed: ${th.message ?: th.javaClass.simpleName}",
                             PclHintTheme.Red,
                         )
                     },
@@ -628,7 +628,7 @@ fun PclInstanceExportPage(version: Version) {
                 running = false
                 Logger.warning(TAG_EXPORT, "Prepare modpack export failed", t)
                 PclHintHost.push(
-                    "导出失败：${t.message ?: t.javaClass.simpleName}",
+                    "Export failed: ${t.message ?: t.javaClass.simpleName}",
                     PclHintTheme.Red,
                 )
             }
@@ -660,8 +660,8 @@ fun PclInstanceExportPage(version: Version) {
                     true
                 }.getOrDefault(false)
             }
-            if (ok) PclHintHost.push("已保存配置文件。", PclHintTheme.Green)
-            else PclHintHost.push("保存配置失败。", PclHintTheme.Red)
+            if (ok) PclHintHost.push("Configuration file saved.", PclHintTheme.Green)
+            else PclHintHost.push("Failed to save configuration.", PclHintTheme.Red)
         }
     }
     val readConfig = rememberLauncherForActivityResult(
@@ -675,7 +675,7 @@ fun PclInstanceExportPage(version: Version) {
             }
             val json = text?.let { runCatching { JSONObject(it) }.getOrNull() }
             if (json == null) {
-                PclHintHost.push("读取配置失败。", PclHintTheme.Red)
+                PclHintHost.push("Failed to read configuration.", PclHintTheme.Red)
                 return@launch
             }
             packName = json.optString("name", packName)
@@ -687,7 +687,7 @@ fun PclInstanceExportPage(version: Version) {
             json.optJSONObject("options")?.let { obj ->
                 obj.keys().forEach { key -> checked[key] = obj.optBoolean(key) }
             }
-            PclHintHost.push("已读取配置文件。", PclHintTheme.Green)
+            PclHintHost.push("Configuration file has been read.", PclHintTheme.Green)
         }
     }
 
@@ -696,7 +696,7 @@ fun PclInstanceExportPage(version: Version) {
         PclContent(contentPadding = PaddingValues(start = 25.dp, top = 10.dp, end = 25.dp, bottom = 65.dp)) {
             if (hasOptiFine) {
                 PclHint(
-                    text = "受 Modrinth 整合包规范限制，导出的整合包中不会包含 OptiFine。",
+                    text = "Due to Modrinth modpack specifications, OptiFine will not be included in the exported modpack.",
                     modifier = Modifier.padding(top = 15.dp),
                     theme = PclHintTheme.Yellow,
                 )
@@ -704,9 +704,9 @@ fun PclInstanceExportPage(version: Version) {
             if (javaRuntimeId.isNotBlank()) {
                 PclHint(
                     text = if (javaUsable) {
-                        "该版本设置要求「使用指定的 Java」，这在导出后很可能会失效。建议修改为「使用版本文件夹中的 Java」。"
+                        "This version setting requires \"use specified Java\", which is likely to be invalid after exporting. "
                     } else {
-                        "该版本设置要求「使用指定的 Java」，但该 Java 当前不可用，导出的整合包可能无法启动。"
+                        "This version setting requires \"Use the specified Java\", but this Java is currently unavailable, and the exported integration package may not be started."
                     },
                     modifier = Modifier.padding(top = 15.dp),
                     theme = if (javaUsable) PclHintTheme.Yellow else PclHintTheme.Red,
@@ -723,14 +723,14 @@ fun PclInstanceExportPage(version: Version) {
                     modifier = Modifier.fillMaxWidth().heightIn(min = 28.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    PclText(text = "整合包名称", modifier = Modifier.padding(end = 20.dp))
+                    PclText(text = "Integrated package name", modifier = Modifier.padding(end = 20.dp))
                     PclTextBox(
                         value = packName,
                         modifier = Modifier.weight(1f),
                         hint = version.getVersionName(),
                         onValueChange = { packName = it },
                     )
-                    PclText(text = "整合包版本", modifier = Modifier.padding(start = 30.dp, end = 20.dp))
+                    PclText(text = "Integrated package version", modifier = Modifier.padding(start = 30.dp, end = 20.dp))
                     PclTextBox(
                         value = packVersion,
                         modifier = Modifier.weight(0.3f),
@@ -747,7 +747,7 @@ fun PclInstanceExportPage(version: Version) {
                 contentPadding = PaddingValues(start = 25.dp, top = 38.dp, end = 15.dp, bottom = 15.dp),
                 titleAccessory = {
                     PclPillButton(
-                        text = "重置",
+                        text = "reset",
                         logo = PclIcons.reset,
                         logoScale = 0.9f,
                         modifier = Modifier.padding(top = 4.dp, end = 5.dp),
@@ -774,43 +774,43 @@ fun PclInstanceExportPage(version: Version) {
 
             // ---- 高级选项（PCL：CanSwap=True IsSwapped=True → 默认折叠）
             PclCard(
-                title = "高级选项",
+                title = "Advanced options",
                 modifier = Modifier.fillMaxWidth().padding(bottom = 15.dp),
                 collapsible = true,
                 initiallyCollapsed = true,
                 contentPadding = PaddingValues(start = 25.dp, top = 37.dp, end = 23.dp, bottom = 20.dp),
             ) {
                 PclHint(
-                    text = "建议仅在无法稳定连接 CurseForge 或 Modrinth 时才打包资源文件。",
+                    text = "It is recommended to only package resource files when a stable connection to CurseForge or Modrinth is not possible.",
                     theme = PclHintTheme.Yellow,
                     modifier = Modifier.padding(bottom = 8.dp),
                 )
                 PclCheckBox(
-                    text = "打包资源文件，以避免在导入时下载",
+                    text = "Package resource files to avoid downloading on import",
                     checked = advancedEmbed,
                     onCheckedChange = { advancedEmbed = it },
                 )
                 PclCheckBox(
-                    text = "Modrinth 上传模式",
+                    text = "Modrinth upload mode",
                     checked = advancedModrinth,
                     onCheckedChange = { advancedModrinth = it },
                 )
                 PclHint(
-                    text = "勾选「Modrinth 上传模式」时导出 .mrpack，否则导出 .zip 压缩包。",
+                    text = "Export .mrpack when \"Modrinth upload mode\" is checked, otherwise export .zip compressed package.",
                     theme = PclHintTheme.Yellow,
                     modifier = Modifier.padding(start = 26.dp, top = 2.dp, bottom = 2.dp),
                 )
                 PclHint(
-                    text = "「保存配置 / 读取配置」保存的是本页的勾选状态与填写的名称，方便下次复用。",
+                    text = "\"Save Configuration/Read Configuration\" saves the check status and filled-in name of this page for easy reuse next time.",
                     theme = PclHintTheme.Blue,
                     modifier = Modifier.padding(top = 20.dp, bottom = 2.dp),
                 )
 
                 // Zalith 的导出器需要作者与描述，PCL 那边没有这两项，放在这里
                 Spacer(Modifier.height(12.dp))
-                PclExportLabeledText("整合包作者", author) { author = it }
+                PclExportLabeledText("Integration package author", author) { author = it }
                 Spacer(Modifier.height(8.dp))
-                PclExportLabeledText("整合包描述", summary) { summary = it }
+                PclExportLabeledText("Integration package description", summary) { summary = it }
 
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
@@ -818,23 +818,23 @@ fun PclInstanceExportPage(version: Version) {
                 ) {
                     // PCL 是三个 MinWidth=140 的按钮；手机上等分更稳，因此改成等宽
                     PclButton(
-                        text = "读取配置",
+                        text = "Read configuration",
                         colorState = PclColorState.Highlight,
                         contentPadding = PaddingValues(horizontal = 13.dp),
                         modifier = Modifier.weight(1f),
                         onClick = { readConfig.launch("*/*") },
                     )
                     PclButton(
-                        text = "保存配置",
+                        text = "Save configuration",
                         contentPadding = PaddingValues(horizontal = 13.dp),
                         modifier = Modifier.weight(1f),
                         onClick = { saveConfig.launch("PCL-Export.json") },
                     )
                     PclButton(
-                        text = "整合包制作指南",
+                        text = "Integrated package production guide",
                         contentPadding = PaddingValues(horizontal = 13.dp),
                         modifier = Modifier.weight(1f),
-                        onClick = { PclHintHost.push("整合包制作请参考 PCL 官方指南。", PclHintTheme.Blue) },
+                        onClick = { PclHintHost.push("For integration package production, please refer to the PCL official guide.", PclHintTheme.Blue) },
                     )
                 }
             }
@@ -844,7 +844,7 @@ fun PclInstanceExportPage(version: Version) {
 
         // BtnExport：底部居中的悬浮胶囊（MyExtraTextButton，自身 Margin="20"）
         PclExtraTextButton(
-            text = "开始导出",
+            text = "Start export",
             logo = PclIcons.instanceExport,
             enabled = javaUsable && !running,
             logoScale = 1.1f,

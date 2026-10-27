@@ -1557,13 +1557,13 @@
 
     <!-- PCL2 界面 · 版本设置 → 导出：导出内容列表里的中文别名 -->
     <string name="pcl_export_alias_mods">Mod</string>
-    <string name="pcl_export_alias_resourcepacks">资源包</string>
-    <string name="pcl_export_alias_shaderpacks">光影包</string>
-    <string name="pcl_export_alias_saves">单人游戏存档</string>
-    <string name="pcl_export_alias_screenshots">截图</string>
-    <string name="pcl_export_alias_replay">录像回放</string>
-    <string name="pcl_export_alias_config">Mod 设置</string>
-    <string name="pcl_export_alias_options">游戏本体设置</string>
-    <string name="pcl_export_alias_launcher">PCL 启动器配置</string>
+    <string name="pcl_export_alias_resourcepacks">Resource Packs</string>
+    <string name="pcl_export_alias_shaderpacks">Shader Packs</string>
+    <string name="pcl_export_alias_saves">Singleplayer Saves</string>
+    <string name="pcl_export_alias_screenshots">Screenshots</string>
+    <string name="pcl_export_alias_replay">Replay Recordings</string>
+    <string name="pcl_export_alias_config">Mod Settings</string>
+    <string name="pcl_export_alias_options">Game Settings</string>
+    <string name="pcl_export_alias_launcher">PCL Launcher Config</string>
     <string name="game_renderer_auto_compat">Detected %1$s, which requires desktop OpenGL 3.3+. The current renderer cannot handle it, so %2$s was selected automatically for this launch.</string>
 </resources>

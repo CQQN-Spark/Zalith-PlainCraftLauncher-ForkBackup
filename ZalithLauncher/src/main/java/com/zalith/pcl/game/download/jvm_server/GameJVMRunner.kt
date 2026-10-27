@@ -110,11 +110,11 @@ suspend fun runJvmRetryRuntimes(
             logOutput = logOutput
         ) {
             IOException(
-                "没有可用的 Java 运行库：\n" +
+                "No Java runtime available: \n" +
                         attempted.joinToString("\n") { jre ->
                             "· ${jre.jreName} —— ${RuntimesManager.describeRuntimeProblem(jre.jreName)}"
                         } +
-                        "\n请重启启动器让它重新解压运行库，或在设置中检查 Java 运行库。"
+                        "\nPlease restart the launcher and let it re-decompress the runtime, or check the Java runtime in the settings."
             )
         }
         return@withContext
@@ -289,7 +289,7 @@ suspend fun startJvmServiceAndWaitExit(
 
                 Logger.error(TAG, "The :jvm process died without sending an exit code, aborting the run.")
                 watchdogFailure.set(
-                    IOException("JVM 进程意外退出且没有回传退出码（通常是前台服务被系统拒绝）")
+                    IOException("The JVM process exits unexpectedly without returning an exit code (usually the foreground service is rejected by the system)")
                 )
                 JVMSocketServer.stop()
                 if (!doneSignal.isCompleted) doneSignal.complete(Unit)

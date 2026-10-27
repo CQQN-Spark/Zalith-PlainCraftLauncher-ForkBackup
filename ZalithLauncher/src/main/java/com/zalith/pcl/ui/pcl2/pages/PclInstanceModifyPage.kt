@@ -107,7 +107,7 @@ import kotlinx.coroutines.launch
  * 返回后回到「版本管理 → 设置」那一页。
  */
 fun pclInstanceModifyPage(version: Version): PclSubPage = PclSubPage(
-    title = "修改实例",
+    title = "Modify instance",
     content = { PclInstanceModifyContent(version) },
 )
 
@@ -321,7 +321,7 @@ private fun PclInstanceModifyContent(version: Version) {
     }
 
     // 选了 Fabric 才会有 Fabric API 这一行（与下载页 `PageDownloadInstall.xaml.vb:266` 一致）；
-    // 但如果实例本来装着 Fabric API、用户又刚把 Fabric 清掉，则仍然显示，免得它被"看不见地"保留下来。
+    // 但如果实例本来装着 Fabric API、用户又刚把 Fabric 清掉，则仍然显示，免得它被"invisible"保留下来。
     val showFabricApi = fabric.selected != null || fabricApi.selected != null
 
     // ---- 本页能重装的加载器只有下面这几个。
@@ -367,11 +367,11 @@ private fun PclInstanceModifyContent(version: Version) {
         when {
             slot.items.isNotEmpty() -> pickSlot = slot
             slot.loading -> PclHintHost.push(
-                "正在获取 ${slot.title} 的版本列表，请稍候…",
+                "Retrieving the version list of ${slot.title}, please wait...",
                 PclHintTheme.Blue,
             )
             else -> {
-                PclHintHost.push("正在重新获取 ${slot.title} 的版本列表…", PclHintTheme.Blue)
+                PclHintHost.push("Retrieving version list for ${slot.title}…", PclHintTheme.Blue)
                 slot.reset()
                 scope.launch {
                     pclModifyLoadSlot(
@@ -409,12 +409,12 @@ private fun PclInstanceModifyContent(version: Version) {
 
     fun startReset() {
         if (mcId.isBlank()) {
-            PclHintHost.push("还没有确定 Minecraft 版本，无法重置。", PclHintTheme.Red)
+            PclHintHost.push("The Minecraft version has not yet been determined and cannot be reset.", PclHintTheme.Red)
             return
         }
         if (runtime.isInstalling) {
             // 不静默返回：直接把用户带到那条任务的进度页，让他自己看见在跑什么
-            PclHintHost.push("已有安装任务正在进行，已切到下载管理。", PclHintTheme.Yellow)
+            PclHintHost.push("The installation task is in progress and has been switched to download management.", PclHintTheme.Yellow)
             nav.push(pclDownloadManagerPage())
             return
         }
@@ -432,7 +432,7 @@ private fun PclInstanceModifyContent(version: Version) {
         quilt.selected?.let { add("Quilt ${quilt.label(it)}") }
         optifine.selected?.let { add("OptiFine ${optifine.label(it)}") }
         cleanroom.selected?.let { add("Cleanroom ${cleanroom.label(it)}") }
-    }.joinToString(" | ").ifEmpty { "未安装模组加载器" }
+    }.joinToString(" | ").ifEmpty { "Mod loader not installed" }
 
     val headerLogo = when {
         fabric.selected != null -> R.drawable.pcl_block_fabric
@@ -461,8 +461,8 @@ private fun PclInstanceModifyContent(version: Version) {
                     contentPadding = PaddingValues(0.dp),
                 ) {
                     PclListItem(
-                        title = "返回",
-                        info = "当前：$mcId",
+                        title = "return",
+                        info = "Current: $mcId",
                         logo = PclIcons.back,
                         logoScale = 0.87f,
                         height = 42.dp,
@@ -514,22 +514,22 @@ private fun PclInstanceModifyContent(version: Version) {
                 }
                 if (runtime.isInstalling) {
                     PclHint(
-                        text = "正在重置，可在右下角「下载管理」查看进度。",
+                        text = "Resetting is in progress. You can check the progress in \"Download Management\" in the lower right corner.",
                         theme = PclHintTheme.Blue,
                     )
                     Spacer(Modifier.height(10.dp))
                 }
                 if (mcId.isBlank()) {
                     PclHint(
-                        text = "读不到这个实例的 Minecraft 版本号，请点右侧铅笔重新选择一个版本。",
+                        text = "The Minecraft version number for this instance cannot be read. Please click the pencil on the right to select a new version.",
                         theme = PclHintTheme.Red,
                     )
                     Spacer(Modifier.height(10.dp))
                 }
                 if (unsupportedLoaders.isNotEmpty()) {
                     PclHint(
-                        text = "这个实例还装着 " + unsupportedLoaders.joinToString("、") { it.displayName } +
-                            "，当前的重置流程不会重装它（会被丢掉），因此已禁用重置。",
+                        text = "This instance is still pretending" + unsupportedLoaders.joinToString("、") { it.displayName } +
+                            ", the current reset process will not reinstall it (it will be thrown away), so reset is disabled.",
                         theme = PclHintTheme.Red,
                     )
                     Spacer(Modifier.height(10.dp))
@@ -538,19 +538,19 @@ private fun PclInstanceModifyContent(version: Version) {
                 // ---- 版本组合
                 PclCard(
                     modifier = Modifier.fillMaxWidth(),
-                    title = "版本组合",
+                    title = "Version combination",
                     contentPadding = PaddingValues(start = 10.dp, top = 38.dp, end = 10.dp, bottom = 10.dp),
                 ) {
                     // Minecraft：右侧铅笔 = 打开版本列表
                     PclListItem(
                         title = "Minecraft",
-                        info = mcId.ifBlank { "未知" },
+                        info = mcId.ifBlank { "unknown" },
                         logo = PclIcons.dlGame,
                         height = 44.dp,
                         buttons = listOf(
                             PclListItemButton(
                                 logo = PclIcons.loginMsEdit,
-                                tooltip = "修改 Minecraft 版本",
+                                tooltip = "Modify Minecraft version",
                                 logoScale = 0.92f,
                             ) { pickingMc = true },
                         ),
@@ -577,8 +577,8 @@ private fun PclInstanceModifyContent(version: Version) {
 
                 Spacer(Modifier.height(12.dp))
                 PclText(
-                    text = "重置只会重新下载该实例所需的文件并重装加载器，" +
-                        "存档、Mod、资源包和版本设置都会保留。",
+                    text = "Resetting only re-downloads the files required for the instance and reloads the loader." +
+                        "Saves, mods, resource packs, and version settings are preserved.",
                     fontSize = 12,
                     color = p.gray2,
                 )
@@ -593,7 +593,7 @@ private fun PclInstanceModifyContent(version: Version) {
         if (!pickingMc) {
             val installing = runtime.isInstalling
             PclExtraTextButton(
-                text = if (installing) "查看安装进度" else "开始重置",
+                text = if (installing) "View installation progress" else "Start reset",
                 logo = PclIcons.restartAlt,
                 logoScale = 0.95f,
                 enabled = canReset,
@@ -615,7 +615,7 @@ private fun PclInstanceModifyContent(version: Version) {
     pickSlot?.let { slot ->
         val options = slot.items.map { slot.label(it) to slot.label(it) }
         PclSelectDialog(
-            title = "选择 ${slot.title} 版本",
+            title = "Select ${slot.title} version",
             options = options,
             current = slot.selected?.let { slot.label(it) },
             onSelect = { picked ->
@@ -628,7 +628,7 @@ private fun PclInstanceModifyContent(version: Version) {
                 // 会觉得「选完什么都没发生」（这就是「没反应」的由来）。
                 if (chosen != null) {
                     PclHintHost.push(
-                        "已选择 ${slot.title} ${slot.label(chosen)}。确认无误后点下方「开始重置」。",
+                        "${slot.title} ${slot.label(chosen)} selected. ",
                         PclHintTheme.Green,
                     )
                 }
@@ -639,16 +639,16 @@ private fun PclInstanceModifyContent(version: Version) {
 
     // ---- 互斥确认：「要换成它的话，得先清掉已选的 X」
     conflictSlot?.let { slot ->
-        val reason = pclLoaderConflict(slot.kind, mcId, selectedKinds) ?: "与已选加载器不兼容"
+        val reason = pclLoaderConflict(slot.kind, mcId, selectedKinds) ?: "Incompatible with selected loader"
         val others = slots
             .filter { it !== slot && it.selected != null }
             .filter { pclLoaderConflict(it.kind, mcId, setOf(slot.kind)) != null }
             .joinToString("、") { it.title }
         PclConfirmDialog(
-            title = "换成 ${slot.title}",
-            content = "当前实例已选择 $others，$reason。\n" +
-                "继续将清除 $others，然后再选择 ${slot.title} 的版本。",
-            confirmText = "清除并选择",
+            title = "Replace with ${slot.title}",
+            content = "The current instance has $others, $reason selected. " +
+                "Continuing will clear $others before selecting the version of ${slot.title}.",
+            confirmText = "clear and select",
             onConfirm = {
                 dropConflictsOf(slot)
                 openPicker(slot)
@@ -660,11 +660,11 @@ private fun PclInstanceModifyContent(version: Version) {
     // ---- 重置确认（PCL 的 MyMsgText：标题 + 两段说明 + 继续 / 取消）
     if (showConfirm) {
         PclConfirmDialog(
-            title = "重置此实例",
-            content = "你正在重置当前实例。\n" +
-                "Zalith-Plain Craft Launcher 将会重新联网下载该实例所需的文件，并重新安装模组加载器（如有）。\n" +
-                "此操作不会丢失你的存档、模组、资源包等。",
-            confirmText = "继续",
+            title = "Reset this instance",
+            content = "You are resetting the current instance. " +
+                "The Zalith-Plain Craft Launcher will reconnect to the internet to download the files required for the instance and reinstall the mod loader (if applicable). " +
+                "This operation will not lose your saves, modules, resource packs, etc.",
+            confirmText = "continue",
             onConfirm = { startReset() },
             onDismiss = { showConfirm = false },
         )
@@ -680,14 +680,14 @@ private fun PclInstanceModifyContent(version: Version) {
 private fun pclModifySlotInfo(slot: PclModifySlot, conflictReason: String?): String {
     slot.selected?.let { item ->
         val label = slot.label(item)
-        return if (slot.unmatched) "$label（当前版本不在列表中）" else label
+        return if (slot.unmatched) "$label (current version is not in the list)" else label
     }
     return when {
         conflictReason != null -> conflictReason
-        slot.loading -> "获取中……"
-        slot.error != null -> "获取失败：${slot.error}"
-        slot.items.isEmpty() -> "没有可用版本"
-        else -> "未安装"
+        slot.loading -> "Getting..."
+        slot.error != null -> "Failed to obtain: ${slot.error}"
+        slot.items.isEmpty() -> "No version available"
+        else -> "Not installed"
     }
 }
 
@@ -730,7 +730,7 @@ private fun PclModifyLoaderRow(
                     add(
                         PclListItemButton(
                             logo = PclIcons.close,
-                            tooltip = "清除 ${slot.title}",
+                            tooltip = "Clear ${slot.title}",
                             logoScale = 0.85f,
                             onClick = onClear,
                         ),
@@ -739,7 +739,7 @@ private fun PclModifyLoaderRow(
                 add(
                     PclListItemButton(
                         logo = PclIcons.arrowRight,
-                        tooltip = "选择 ${slot.title} 版本",
+                        tooltip = "Select ${slot.title} version",
                         logoScale = 0.9f,
                         onClick = onPick,
                     ),

@@ -54,11 +54,11 @@ import androidx.compose.ui.unit.sp
 /** 纵轴分割段数 */
 private const val FPS_SEGMENTS = 5
 
-/** 纵轴刻度步长的候选"好数"，贴合帧率语境（1/2/5/10/15/20/30/60/120…） */
+/** 纵轴刻度步长的候选"Good number"，贴合帧率语境（1/2/5/10/15/20/30/60/120…） */
 private val FPS_AXIS_STEPS = intArrayOf(1, 2, 5, 10, 15, 20, 30, 60, 120, 240)
 
 /**
- * 计算纵轴的"好数"范围：均分为5段后每个刻度都落在规整数字上，
+ * 计算纵轴的"Good number"范围：均分为5段后每个刻度都落在规整数字上，
  * 完整覆盖实际帧率范围，两端尽量对称地留出余量，且最低刻度不小于0
  */
 private fun niceFpsBounds(fpsMin: Int, fpsMax: Int): Pair<Int, Int> {
@@ -93,7 +93,7 @@ private val FpsLabelHeight = 12.dp
 
 /**
  * 游戏内帧率历史图表：
- * 纵轴为帧率（范围向外取整为"好数"后分5段标注刻度），
+ * 纵轴为帧率（范围向外取整为"Good number"后分5段标注刻度），
  * 横轴为时间（最多记录15个时间节点，不显示具体时间）；
  * 最后一个点旁标注当前帧率
  */
@@ -108,7 +108,7 @@ fun FpsChart(
     val lineColor = primaryColor.copy(alpha = 0.3f)
     val labelColor = LocalContentColor.current
     val textMeasurer = rememberTextMeasurer()
-    //纵轴刻度数字：范围向外取整为"好数"后均分5段（含两端）
+    //纵轴刻度数字：范围向外取整为"Good number"后均分5段（含两端）
     val bounds = remember(fpsMax, fpsMin) { niceFpsBounds(fpsMin, fpsMax) }
     val ticks = remember(bounds) {
         val step = (bounds.second - bounds.first) / FPS_SEGMENTS

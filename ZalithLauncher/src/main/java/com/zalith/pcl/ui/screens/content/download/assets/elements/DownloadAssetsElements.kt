@@ -528,7 +528,7 @@ fun ProjectUrlsContent(
             onClick = { openLink(url) },
             iconSize = 18.dp,
             painter = painterResource(R.drawable.ic_link),
-            text = "MC 百科" //品牌名不需要翻译，硬编码
+            text = "MC Encyclopedia" //品牌名不需要翻译，硬编码
         )
     }
 }

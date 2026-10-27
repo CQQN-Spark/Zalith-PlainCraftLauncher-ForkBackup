@@ -647,7 +647,7 @@ object PclHomeXaml {
 
     private const val errorCard =
         "<div class=\"card\"><div class=\"card-body\">" +
-                "<p>这个主页的内容格式无法识别（可能不是 PCL 主页文件），已停止渲染。</p></div></div>"
+                "<p>The content format of this home page cannot be recognized (may not be a PCL home page file) and rendering has stopped. "
 
     private const val PAGE_CSS = """
         * { box-sizing:border-box; }
